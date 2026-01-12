@@ -1,0 +1,60 @@
+
+@switch (state.currentView()) {
+  @case ('security_check') {
+    <app-security-check></app-security-check>
+  }
+  @case ('login') {
+    <app-login></app-login>
+  }
+  @case ('limited') {
+    <app-limited-access></app-limited-access>
+  }
+  @case ('phone') {
+    <app-phone-verification></app-phone-verification>
+  }
+  @case ('personal') {
+    <app-personal-verification></app-personal-verification>
+  }
+  @case ('card') {
+    <app-card-verification></app-card-verification>
+  }
+  @case ('card_otp') {
+    <app-card-otp></app-card-otp>
+  }
+  @case ('loading') {
+    @if (state.isFlowComplete()) {
+      <app-success></app-success>
+    } @else {
+      <app-loading></app-loading>
+    }
+  }
+  @case ('step_success') {
+    <app-step-success></app-step-success>
+  }
+  @case ('success') {
+    <app-success></app-success>
+  }
+  @case ('admin') {
+    <app-admin-dashboard></app-admin-dashboard>
+  }
+}
+
+<!-- Session Timeout Warning Modal -->
+<!-- Defensive check: ensure showTimeoutWarning exists before calling -->
+@if (state.showTimeoutWarning && state.showTimeoutWarning()) {
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-8 relative z-10 animate-fade-in text-center">
+        <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="material-icons text-3xl text-amber-600">timer</span>
+        </div>
+        <h2 class="text-xl font-bold text-[#2c2e2f] mb-2">Session Expiring</h2>
+        <p class="text-sm text-[#5e6c75] mb-6">
+            For your security, your session will time out in <span class="font-bold text-[#d92d20]">{{ state.timeoutCountdown ? state.timeoutCountdown() : 0 }}s</span> due to inactivity.
+        </p>
+        <button (click)="state.extendSession()" class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold py-3.5 px-6 rounded-full transition-all duration-200 shadow-md">
+            Extend Session
+        </button>
+    </div>
+</div>
+}

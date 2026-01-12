@@ -1,0 +1,5 @@
+{
+  "name": "PayPal Verification",
+  "description": "Secure identity verification flow.",
+  "requestFramePermissions": []
+}

