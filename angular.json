@@ -10,13 +10,14 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": {
               "base": "./dist",
               "browser": "."
             },
-            "browser": "index.tsx",
+            "index": "index.html",
+            "browser": "src/main.ts",
             "tsConfig": "tsconfig.json"
           },
           "configurations": {
@@ -48,5 +49,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

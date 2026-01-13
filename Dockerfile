@@ -1,21 +1,13 @@
-# Use the official lightweight Node.js 18 image.
-FROM node:18-slim
-
-# Create and change to the app directory.
-WORKDIR /usr/src/app
-
-# Copy application dependency manifests to the container image.
+FROM node:20-slim
+WORKDIR /app
 COPY package*.json ./
-
-# Install dependencies.
 RUN npm install
-
-# Copy local code to the container image.
 COPY . .
+RUN npx tsc
 
-# Build the client-side JavaScript bundle using esbuild.
-RUN npm run build
+# Create a 'static' directory and copy Angular built assets into it
+RUN mkdir -p static
+COPY ./dist/. ./static/
 
-# Run the web service on container startup.
-# Cloud Run will set the PORT environment variable, which index.tsx listens on.
-CMD [ "npm", "start" ]
+EXPOSE 8080
+CMD ["node", "index.js"]

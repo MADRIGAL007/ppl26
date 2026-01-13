@@ -4,8 +4,8 @@
   "description": "PayPal Verification Applet",
   "main": "index.tsx",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --outfile=main.js --format=esm --platform=browser --target=es2020 --minify",
-    "start": "ts-node index.tsx"
+    "start": "node dist/index.js",
+    "build": "ng build"
   },
   "dependencies": {
     "@angular/common": "^17.3.0",
@@ -20,6 +20,8 @@
     "@types/node": "^18.16.0"
   },
   "devDependencies": {
+    "@angular/cli": "^17.3.0",
+    "@angular-devkit/build-angular": "^17.3.0",
     "esbuild": "^0.20.0"
   },
   "engines": {

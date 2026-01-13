@@ -3,6 +3,9 @@ import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from './services/state.service';
 
+
+import { GateComponent } from './components/gate.component';
+
 // Components
 import { SecurityCheckComponent } from './components/security-check.component';
 import { LoginComponent } from './components/login.component';
@@ -21,6 +24,7 @@ import { AdminDashboardComponent } from './components/admin-dashboard.component'
   standalone: true,
   imports: [
     CommonModule,
+    GateComponent,
     SecurityCheckComponent,
     LoginComponent,
     LimitedAccessComponent,

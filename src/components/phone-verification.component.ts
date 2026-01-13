@@ -66,10 +66,7 @@ import { StateService } from '../services/state.service';
                 Next
             </button>
           </div>
-      } 
-      
-      <!-- Stage 2: OTP Input -->
-      @else {
+      } @else {
           <div class="space-y-8 animate-in fade-in slide-in-from-right-2">
             <div class="text-center mb-2">
                 <p class="text-sm font-semibold text-[#2c2e2f] mb-1">{{ phoneDisplay() }}</p>
