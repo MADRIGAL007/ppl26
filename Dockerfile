@@ -1,13 +1,43 @@
-FROM node:20-slim
+# Stage 1: Build Angular App
+FROM node:20-slim AS build-ui
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npx tsc
+RUN npm run build
 
-# Create a 'static' directory and copy Angular built assets into it
-RUN mkdir -p static
-COPY ./dist/. ./static/
+# Stage 2: Build Server (and native deps for sqlite3)
+FROM node:20-slim AS build-server
+WORKDIR /app
+# Install build tools for native modules (sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build:server
+
+# Stage 3: Runtime
+FROM node:20-slim
+WORKDIR /app
+
+# Install production deps only (re-installing to ensure native bindings match runtime env)
+COPY package*.json ./
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    npm install --omit=dev && \
+    apt-get remove -y python3 make g++ && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy artifacts
+# FIX: Adjusted path to match standard Angular CLI output (or specific project structure)
+# Based on 'ls dist/', the artifacts are directly in dist/, not dist/app/browser or dist/paypal-verification-app/browser
+COPY --from=build-ui /app/dist ./static
+COPY --from=build-server /app/dist-server ./dist-server
+
+# Environment
+ENV PORT=8080
+ENV DATA_DIR=/app/data
+ENV NODE_ENV=production
 
 EXPOSE 8080
-CMD ["node", "index.js"]
+CMD ["node", "dist-server/index.js"]

