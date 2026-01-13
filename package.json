@@ -1,9 +1,10 @@
-
 {
   "name": "paypal-verification-app",
   "version": "1.0.0",
   "description": "PayPal Verification Applet",
+  "main": "index.tsx",
   "scripts": {
+    "build": "esbuild src/main.ts --bundle --outfile=main.js --format=esm --platform=browser --target=es2020 --minify",
     "start": "ts-node index.tsx"
   },
   "dependencies": {
@@ -17,6 +18,9 @@
     "typescript": "~5.4.0",
     "zone.js": "~0.14.0",
     "@types/node": "^18.16.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
   },
   "engines": {
     "node": ">=18.0.0"
