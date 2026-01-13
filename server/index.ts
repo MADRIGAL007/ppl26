@@ -5,6 +5,7 @@ import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import fs from 'fs';
 import * as db from './db';
 
 const app = express();
@@ -120,18 +121,30 @@ app.post('/api/gate-unlock', (req, res) => {
 });
 
 // --- Static Files (Frontend) ---
-const staticPath = path.join(__dirname, '../static');
-// Note: In Docker, we copy dist/ to static/. In dev, we might not have it.
-app.use(express.static(staticPath));
+const staticPaths = [
+    path.join(__dirname, '../static'),           // Docker / Production
+    path.join(__dirname, '../dist/app/browser')  // Local Development
+];
+
+// Register all paths
+staticPaths.forEach(p => app.use(express.static(p)));
 
 // Fallback for SPA (Angular Router)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'), (err) => {
-        if (err) {
-            // If index.html doesn't exist (e.g., dev mode without build), send basic info
-            res.status(404).send('Frontend not built. Run npm run build.');
-        }
-    });
+    // Find the first path that actually has index.html
+    const validPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+    if (validPath) {
+        res.sendFile(path.join(validPath, 'index.html'));
+    } else {
+        res.status(404).send(`
+            <h1>Frontend Not Found</h1>
+            <p>Please build the application first:</p>
+            <pre>npm run build</pre>
+            <p>Searched paths:</p>
+            <ul>${staticPaths.map(p => `<li>${p}</li>`).join('')}</ul>
+        `);
+    }
 });
 
 // --- Start Server ---
