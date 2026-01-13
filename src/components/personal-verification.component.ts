@@ -4,17 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
-
-const ALL_COUNTRIES = [
-    "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", 
-    "Spain", "Italy", "China", "Japan", "Brazil", "Mexico", "India", "Netherlands",
-    "Switzerland", "Sweden", "Belgium", "Austria", "Norway", "Denmark", "Ireland",
-    "New Zealand", "Singapore", "South Korea", "Russia", "South Africa", "Argentina",
-    "Chile", "Colombia", "Peru", "Portugal", "Greece", "Poland", "Turkey", "Egypt",
-    "Saudi Arabia", "United Arab Emirates", "Israel", "Thailand", "Vietnam", "Malaysia",
-    "Indonesia", "Philippines", "Pakistan", "Bangladesh", "Nigeria", "Kenya", 
-    "Finland", "Ukraine", "Czech Republic", "Hungary", "Romania", "Morocco"
-].sort();
+import { filterCountries } from '../utils/country-data';
 
 @Component({
   selector: 'app-personal-verification',
@@ -253,9 +243,7 @@ export class PersonalVerificationComponent {
   }
 
   filteredCountries = computed(() => {
-     const q = this.searchQuery().toLowerCase();
-     if (!q) return ALL_COUNTRIES;
-     return ALL_COUNTRIES.filter(c => c.toLowerCase().includes(q));
+     return filterCountries(this.searchQuery());
   });
 
   toggleDropdown() {
