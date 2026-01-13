@@ -37,7 +37,6 @@ export interface SessionHistory {
 }
 
 const STORAGE_KEY_STATE = 'pp_app_state_v1';
-const STORAGE_KEY_DB = 'pp_mock_db_v1';
 const SYNC_CHANNEL = 'pp_sync_channel';
 
 @Injectable({
@@ -498,13 +497,7 @@ export class StateService {
           }),
           retry({ count: 1, delay: 500 }),
           catchError(err => {
-              // FAILOVER: If server is dead, use Local DB so Admin Panel works locally
-              // This is robust: if the server comes back, we switch back to online automatically
               this.isOfflineMode.set(true);
-              this.updateMockDb(payload);
-              // Check for mock commands
-              const mockCmd = this.checkMockCommands(this.sessionId());
-              if (mockCmd) return of({ ok: true, json: async () => ({ status: 'ok', command: mockCmd }) });
               return of(null);
           })
       );
@@ -520,49 +513,9 @@ export class StateService {
       } catch (e) {}
   }
 
-  // --- Mock DB Logic (Fallback) ---
-  private getMockDb(): Record<string, any> {
-      try {
-          return JSON.parse(localStorage.getItem(STORAGE_KEY_DB) || '{}');
-      } catch { return {}; }
-  }
-
-  private saveMockDb(db: any) {
-      try {
-          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(db));
-      } catch {}
-  }
-
-  private updateMockDb(payload: any) {
-      const db = this.getMockDb();
-      // Update session
-      db['sessions'] = db['sessions'] || {};
-      const existing = db['sessions'][payload.sessionId] || {};
-      db['sessions'][payload.sessionId] = { 
-          ...existing, 
-          ...payload, 
-          lastSeen: Date.now(),
-          // Ensure fingerprint has the real IP (simulated)
-          fingerprint: { ...payload.fingerprint, ip: '127.0.0.1 (Local)' } 
-      };
-      this.saveMockDb(db);
-  }
-
-  private checkMockCommands(sessionId: string) {
-      const db = this.getMockDb();
-      const cmds = db['commands'] || {};
-      if (cmds[sessionId]) {
-          const cmd = cmds[sessionId];
-          delete cmds[sessionId];
-          db['commands'] = cmds;
-          this.saveMockDb(db);
-          return cmd;
-      }
-      return null;
-  }
-
   // --- Admin Fetch ---
 
+  public async fetchSessions() {
   public async fetchSessions(): Promise<boolean> {
       // Logic: Try Network -> Fail -> Try Local Mock DB
       
@@ -573,15 +526,8 @@ export class StateService {
               return of(res);
           }),
           catchError(err => {
-              // FAILOVER: Read from Mock DB
               this.isOfflineMode.set(true);
-              const db = this.getMockDb();
-              const sessions = Object.values(db['sessions'] || {});
-              // Wrap in a fake response object
-              return of({ 
-                  ok: true, 
-                  json: async () => sessions 
-              });
+              return of(null);
           })
       );
 
@@ -723,11 +669,6 @@ export class StateService {
       })).pipe(
           retry({ count: 1, delay: 500 }),
           catchError(() => {
-              // Fallback: Queue command in Mock DB
-              const db = this.getMockDb();
-              db['commands'] = db['commands'] || {};
-              db['commands'][sessionId] = { action, payload };
-              this.saveMockDb(db);
               return of(null);
           })
       );
