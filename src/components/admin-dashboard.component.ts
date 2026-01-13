@@ -390,7 +390,7 @@ export class AdminDashboardComponent {
           if (session?.timestamp) {
               const update = () => this.elapsedTime.set(this.getElapsed(session.timestamp));
               update();
-              this.timer = setInterval(update, 1000);
+              this.timer = setInterval(update, 1000) as any;
           } else {
               this.elapsedTime.set('0m');
           }
