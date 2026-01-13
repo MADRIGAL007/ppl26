@@ -17,7 +17,7 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 8080;
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env var
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD; // Use env var
 
 // --- Middleware ---
 app.use(helmet({
@@ -112,6 +112,12 @@ app.post('/api/command', async (req, res) => {
 // 4. Gate Unlock
 app.post('/api/gate-unlock', (req, res) => {
     const { password } = req.body;
+    if (!MASTER_PASSWORD) {
+        // This case should ideally not be reached if the startup check is in place.
+        // However, as a defense-in-depth measure, we handle it.
+        console.warn('[Server] Gate unlock endpoint called, but MASTER_PASSWORD is not set.');
+        return res.status(503).json({ success: false, error: 'Service Unavailable: Not configured.' });
+    }
     if (password === MASTER_PASSWORD) {
         res.json({ success: true });
     } else {
@@ -135,6 +141,12 @@ app.get('*', (req, res) => {
 });
 
 // --- Start Server ---
+if (!MASTER_PASSWORD) {
+    console.error('[Server] ❌ FATAL ERROR: MASTER_PASSWORD environment variable not set.');
+    console.error('[Server] ❌ The application cannot start without a secure master password.');
+    process.exit(1);
+}
+
 httpServer.listen(PORT, () => {
     console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
 });
