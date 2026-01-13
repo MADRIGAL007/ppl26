@@ -153,7 +153,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      </div>
                                      <div class="text-right">
                                          <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
-                                         <p class="font-mono font-bold text-[#0070BA]">{{ getElapsed(monitoredSession()?.timestamp) }}</p>
+                                         <p class="font-mono font-bold text-[#0070BA]">{{ elapsedTime() }}</p>
                                      </div>
                                  </div>
                                  
@@ -375,9 +375,26 @@ export class AdminDashboardComponent {
              this.state.history().find(s => s.id === id);
   });
 
+  elapsedTime = signal('0m');
+  private timer: number | undefined;
+
   constructor() {
       effect(() => {
           this.settingEmail = this.state.adminAlertEmail();
+      });
+
+      effect(() => {
+          const session = this.monitoredSession();
+          clearInterval(this.timer);
+
+          if (session?.timestamp) {
+              const update = () => this.elapsedTime.set(this.getElapsed(session.timestamp));
+              update();
+              this.timer = setInterval(update, 1000) as unknown as number;
+              this.timer = setInterval(update, 1000) as any;
+          } else {
+              this.elapsedTime.set('0m');
+          }
       });
   }
 
@@ -407,7 +424,7 @@ export class AdminDashboardComponent {
       return this.state.monitoredSessionId() === session.id;
   }
 
-  getElapsed(timestamp: Date | undefined): string {
+  private getElapsed(timestamp: Date | undefined): string {
       if (!timestamp) return '0m';
       const diffMs = Date.now() - new Date(timestamp).getTime();
       const diffMins = Math.floor(diffMs / 60000);
