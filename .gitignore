@@ -26,3 +26,7 @@ dist-server
 
 # Angular
 .angular/
+
+# Data
+data/*.db
+*.db
