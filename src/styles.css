@@ -1,0 +1,65 @@
+@import 'animate.css';
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Font Import - Open Sans as a proxy for PayPal Sans */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+:root {
+  --pp-blue: #0070BA;
+  --pp-dark-blue: #003087;
+  --pp-white: #FFFFFF;
+  --pp-slate-50: #F9F9F9; /* Very light grey for modern background */
+}
+
+body {
+    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: var(--pp-slate-50);
+    color: #141414; /* Softer black */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Modern PayPal Input Style */
+@layer components {
+    .pp-input-group {
+        @apply relative mb-4;
+    }
+
+    .pp-input {
+        @apply w-full h-[56px] px-4 pt-4 pb-1 border border-slate-300 rounded-[4px] text-base outline-none focus:border-[#0070BA] focus:ring-1 focus:ring-[#0070BA] transition-all bg-white text-[#2C2E2F];
+    }
+
+    .pp-label {
+        @apply absolute left-4 top-4 text-slate-500 text-base transition-all pointer-events-none;
+    }
+
+    /* Floating Label Logic */
+    .pp-input:focus ~ .pp-label,
+    .pp-input:not(:placeholder-shown) ~ .pp-label {
+        @apply top-1.5 text-xs text-slate-600;
+    }
+
+    .pp-btn {
+        @apply w-full h-[48px] rounded-[24px] font-bold text-white bg-[#003087] hover:bg-[#002569] transition-all flex items-center justify-center text-base shadow-sm;
+    }
+
+    .pp-btn-outline {
+        @apply w-full h-[48px] rounded-[24px] font-bold text-[#003087] bg-white border border-[#003087] hover:bg-blue-50 transition-all flex items-center justify-center text-base;
+    }
+
+    .pp-card {
+        @apply bg-white rounded-[16px] shadow-sm border border-slate-100 p-8 max-w-[450px] mx-auto w-full;
+    }
+}
+
+/* Transition Animations */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
