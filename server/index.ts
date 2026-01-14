@@ -65,6 +65,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate Limiting
+app.set('trust proxy', 1); // Trust first proxy (required for Render/Cloud Run)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 500 // Limit each IP to 500 requests per windowMs
