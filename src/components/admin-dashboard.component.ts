@@ -376,7 +376,7 @@ export class AdminDashboardComponent {
   });
 
   elapsedTime = signal('0m');
-  private timer: number | undefined;
+  private timer: any;
 
   constructor() {
       effect(() => {

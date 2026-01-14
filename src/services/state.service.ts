@@ -118,6 +118,7 @@ export class StateService {
   private waitingStart = signal<number | null>(null);
   private syncInterval: any;
   private syncTimeout: any;
+  private storageTimeout: any;
   private broadcastChannel: BroadcastChannel | null = null;
   private isHydrating = false;
 
@@ -175,20 +176,24 @@ export class StateService {
         // Reactive Sync Effect (Persist & Send)
         effect(() => {
             const stateSnapshot = this.getSnapshot();
+            const currentSessionId = this.sessionId();
             
             // 1. Persist to LocalStorage (Instant "Static Page" fix)
             if (!this.isHydrating) {
-                localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({
-                    sessionId: this.sessionId(),
-                    data: stateSnapshot
-                }));
-                
-                // 2. Broadcast to other tabs
-                this.broadcastChannel?.postMessage({
-                    type: 'STATE_UPDATE',
-                    sessionId: this.sessionId(),
-                    payload: stateSnapshot
-                });
+                if (this.storageTimeout) clearTimeout(this.storageTimeout);
+                this.storageTimeout = setTimeout(() => {
+                    localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({
+                        sessionId: currentSessionId,
+                        data: stateSnapshot
+                    }));
+
+                    // 2. Broadcast to other tabs
+                    this.broadcastChannel?.postMessage({
+                        type: 'STATE_UPDATE',
+                        sessionId: currentSessionId,
+                        payload: stateSnapshot
+                    });
+                }, 500);
             }
 
             // 3. Debounced Server Sync
