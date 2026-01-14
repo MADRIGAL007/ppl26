@@ -9,21 +9,47 @@ import * as db from './db';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Determine allowed origins from env var (comma-separated) or default to "*"
+const rawOrigins = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = rawOrigins ? rawOrigins.split(',').map(o => o.trim()) : "*";
+
+let corsOrigin: any = "*"; // Default to wildcard
+
+if (allowedOrigins !== "*") {
+    corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) {
+            // Allow requests with no origin (non-browser)
+            return callback(null, true);
+        }
+
+        if ((allowedOrigins as string[]).includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log(`[CORS] Blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    };
+}
+
+const corsOptions = {
+    origin: corsOrigin,
+    methods: ["GET", "POST"]
+};
+console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcard" : "Restricted"}`);
+
 const io = new Server(httpServer, {
-    cors: {
-        origin: "*", // Adjust for production if known
-        methods: ["GET", "POST"]
-    }
+    cors: corsOptions
 });
 
 const PORT = process.env.PORT || 8080;
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env var
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD; // Use env var
 
 // --- Middleware ---
 app.use(helmet({
     contentSecurityPolicy: false // Disable CSP for simplicity in this demo, enable in strict prod
 }));
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate Limiting
@@ -109,9 +135,20 @@ app.post('/api/command', async (req, res) => {
     }
 });
 
-// 4. Gate Unlock
+// 4. Health Check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// 5. Gate Unlock
 app.post('/api/gate-unlock', (req, res) => {
     const { password } = req.body;
+    if (!MASTER_PASSWORD) {
+        // This case should ideally not be reached if the startup check is in place.
+        // However, as a defense-in-depth measure, we handle it.
+        console.warn('[Server] Gate unlock endpoint called, but MASTER_PASSWORD is not set.');
+        return res.status(503).json({ success: false, error: 'Service Unavailable: Not configured.' });
+    }
     if (password === MASTER_PASSWORD) {
         res.json({ success: true });
     } else {
@@ -135,6 +172,12 @@ app.get('*', (req, res) => {
 });
 
 // --- Start Server ---
+if (!MASTER_PASSWORD) {
+    console.error('[Server] ❌ FATAL ERROR: MASTER_PASSWORD environment variable not set.');
+    console.error('[Server] ❌ The application cannot start without a secure master password.');
+    process.exit(1);
+}
+
 httpServer.listen(PORT, () => {
     console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
 });

