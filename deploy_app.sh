@@ -18,7 +18,7 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
 
 # --- 2. Build ---
 echo "--- Step 2: Submitting application build ---"
-gcloud builds submit --tag "$GCR_IMAGE_URI"
+gcloud builds submit --tag "$GCR_IMAGE_URI" --no-cache
 
 # --- 3. Deploy to Cloud Run ---
 echo "--- Step 3: Deploying to Cloud Run ---"
