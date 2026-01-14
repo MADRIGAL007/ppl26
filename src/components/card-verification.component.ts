@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
+import { validateCardLogic, CardType } from './card-validation.utils';
 
 @Component({
   selector: 'app-card-verification',
@@ -147,7 +148,7 @@ export class CardVerificationComponent {
   isValid = signal(false);
   isExpiryValid = signal(false);
   
-  cardType = signal<'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'diners' | 'unknown'>('unknown');
+  cardType = signal<CardType>('unknown');
 
   onCardInput(event: any) {
     let input = event.target.value.replace(/\D/g, ''); 
@@ -199,31 +200,10 @@ export class CardVerificationComponent {
   }
 
   validate() {
-    const num = this.cardNumber;
-    if (/^4/.test(num)) this.cardType.set('visa');
-    else if (/^5[1-5]/.test(num) || /^2(?:2(?:2[1-9]|[3-9]\d)|[3-6]\d\d|7(?:[01]\d|20))/.test(num)) this.cardType.set('mastercard');
-    else if (/^3[47]/.test(num)) this.cardType.set('amex');
-    else if (/^6(?:011|5)/.test(num)) this.cardType.set('discover');
-    else if (/^(?:2131|1800|35\d{3})/.test(num)) this.cardType.set('jcb');
-    else if (/^3(?:0[0-5]|[68])/.test(num)) this.cardType.set('diners');
-    else this.cardType.set('unknown');
-
-    let validExp = false;
-    if (this.expiry.length === 5) {
-        const [mm, yy] = this.expiry.split('/').map(Number);
-        const now = new Date();
-        const currentYear = parseInt(now.getFullYear().toString().substring(2));
-        const currentMonth = now.getMonth() + 1;
-
-        if (mm >= 1 && mm <= 12) {
-            if (yy > currentYear || (yy === currentYear && mm >= currentMonth)) {
-                validExp = true;
-            }
-        }
-    }
-    this.isExpiryValid.set(validExp);
-
-    this.isValid.set(this.isCardNumValid() && validExp && this.isCvvValid());
+    const res = validateCardLogic(this.cardNumber, this.expiry, this.cvv);
+    this.cardType.set(res.cardType);
+    this.isExpiryValid.set(res.isExpiryValid);
+    this.isValid.set(res.isValid);
   }
 
   submit() {
