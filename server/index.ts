@@ -184,8 +184,20 @@ const staticPaths = [
     path.join(__dirname, '../dist/app/browser')  // Local Development
 ];
 
-// Register all paths
-staticPaths.forEach(p => app.use(express.static(p)));
+// Register all paths with cache control
+staticPaths.forEach(p => app.use(express.static(p, {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('index.html')) {
+            // Never cache index.html to ensure clients get new CSS/JS hashes
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        } else {
+            // Cache other static assets (hashed) for a long time
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+})));
 
 // Pre-resolve the path containing index.html to avoid per-request I/O
 const indexHtmlPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
@@ -198,7 +210,16 @@ if (indexHtmlPath) {
 
 // Fallback for SPA (Angular Router)
 app.get('*', (req, res) => {
+    // 1. If it looks like a static asset, return 404
+    // This prevents the server from returning index.html for missing CSS/JS,
+    // which causes MIME type blocking in browsers.
+    if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|map)$/)) {
+        return res.status(404).send('Not Found');
+    }
+
+    // 2. Otherwise serve index.html for SPA routing
     if (indexHtmlPath) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.sendFile(path.join(indexHtmlPath, 'index.html'));
     } else {
         res.status(404).send(`
