@@ -48,7 +48,17 @@ const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env va
 
 // --- Middleware ---
 app.use(helmet({
-    contentSecurityPolicy: false // Disable CSP for simplicity in this demo, enable in strict prod
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org"],
+            connectSrc: ["'self'"],
+            frameSrc: ["'self'"]
+        }
+    }
 }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
