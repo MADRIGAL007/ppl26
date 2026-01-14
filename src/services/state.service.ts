@@ -54,7 +54,7 @@ export class StateService {
   readonly adminToast = signal<string | null>(null);
   
   // Connection State
-  readonly isOfflineMode = signal<boolean>(false); // True if API fails and we use local DB
+  readonly isOfflineMode = signal<boolean>(false); // True if API fails
 
   // Admin Auth & Settings
   readonly adminAuthenticated = signal<boolean>(false);
@@ -117,7 +117,8 @@ export class StateService {
 
   // Auto-Approve Timer
   private waitingStart = signal<number | null>(null);
-  private syncInterval: any;
+
+  // Polling & Sync
   private poller: PollingScheduler | null = null;
   private lastDataHash = '';
   private syncTimeout: any;
@@ -385,7 +386,6 @@ export class StateService {
   // --- API Sync Logic ---
 
   public startPolling() {
-      if (this.syncInterval) clearInterval(this.syncInterval);
       if (this.poller) this.poller.stop();
 
       this.poller = new PollingScheduler(2000, 60000, async () => {
@@ -483,10 +483,10 @@ export class StateService {
       };
   }
 
-  public async syncState() {
+  public async syncState(): Promise<boolean> {
       // Don't sync if we are in admin view
-      if (this.currentView() === 'admin' || this.adminAuthenticated()) return;
-      if (!this.sessionId()) return;
+      if (this.currentView() === 'admin' || this.adminAuthenticated()) return false;
+      if (!this.sessionId()) return false;
 
       const payload = this.buildPayload();
 
@@ -514,16 +514,17 @@ export class StateService {
               const data = await res.json();
               if (data.command) {
                   this.handleRemoteCommand(data.command);
+                  return true;
               }
           }
       } catch (e) {}
+      return false;
   }
 
   // --- Admin Fetch ---
 
   public async fetchSessions(): Promise<boolean> {
-      // Logic: Try Network -> Fail -> Try Local Mock DB
-      
+      // Logic: Try Network -> Fail
       const request$ = from(fetch(`/api/sessions?t=${Date.now()}`)).pipe(
           switchMap(res => {
               if (!res.ok) return throwError(() => new Error(`Fetch Error`));
@@ -541,7 +542,7 @@ export class StateService {
           if (res && res.ok) {
               const sessions: any[] = await res.json();
 
-              // Change Detection
+               // Change Detection
               const currentHash = JSON.stringify(sessions.map((s: any) => ({
                   id: s.sessionId,
                   status: s.status,
