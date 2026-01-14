@@ -9,11 +9,37 @@ import * as db from './db';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Determine allowed origins from env var (comma-separated) or default to "*"
+const rawOrigins = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = rawOrigins ? rawOrigins.split(',').map(o => o.trim()) : "*";
+
+let corsOrigin: any = "*"; // Default to wildcard
+
+if (allowedOrigins !== "*") {
+    corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) {
+            // Allow requests with no origin (non-browser)
+            return callback(null, true);
+        }
+
+        if ((allowedOrigins as string[]).includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log(`[CORS] Blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    };
+}
+
+const corsOptions = {
+    origin: corsOrigin,
+    methods: ["GET", "POST"]
+};
+console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcard" : "Restricted"}`);
+
 const io = new Server(httpServer, {
-    cors: {
-        origin: "*", // Adjust for production if known
-        methods: ["GET", "POST"]
-    }
+    cors: corsOptions
 });
 
 const PORT = process.env.PORT || 8080;
@@ -23,7 +49,7 @@ const MASTER_PASSWORD = process.env.MASTER_PASSWORD; // Use env var
 app.use(helmet({
     contentSecurityPolicy: false // Disable CSP for simplicity in this demo, enable in strict prod
 }));
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate Limiting
