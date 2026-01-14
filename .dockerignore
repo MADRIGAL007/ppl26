@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-server
+.angular
+.git
+.gitignore
+README.md
+Dockerfile
+deploy_app.sh
+*.log
