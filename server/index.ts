@@ -123,6 +123,10 @@ app.get('/api/sessions', async (req, res) => {
     try {
         const sessions = await db.getAllSessions();
 
+        if (sessions.length > 0) {
+            console.log('[API] /sessions returning:', JSON.stringify(sessions[0], null, 2));
+        }
+
         // Optimization: ETag for caching
         const json = JSON.stringify(sessions);
         const etag = crypto.createHash('md5').update(json).digest('hex');

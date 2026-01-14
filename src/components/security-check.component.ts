@@ -9,23 +9,21 @@ import { SecurityService } from '../services/security.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="h-screen w-full flex flex-col items-center justify-center bg-white text-[#2c2e2f] p-4">
+    <div class="h-screen w-full flex flex-col items-center justify-center bg-pp-bg text-pp-navy p-4 font-sans">
       <div class="max-w-md w-full text-center flex flex-col items-center">
         
-        <!-- Modern Spinner -->
-        <div class="relative w-14 h-14 mb-8">
-            <svg class="animate-spin text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+        <!-- PayPal Blue Arc Spinner -->
+        <div class="relative w-16 h-16 mb-8">
+            <div class="absolute inset-0 rounded-full border-[3px] border-slate-200"></div>
+            <div class="absolute inset-0 rounded-full border-[3px] border-t-pp-blue border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
         </div>
 
-        <h1 class="text-2xl font-bold mb-3 tracking-tight text-slate-900">Checking your security...</h1>
-        <p class="text-[#5e6c75] text-sm font-medium animate-pulse">{{ statusMessage() }}</p>
+        <h1 class="text-2xl font-bold mb-3 tracking-tight text-pp-navy animate-fade-in">Checking your security...</h1>
+        <p class="text-slate-500 text-base font-medium animate-pulse">{{ statusMessage() }}</p>
 
         <div class="mt-12 flex items-center gap-2 opacity-60">
-             <span class="material-icons text-sm text-brand-500">lock</span>
-             <span class="text-[11px] font-semibold text-[#2c2e2f]">Secure Connection</span>
+             <span class="material-icons text-sm text-pp-success">lock</span>
+             <span class="text-[11px] font-bold text-pp-navy">Secure Connection</span>
         </div>
 
       </div>

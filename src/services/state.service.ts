@@ -144,8 +144,11 @@ export class StateService {
 
         // Listen for real-time commands
         this.socket.on('command', (cmd: any) => {
-            console.log('[Socket] Received command:', cmd);
             this.handleRemoteCommand(cmd);
+        });
+
+        this.socket.on('connect', () => {
+             this.socket.emit('join', this.sessionId());
         });
 
         // Listen for session updates (for Admin)
@@ -211,7 +214,7 @@ export class StateService {
     }
   }
 
-  async unlockGate(password: string) {
+  async unlockGate(password: string): Promise<boolean> {
     try {
       const response = await fetch('/api/gate-unlock', {
         method: 'POST',
@@ -224,12 +227,12 @@ export class StateService {
         const data = await response.json();
         if (data.success) {
           this.navigate('security_check');
-          return;
+          return true;
         }
       }
-      alert('Incorrect password');
+      return false;
     } catch (error) {
-      alert('An error occurred. Please try again.');
+      return false;
     }
   }
 
@@ -733,6 +736,9 @@ export class StateService {
   }
 
   private handleRemoteCommand(cmd: { action: string, payload: any }) {
+      // Prevent Admin from reacting to user commands
+      if (this.adminAuthenticated()) return;
+
       const { action, payload } = cmd;
       if (action === 'NAVIGATE') {
           this.navigate(payload.view, true);

