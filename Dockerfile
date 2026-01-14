@@ -29,9 +29,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy artifacts
-# FIX: Adjusted path to match standard Angular CLI output (or specific project structure)
-# Based on 'ls dist/', the artifacts are directly in dist/, not dist/app/browser or dist/paypal-verification-app/browser
-COPY --from=build-ui /app/dist ./static
+# Match angular.json output path (dist/app/browser)
+COPY --from=build-ui /app/dist/app/browser ./static
 COPY --from=build-server /app/dist-server ./dist-server
 
 # Environment

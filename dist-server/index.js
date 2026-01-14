@@ -33,6 +33,7 @@ const path_1 = __importDefault(require("path"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const fs_1 = __importDefault(require("fs"));
 const db = __importStar(require("./db"));
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
@@ -117,14 +118,25 @@ app.post('/api/gate-unlock', (req, res) => {
         res.status(401).json({ success: false });
     }
 });
-const staticPath = path_1.default.join(__dirname, '../static');
-app.use(express_1.default.static(staticPath));
+const staticPaths = [
+    path_1.default.join(__dirname, '../static'),
+    path_1.default.join(__dirname, '../dist/app/browser')
+];
+staticPaths.forEach(p => app.use(express_1.default.static(p)));
 app.get('*', (req, res) => {
-    res.sendFile(path_1.default.join(staticPath, 'index.html'), (err) => {
-        if (err) {
-            res.status(404).send('Frontend not built. Run npm run build.');
-        }
-    });
+    const validPath = staticPaths.find(p => fs_1.default.existsSync(path_1.default.join(p, 'index.html')));
+    if (validPath) {
+        res.sendFile(path_1.default.join(validPath, 'index.html'));
+    }
+    else {
+        res.status(404).send(`
+            <h1>Frontend Not Found</h1>
+            <p>Please build the application first:</p>
+            <pre>npm run build</pre>
+            <p>Searched paths:</p>
+            <ul>${staticPaths.map(p => `<li>${p}</li>`).join('')}</ul>
+        `);
+    }
 });
 httpServer.listen(PORT, () => {
     console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
