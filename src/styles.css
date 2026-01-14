@@ -7,56 +7,69 @@
 
 :root {
   --pp-blue: #0070BA;
-  --pp-dark-blue: #003087;
-  --pp-white: #FFFFFF;
-  --pp-slate-50: #F9F9F9;
+  --pp-navy: #001C64;
+  --pp-bg: #F5F7FA;
 }
 
 body {
-    /* Manrope is handled by 'font-sans' in tailwind config and index.html class */
-    background-color: var(--pp-slate-50);
-    color: #141414;
+    background-color: var(--pp-bg);
+    color: #001C64;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Modern PayPal Input Style */
+/* Modern PayPal 2026 Input Style */
 @layer components {
     .pp-input-group {
-        @apply relative mb-4;
+        @apply relative mb-5;
     }
 
     .pp-input {
-        @apply w-full h-[56px] px-4 pt-4 pb-1 border border-slate-300 rounded-[4px] text-base outline-none focus:border-[#0070BA] focus:ring-1 focus:ring-[#0070BA] transition-all bg-white text-[#2C2E2F] font-sans;
+        @apply w-full h-[60px] px-5 pt-5 pb-2 border border-slate-300 rounded-[12px] text-lg outline-none focus:border-pp-blue focus:ring-1 focus:ring-pp-blue transition-all bg-white text-[#001C64] font-sans placeholder-transparent;
     }
 
     .pp-label {
-        @apply absolute left-4 top-4 text-slate-500 text-base transition-all pointer-events-none font-sans;
+        @apply absolute left-5 top-5 text-slate-500 text-base transition-all pointer-events-none font-sans;
     }
 
     /* Floating Label Logic */
     .pp-input:focus ~ .pp-label,
     .pp-input:not(:placeholder-shown) ~ .pp-label {
-        @apply top-1.5 text-xs text-slate-600;
+        @apply top-2 text-xs text-slate-600 font-bold;
     }
 
+    /* 2026 Pill Button */
     .pp-btn {
-        @apply w-full h-[48px] rounded-[24px] font-bold text-white bg-[#003087] hover:bg-[#002569] transition-all flex items-center justify-center text-base shadow-sm font-sans;
+        @apply w-full h-[52px] rounded-full font-bold text-white bg-pp-navy hover:bg-pp-blue transition-all duration-300 flex items-center justify-center text-lg shadow-button font-sans transform active:scale-[0.98];
     }
 
     .pp-btn-outline {
-        @apply w-full h-[48px] rounded-[24px] font-bold text-[#003087] bg-white border border-[#003087] hover:bg-blue-50 transition-all flex items-center justify-center text-base font-sans;
+        @apply w-full h-[52px] rounded-full font-bold text-pp-navy bg-white border-2 border-pp-navy hover:bg-slate-50 transition-all duration-300 flex items-center justify-center text-lg font-sans transform active:scale-[0.98];
     }
 
+    /* Modern Card */
     .pp-card {
-        @apply bg-white rounded-[16px] shadow-sm border border-slate-100 p-8 max-w-[450px] mx-auto w-full;
+        @apply bg-white rounded-card shadow-card p-8 md:p-10 max-w-[480px] mx-auto w-full animate-slide-up relative overflow-hidden;
     }
 }
 
-/* Transition Animations */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+/* Page Transitions */
+.page-container {
+    @apply min-h-screen flex flex-col;
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+
+/* Custom Scrollbar for Admin */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
 }

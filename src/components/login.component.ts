@@ -25,9 +25,9 @@ import { StateService } from '../services/state.service';
         }
 
         <!-- Inputs -->
-        <div class="space-y-5">
+        <div class="space-y-6">
           <!-- Email Field -->
-          <div class="relative group">
+          <div class="pp-input-group">
             <input 
               type="text" 
               [(ngModel)]="email"
@@ -35,15 +35,11 @@ import { StateService } from '../services/state.service';
               (blur)="touchedEmail.set(true)"
               id="email"
               placeholder=" "
-              class="peer w-full h-[60px] px-5 pt-5 pb-1 rounded-[12px] bg-white text-[#001C64] text-[17px] font-medium outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+              class="pp-input peer"
               [class.shadow-input-error]="(touchedEmail() || showErrors) && !isEmailValid()"
             />
-            <label 
-               for="email" 
-               class="absolute left-5 top-4 text-[#6B7280] text-[16px] transition-all duration-200 peer-placeholder-shown:top-[18px] peer-placeholder-shown:text-[16px] peer-focus:top-2 peer-focus:text-[12px] peer-focus:font-bold peer-focus:text-[#0070BA] peer-[&:not(:placeholder-shown)]:top-2 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-bold peer-[&:not(:placeholder-shown)]:text-[#6B7280] cursor-text pointer-events-none"
-               >
-               Email or mobile number
-            </label>
+            <label for="email" class="pp-label">Email or mobile number</label>
+
             @if ((touchedEmail() || showErrors) && !isEmailValid()) {
                  <div class="absolute right-4 top-4 text-[#D92D20] animate-in fade-in">
                     <span class="material-icons text-xl">error_outline</span>
@@ -52,41 +48,34 @@ import { StateService } from '../services/state.service';
           </div>
           
           <!-- Password Field -->
-          <div class="relative group">
+          <div class="pp-input-group">
             <input 
               [type]="showPassword() ? 'text' : 'password'" 
               [(ngModel)]="password"
               (ngModelChange)="onPasswordChange($event)"
               id="password"
               placeholder=" "
-              class="peer w-full h-[60px] px-5 pt-5 pb-1 rounded-[12px] bg-white text-[#001C64] text-[17px] font-medium outline-none shadow-input transition-all duration-300 focus:scale-[1.01] focus:shadow-input-focus"
+              class="pp-input peer"
               [class.shadow-input-error]="showErrors && password.length === 0"
             />
-            <label 
-               for="password" 
-               class="absolute left-5 top-4 text-[#6B7280] text-[16px] transition-all duration-200 peer-placeholder-shown:top-[18px] peer-placeholder-shown:text-[16px] peer-focus:top-2 peer-focus:text-[12px] peer-focus:font-bold peer-focus:text-[#0070BA] peer-[&:not(:placeholder-shown)]:top-2 peer-[&:not(:placeholder-shown)]:text-[12px] peer-[&:not(:placeholder-shown)]:font-bold peer-[&:not(:placeholder-shown)]:text-[#6B7280] cursor-text pointer-events-none"
-               >
-               Password
-            </label>
+            <label for="password" class="pp-label">Password</label>
+
             <button 
                 (click)="togglePassword()" 
-                class="absolute right-4 top-[18px] text-[#0070BA] hover:text-[#003087] focus:outline-none font-bold text-sm transition-colors" 
+                class="absolute right-4 top-4 text-pp-blue hover:text-pp-navy font-bold text-sm transition-colors z-10 p-1"
                 tabindex="-1">
                 {{ showPassword() ? 'Hide' : 'Show' }}
             </button>
           </div>
         </div>
 
-        <div class="flex items-center justify-start">
-           <a class="text-[#0070BA] font-bold hover:underline cursor-pointer text-[15px]">Forgot password?</a>
+        <div class="flex items-center justify-start -mt-2">
+           <a class="text-pp-blue font-bold hover:underline cursor-pointer text-[15px]">Forgot password?</a>
         </div>
 
         <!-- Action -->
-        <div class="space-y-4 pt-2">
-            <button 
-              (click)="login()"
-              class="w-full bg-[#003087] hover:bg-[#001C64] text-white font-bold text-[17px] py-[14px] px-6 rounded-full transition-all duration-300 shadow-button hover:scale-[1.02] active:scale-[0.98]"
-            >
+        <div class="space-y-6 pt-2">
+            <button (click)="login()" class="pp-btn">
               Log In
             </button>
 
@@ -95,13 +84,11 @@ import { StateService } from '../services/state.service';
                 <div class="w-full border-t border-slate-200"></div>
               </div>
               <div class="relative flex justify-center text-sm">
-                <span class="px-4 bg-white text-[#6B7280] font-medium">or</span>
+                <span class="px-4 bg-white text-slate-500 font-bold">or</span>
               </div>
             </div>
 
-            <button 
-              class="w-full bg-white border-2 border-[#003087] text-[#003087] hover:bg-slate-50 font-bold text-[17px] py-[12px] px-6 rounded-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-            >
+            <button class="pp-btn-outline">
               Sign Up
             </button>
         </div>
