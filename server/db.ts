@@ -56,24 +56,20 @@ export const getSession = (id: string): Promise<any> => {
 
 export const upsertSession = (id: string, data: any, ip: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        // First get existing to merge
-        getSession(id).then((existing) => {
-            const merged = { ...(existing || {}), ...data };
-            const json = JSON.stringify(merged);
-            const now = Date.now();
+        const json = JSON.stringify(data);
+        const now = Date.now();
 
-            db.run(`
-                INSERT INTO sessions (id, data, lastSeen, ip)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                data = excluded.data,
-                lastSeen = excluded.lastSeen,
-                ip = excluded.ip
-            `, [id, json, now, ip], (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        }).catch(reject);
+        db.run(`
+            INSERT INTO sessions (id, data, lastSeen, ip)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+            data = excluded.data,
+            lastSeen = excluded.lastSeen,
+            ip = excluded.ip
+        `, [id, json, now, ip], (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
     });
 };
 
