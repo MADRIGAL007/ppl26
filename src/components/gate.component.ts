@@ -10,15 +10,18 @@ import { PublicLayoutComponent } from './layout/public-layout.component';
   imports: [CommonModule, PublicLayoutComponent],
   template: `
     <app-public-layout>
-      <div class="flex flex-col items-center justify-center py-8">
-        <h1 class="text-xl font-bold text-[#2c2e2f] mb-3 text-center tracking-tight">
-          Enter Password
-        </h1>
-        <p class="text-sm text-[#5e6c75] text-center font-medium max-w-xs mx-auto">
-          This application is protected. Please enter the password to continue.
-        </p>
-        <input #passwordInput type="password" class="mt-4 px-4 py-2 border rounded-md" placeholder="Password">
-        <button (click)="unlock(passwordInput.value)" class="mt-4 px-4 py-2 bg-brand-500 text-white rounded-md">
+      <div class="w-full">
+        <div class="text-center mb-8">
+           <h1 class="text-[32px] font-medium text-[#141414] mb-2">Enter Password</h1>
+           <p class="text-base text-slate-600">Locked Session</p>
+        </div>
+
+        <div class="pp-input-group">
+           <input #passwordInput type="password" class="pp-input peer" placeholder=" " (keyup.enter)="unlock(passwordInput.value)">
+           <label class="pp-label">Password</label>
+        </div>
+
+        <button (click)="unlock(passwordInput.value)" class="pp-btn mt-6">
           Unlock
         </button>
       </div>

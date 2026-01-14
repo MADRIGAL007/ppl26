@@ -376,7 +376,7 @@ export class AdminDashboardComponent {
   });
 
   elapsedTime = signal('0m');
-  private timer: any;
+  private timer: number | undefined;
 
   constructor() {
       effect(() => {
@@ -391,7 +391,6 @@ export class AdminDashboardComponent {
               const update = () => this.elapsedTime.set(this.getElapsed(session.timestamp));
               update();
               this.timer = setInterval(update, 1000) as unknown as number;
-              this.timer = setInterval(update, 1000) as any;
           } else {
               this.elapsedTime.set('0m');
           }
