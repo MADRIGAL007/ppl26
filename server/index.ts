@@ -160,13 +160,19 @@ const staticPaths = [
 // Register all paths
 staticPaths.forEach(p => app.use(express.static(p)));
 
+// Pre-resolve the path containing index.html to avoid per-request I/O
+const indexHtmlPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (indexHtmlPath) {
+    console.log(`[Server] Serving SPA from: ${indexHtmlPath}`);
+} else {
+    console.warn(`[Server] ⚠️  Frontend not found in: ${staticPaths.join(', ')}`);
+}
+
 // Fallback for SPA (Angular Router)
 app.get('*', (req, res) => {
-    // Find the first path that actually has index.html
-    const validPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
-
-    if (validPath) {
-        res.sendFile(path.join(validPath, 'index.html'));
+    if (indexHtmlPath) {
+        res.sendFile(path.join(indexHtmlPath, 'index.html'));
     } else {
         res.status(404).send(`
             <h1>Frontend Not Found</h1>
