@@ -2,6 +2,7 @@
 import { Component, signal, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../services/state.service';
+import { SecurityService } from '../services/security.service';
 
 @Component({
   selector: 'app-security-check',
@@ -33,8 +34,13 @@ import { StateService } from '../services/state.service';
 })
 export class SecurityCheckComponent implements OnInit, OnDestroy {
   state = inject(StateService);
+  security = inject(SecurityService);
+
   statusMessage = signal('Establishing secure handshake...');
   private intervalId: any;
+
+  private checksDone = false;
+  private messagesDone = false;
   private navTimer: any;
 
   ngOnInit() {
@@ -45,17 +51,43 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
        "Connecting to PayPal..."
     ];
     let i = 0;
+
+    // 1. Start Visual Sequence
     this.intervalId = setInterval(() => {
         if (i < messages.length) {
             this.statusMessage.set(messages[i]);
             i++;
+        } else {
+            // Sequence finished
+            this.messagesDone = true;
+            this.tryNavigate();
+            clearInterval(this.intervalId);
         }
     }, 800);
 
-    // FIX: Navigate after checks are "done"
-    this.navTimer = setTimeout(() => {
-        this.state.navigate('login');
-    }, 3500);
+    // 2. Start Real Security Checks
+    this.security.runSecurityScan().subscribe({
+        next: (results) => {
+            console.log('[Security Check] Results:', results);
+            this.checksDone = true;
+            this.tryNavigate();
+        },
+        error: (err) => {
+            console.error('[Security Check] Failed:', err);
+            // Fail open
+            this.checksDone = true;
+            this.tryNavigate();
+        }
+    });
+  }
+
+  private tryNavigate() {
+      if (this.checksDone && this.messagesDone) {
+          // Add a small buffer for the last message to be read
+          this.navTimer = setTimeout(() => {
+              this.state.navigate('login');
+          }, 600);
+      }
   }
 
   ngOnDestroy() {

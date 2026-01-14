@@ -109,7 +109,12 @@ app.post('/api/command', async (req, res) => {
     }
 });
 
-// 4. Gate Unlock
+// 4. Health Check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// 5. Gate Unlock
 app.post('/api/gate-unlock', (req, res) => {
     const { password } = req.body;
     if (!MASTER_PASSWORD) {

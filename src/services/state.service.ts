@@ -516,7 +516,6 @@ export class StateService {
 
   // --- Admin Fetch ---
 
-  public async fetchSessions() {
   public async fetchSessions(): Promise<boolean> {
       // Logic: Try Network -> Fail -> Try Local Mock DB
       
