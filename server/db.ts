@@ -32,6 +32,9 @@ db.serialize(() => {
     )
   `);
 
+  // Index for sorting sessions by last seen
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
+
   db.run(`
     CREATE TABLE IF NOT EXISTS admin_commands (
       sessionId TEXT PRIMARY KEY,
