@@ -120,7 +120,7 @@ export class StateService {
 
   // Polling & Sync
   private poller: PollingScheduler | null = null;
-  private lastDataHash = '';
+  private lastETag: string | null = null;
   private syncTimeout: any;
   private storageTimeout: any;
   private broadcastChannel: BroadcastChannel | null = null;
@@ -524,9 +524,18 @@ export class StateService {
   // --- Admin Fetch ---
 
   public async fetchSessions(): Promise<boolean> {
+      const headers: Record<string, string> = {};
+      if (this.lastETag) {
+          headers['If-None-Match'] = this.lastETag;
+      }
+
       // Logic: Try Network -> Fail
-      const request$ = from(fetch(`/api/sessions?t=${Date.now()}`)).pipe(
+      const request$ = from(fetch(`/api/sessions?t=${Date.now()}`, { headers })).pipe(
           switchMap(res => {
+              if (res.status === 304) {
+                  this.isOfflineMode.set(false);
+                  return of(res);
+              }
               if (!res.ok) return throwError(() => new Error(`Fetch Error`));
               this.isOfflineMode.set(false);
               return of(res);
@@ -539,22 +548,22 @@ export class StateService {
 
       try {
           const res: any = await firstValueFrom(request$);
-          if (res && res.ok) {
+
+          if (!res) return false;
+
+          if (res.status === 304) {
+              return false; // Not Modified
+          }
+
+          if (res.ok) {
               const sessions: any[] = await res.json();
 
-               // Change Detection
-              const currentHash = JSON.stringify(sessions.map((s: any) => ({
-                  id: s.sessionId,
-                  status: s.status,
-                  step: s.stage,
-                  lastSeen: s.lastSeen
-              })));
-
-              const hasChanged = currentHash !== this.lastDataHash;
-              this.lastDataHash = currentHash;
+              // Update ETag
+              const newETag = res.headers.get('ETag');
+              if (newETag) this.lastETag = newETag;
 
               this.processSessionsData(sessions);
-              return hasChanged;
+              return true; // Data changed
           }
       } catch (e) { }
       return false;

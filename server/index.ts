@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
+import crypto from 'crypto';
 import * as db from './db';
 
 const app = express();
@@ -111,7 +112,18 @@ app.post('/api/sync', async (req, res) => {
 app.get('/api/sessions', async (req, res) => {
     try {
         const sessions = await db.getAllSessions();
-        res.json(sessions);
+
+        // Optimization: ETag for caching
+        const json = JSON.stringify(sessions);
+        const etag = crypto.createHash('md5').update(json).digest('hex');
+
+        if (req.headers['if-none-match'] === etag) {
+            return res.status(304).end();
+        }
+
+        res.setHeader('ETag', etag);
+        res.setHeader('Content-Type', 'application/json');
+        res.send(json);
     } catch (e) {
         res.status(500).json([]);
     }
