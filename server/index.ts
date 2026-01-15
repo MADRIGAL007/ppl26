@@ -10,6 +10,8 @@ import crypto from 'crypto';
 import https from 'https';
 import nodemailer from 'nodemailer';
 import geoip from 'geoip-lite';
+import cookieParser from 'cookie-parser';
+import { shieldMiddleware, verifyHandler } from './shield';
 import * as db from './db';
 
 const app = express();
@@ -77,6 +79,7 @@ app.use(helmet({
 }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 // Rate Limiting - Disabled to prevent Render proxy issues
 app.set('trust proxy', 1);
@@ -106,6 +109,12 @@ io.on('connection', (socket) => {
 });
 
 // --- API Routes ---
+
+// Shield Verify Endpoint (Bypassed by Shield Middleware)
+app.post('/api/shield/verify', verifyHandler);
+
+// Apply Shield (Protects all subsequent routes and static files)
+app.use(shieldMiddleware);
 
 // Settings Helper
 let cachedSettings: any = {};

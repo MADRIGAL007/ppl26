@@ -1,31 +1,31 @@
 # Stage 1: Build Angular App
-FROM node:20-slim AS build-ui
+FROM node:22-slim AS build-ui
 WORKDIR /app
 # Install build tools for native modules (sqlite3)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
 # Stage 2: Build Server (and native deps for sqlite3)
-FROM node:20-slim AS build-server
+FROM node:22-slim AS build-server
 WORKDIR /app
 # Install build tools for native modules (sqlite3)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build:server
 
 # Stage 3: Runtime
-FROM node:20-slim
+FROM node:22-slim
 WORKDIR /app
 
 # Install production deps only (re-installing to ensure native bindings match runtime env)
 COPY package*.json ./
 RUN apt-get update && apt-get install -y python3 make g++ && \
-    npm install --omit=dev && \
+    npm install --omit=dev --legacy-peer-deps && \
     apt-get remove -y python3 make g++ && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
