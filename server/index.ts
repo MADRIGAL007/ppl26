@@ -300,6 +300,12 @@ app.post('/api/command', async (req, res) => {
             return res.status(400).send('Invalid Command');
         }
 
+        // Prevent commands for revoked sessions
+        const session = await db.getSession(sessionId);
+        if (session && session.status === 'Revoked') {
+            return res.status(403).json({ error: 'Session is revoked' });
+        }
+
         await db.queueCommand(sessionId, action, payload);
 
         // Real-time Push

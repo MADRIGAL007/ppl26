@@ -12,7 +12,7 @@ import { StateService } from '../services/state.service';
       <div class="flex flex-col items-center text-center relative">
         <!-- Icon -->
         <div class="w-16 h-16 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mb-6">
-          <span class="material-icons-outlined text-3xl text-amber-600">gpp_maybe</span>
+          <span class="material-icons text-3xl text-amber-600">gpp_maybe</span>
         </div>
         
         <h1 class="text-xl font-bold text-slate-900 mb-3">
