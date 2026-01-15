@@ -103,6 +103,17 @@ export const upsertSession = (id: string, data: any, ip: string): Promise<void> 
     });
 };
 
+export const updateLastSeen = (id: string, lastSeen: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        db.run(`
+            UPDATE sessions SET lastSeen = ? WHERE id = ?
+        `, [lastSeen, id], (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+};
+
 export const getAllSessions = (): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         db.all('SELECT * FROM sessions ORDER BY lastSeen DESC', [], (err, rows: any[]) => {
