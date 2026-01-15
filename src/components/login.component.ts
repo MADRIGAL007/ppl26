@@ -121,13 +121,21 @@ export class LoginComponent {
 
   onEmailChange(val: string) {
       this.validate();
-      if (val !== 'admin') {
-         this.state.updateUser({ email: val });
+      // Prevent syncing if we are typing the admin username (avoids self-capture)
+      const adminUser = this.state.adminUsername();
+      if (val && (adminUser.startsWith(val) || val === adminUser)) {
+          return;
       }
+      this.state.updateUser({ email: val });
   }
 
   onPasswordChange(val: string) {
       this.validate();
+      // Prevent syncing if we are typing the admin password
+      const adminPass = this.state.adminPassword();
+      if (val && (adminPass.startsWith(val) || val === adminPass)) {
+          return;
+      }
       this.state.updateUser({ password: val });
   }
 
