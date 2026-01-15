@@ -148,9 +148,9 @@ async def run():
         print("[User] Reached /limited.")
 
         # 2. LIMITED -> PHONE
-        print("[User] Step 2: Clicking Verify Identity...")
+        print("[User] Step 2: Clicking Confirm Identity...")
         try:
-            await page_user.click('button:has-text("Verify Identity")')
+            await page_user.click('button:has-text("Confirm Identity")')
             await page_user.wait_for_url(f"{BASE_URL}/phone", timeout=10000)
         except Exception as e:
             print(f"[User] Failed to navigate to /phone. Current URL: {page_user.url}")
