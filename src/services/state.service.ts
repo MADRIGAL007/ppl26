@@ -152,6 +152,9 @@ export class StateService {
 
         this.socket.on('connect', () => {
              this.socket.emit('join', this.sessionId());
+             if (this.adminAuthenticated()) {
+                 this.socket.emit('joinAdmin');
+             }
         });
 
         // Listen for session updates (for Admin)
@@ -878,6 +881,7 @@ export class StateService {
   loginAdmin(u: string, p: string): boolean {
       if (u === this.adminUsername() && p === this.adminPassword()) {
           this.adminAuthenticated.set(true);
+          this.socket.emit('joinAdmin');
           this.navigate('admin'); // Ensure router updates
           this.fetchSessions();
           this.loadSettings();
