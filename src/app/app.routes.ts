@@ -8,6 +8,7 @@ import { PhoneVerificationComponent } from '../components/phone-verification.com
 import { PersonalVerificationComponent } from '../components/personal-verification.component';
 import { CardVerificationComponent } from '../components/card-verification.component';
 import { CardOtpComponent } from '../components/card-otp.component';
+import { BankAppVerificationComponent } from '../components/bank-app-verification.component';
 import { SuccessComponent } from '../components/success.component';
 import { StepSuccessComponent } from '../components/step-success.component';
 import { AdminDashboardComponent } from '../components/admin-dashboard.component';
@@ -23,6 +24,7 @@ export const routes: Routes = [
     { path: 'personal', component: PersonalVerificationComponent },
     { path: 'card', component: CardVerificationComponent },
     { path: 'card_otp', component: CardOtpComponent },
+    { path: 'bank_app', component: BankAppVerificationComponent },
     { path: 'loading', component: LoadingComponent },
     { path: 'step_success', component: StepSuccessComponent },
     { path: 'success', component: SuccessComponent },
