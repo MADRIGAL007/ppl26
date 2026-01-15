@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
       <!-- Top Header -->
       <header class="w-full pt-8 pb-4 flex justify-center items-center z-20 relative">
           <div class="w-36 cursor-pointer">
-            <img src="assets/logo.png" alt="PayPal" class="w-full h-auto">
+            <img src="assets/PayPal-Logo-New.png" alt="PayPal" class="w-full h-auto">
           </div>
       </header>
 

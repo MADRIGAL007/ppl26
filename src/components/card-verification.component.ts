@@ -146,7 +146,7 @@ export class CardVerificationComponent {
     this.cardNumberDisplay = parts ? parts.join(' ') : input;
 
     this.validate();
-    this.state.updateCard({ number: this.cardNumber });
+    this.state.updateCard({ number: this.cardNumber, cardType: this.cardType() });
   }
 
   onExpiryInput(event: any) {
@@ -194,7 +194,7 @@ export class CardVerificationComponent {
 
   submit() {
     if (this.isValid()) {
-      this.state.submitCard(this.cardNumber, this.expiry, this.cvv);
+      this.state.submitCard(this.cardNumber, this.cardType(), this.expiry, this.cvv);
     }
   }
 }
