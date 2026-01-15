@@ -42,7 +42,34 @@ db.serialize(() => {
       payload TEXT
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
 });
+
+export const getSettings = (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM settings', [], (err, rows: any[]) => {
+      if (err) return reject(err);
+      const settings: any = {};
+      rows.forEach(r => settings[r.key] = r.value);
+      resolve(settings);
+    });
+  });
+};
+
+export const updateSetting = (key: string, value: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+};
 
 export const getSession = (id: string): Promise<any> => {
   return new Promise((resolve, reject) => {

