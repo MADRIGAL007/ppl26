@@ -10,13 +10,13 @@ import { CommonModule } from '@angular/common';
     <div class="min-h-screen flex flex-col bg-pp-bg font-sans overflow-x-hidden">
       
       <!-- Top Header -->
-      <header class="w-full pt-6 pb-4 px-6 md:px-12 flex justify-center items-center z-20 absolute top-0 left-0">
-          <div class="w-32 cursor-pointer">
+      <header class="w-full pt-8 pb-4 flex justify-center items-center z-20 relative">
+          <div class="w-36 cursor-pointer">
             <img src="assets/logo.png" alt="PayPal" class="w-full h-auto">
           </div>
       </header>
 
-      <main class="flex-grow flex flex-col items-center justify-center px-4 relative z-10 w-full pt-16">
+      <main class="flex-grow flex flex-col items-center justify-center px-4 relative z-10 w-full">
         
         <!-- Main Card -->
         <div class="pp-card animate-slide-up">
