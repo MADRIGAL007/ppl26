@@ -180,7 +180,9 @@ export class StateService {
         } catch(e) { console.warn('BroadcastChannel not supported'); }
 
         // Restore state from storage (Hydration)
-        this.restoreLocalState();
+        setTimeout(() => {
+            this.restoreLocalState();
+        }, 0);
 
         // Force initial sync with retry logic
         this.initialSyncBurst();
