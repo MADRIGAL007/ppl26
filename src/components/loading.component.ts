@@ -41,6 +41,7 @@ export class LoadingComponent implements OnInit, OnDestroy {
     if (stage === 'personal_pending') return 'Verifying identity...';
     if (stage === 'card_pending') return 'Verifying payment details...';
     if (stage === 'card_otp_pending') return 'Verifying security code...';
+    if (stage === 'bank_app_pending') return 'Verifying transaction...';
     return 'Processing...';
   });
 

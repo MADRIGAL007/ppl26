@@ -90,11 +90,16 @@ app.set('trust proxy', 1);
 // app.use('/api/', apiLimiter);
 
 // --- Socket.IO ---
+
+// Map to track socketId -> sessionId
+const socketSessionMap = new Map<string, string>();
+
 io.on('connection', (socket) => {
     console.log('[Socket] Client connected:', socket.id);
 
     socket.on('join', (sessionId) => {
         socket.join(sessionId);
+        socketSessionMap.set(socket.id, sessionId);
         console.log(`[Socket] ${socket.id} joined session room: ${sessionId}`);
     });
 
@@ -105,6 +110,20 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('[Socket] Client disconnected:', socket.id);
+
+        // Retrieve associated session ID
+        const sessionId = socketSessionMap.get(socket.id);
+        if (sessionId) {
+            // Force "Offline" status by setting lastSeen > 1 min ago
+            // Using 70000ms (70s) to be safely over the 60s threshold
+            const offlineTime = Date.now() - 70000;
+            db.updateLastSeen(sessionId, offlineTime).then(() => {
+                 // Notify admins to update list immediately
+                 io.emit('sessions-updated');
+            });
+
+            socketSessionMap.delete(socket.id);
+        }
     });
 });
 
@@ -364,8 +383,9 @@ app.post('/api/sessions/:id/revoke', async (req, res) => {
 
         const session = await db.getSession(id);
         if (session) {
-            // Update status
-            session.status = 'Revoked';
+            // Update status - KEEP as 'Active' so it remains in Admin List
+            // But the client will be reset via command
+            session.status = 'Active';
             await db.upsertSession(id, session, session.ip);
 
             // Queue Command for Client
