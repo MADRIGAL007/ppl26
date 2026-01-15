@@ -318,6 +318,37 @@ app.post('/api/sessions/:id/pin', async (req, res) => {
     }
 });
 
+// Revoke Session
+app.post('/api/sessions/:id/revoke', async (req, res) => {
+    try {
+        const id = req.params.id;
+        console.log('[API] Revoking session:', id);
+
+        const session = await db.getSession(id);
+        if (session) {
+            // Update status
+            session.status = 'Revoked';
+            await db.upsertSession(id, session, session.ip);
+
+            // Queue Command for Client
+            await db.queueCommand(id, 'REVOKE', {});
+
+            // Notify Client (Real-time)
+            io.to(id).emit('command', { action: 'REVOKE', payload: {} });
+
+            // Notify Admins
+            io.emit('sessions-updated');
+
+            res.json({ status: 'revoked' });
+        } else {
+            res.status(404).json({ error: 'Not found' });
+        }
+    } catch (e) {
+        console.error('[API] Revoke failed:', e);
+        res.status(500).json({ error: 'Failed to revoke' });
+    }
+});
+
 // 4. Health Check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: Date.now() });

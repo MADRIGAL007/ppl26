@@ -288,6 +288,9 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                                      @if(isSessionLive(monitoredSession())) {
                                          <div class="flex gap-3">
+                                              <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                                  Revoke
+                                              </button>
                                               <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
