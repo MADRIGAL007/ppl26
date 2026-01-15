@@ -608,8 +608,8 @@ export class StateService {
 
     const adminSessionId = this.sessionId();
 
-    // Active sessions: Not Verified
-    const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.sessionId !== adminSessionId);
+    // Active sessions: Not Verified AND Not Revoked
+    const rawActive = sessions.filter((s: any) => s.status !== 'Verified' && s.status !== 'Revoked' && s.sessionId !== adminSessionId);
 
     const newActiveSessions: SessionHistory[] = [];
     const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes timeout for "Live" status
@@ -1033,6 +1033,12 @@ export class StateService {
       try {
           await firstValueFrom(from(fetch(`/api/sessions/${id}/revoke`, { method: 'POST' })));
           this.showAdminToast('Session Revoked');
+
+          // Clear current view if we just revoked it
+          if (this.monitoredSessionId() === id) {
+              this.monitoredSessionId.set(null);
+          }
+
           this.fetchSessions();
       } catch (e) {
           this.showAdminToast('Failed to revoke');
