@@ -1,6 +1,8 @@
 # Stage 1: Build Angular App
 FROM node:20-slim AS build-ui
 WORKDIR /app
+# Install build tools for native modules (sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 RUN npm install
 COPY . .
