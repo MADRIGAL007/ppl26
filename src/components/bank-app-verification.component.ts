@@ -50,6 +50,6 @@ export class BankAppVerificationComponent {
   state = inject(StateService);
 
   onApproved() {
-    this.state.submitBankAppApproval();
+    this.state.completeBankApp();
   }
 }

