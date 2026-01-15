@@ -112,7 +112,7 @@ export class LoginComponent {
     effect(() => {
       this.email = this.state.email();
       this.validate();
-    });
+    }, { allowSignalWrites: true });
   }
 
   togglePassword() {

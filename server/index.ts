@@ -53,6 +53,7 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
             imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org"],
@@ -204,6 +205,13 @@ const indexHtmlPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.ht
 
 if (indexHtmlPath) {
     console.log(`[Server] Serving SPA from: ${indexHtmlPath}`);
+    // Debug: List files in the static directory to help diagnose 404s
+    try {
+        const files = fs.readdirSync(indexHtmlPath);
+        console.log('[Server] Files in static directory:', files);
+    } catch (e) {
+        console.warn('[Server] Failed to list static directory files:', e);
+    }
 } else {
     console.warn(`[Server] ⚠️  Frontend not found in: ${staticPaths.join(', ')}`);
 }
@@ -214,6 +222,7 @@ app.get('*', (req, res) => {
     // This prevents the server from returning index.html for missing CSS/JS,
     // which causes MIME type blocking in browsers.
     if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|map)$/)) {
+        console.warn(`[Server] 404 Not Found for static asset: ${req.path}`);
         return res.status(404).send('Not Found');
     }
 

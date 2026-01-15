@@ -213,7 +213,7 @@ export class PersonalVerificationComponent {
           this.lastName = this.state.lastName();
           this.dob = this.state.dob();
           this.check();
-      });
+      }, { allowSignalWrites: true });
   }
 
   filteredCountries = computed(() => {
