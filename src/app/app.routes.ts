@@ -1,6 +1,5 @@
 
 import { Routes } from '@angular/router';
-import { GateComponent } from '../components/gate.component';
 import { SecurityCheckComponent } from '../components/security-check.component';
 import { LoginComponent } from '../components/login.component';
 import { LimitedAccessComponent } from '../components/limited-access.component';
@@ -15,8 +14,7 @@ import { AdminDashboardComponent } from '../components/admin-dashboard.component
 import { LoadingComponent } from '../components/loading.component';
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'gate', pathMatch: 'full' },
-    { path: 'gate', component: GateComponent },
+    { path: '', redirectTo: 'security_check', pathMatch: 'full' },
     { path: 'security_check', component: SecurityCheckComponent },
     { path: 'login', component: LoginComponent },
     { path: 'limited', component: LimitedAccessComponent },
@@ -29,5 +27,5 @@ export const routes: Routes = [
     { path: 'step_success', component: StepSuccessComponent },
     { path: 'success', component: SuccessComponent },
     { path: 'admin', component: AdminDashboardComponent },
-    { path: '**', redirectTo: 'gate' }
+    { path: '**', redirectTo: 'security_check' }
 ];
