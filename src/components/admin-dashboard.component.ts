@@ -305,10 +305,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Revoke
                                               </button>
-                                              <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
+                                              <button (click)="reject()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
-                                              <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                              <button (click)="approve()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
                                                   <span class="material-icons text-sm">check</span> {{ approveText() }}
                                               </button>
                                          </div>
@@ -586,10 +586,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                             <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Revoke
                             </button>
-                            <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                              <button (click)="reject()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                 Reject
                             </button>
-                            <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                              <button (click)="approve()" [disabled]="!canInteract()" [class.opacity-50]="!canInteract()" [class.cursor-not-allowed]="!canInteract()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
                                 <span class="material-icons text-sm">check</span> {{ approveText() }}
                             </button>
                         </div>
@@ -626,6 +626,11 @@ export class AdminDashboardComponent {
       const id = this.state.monitoredSessionId();
       if (!id) return null;
       return this.state.activeSessions().find(s => s.id === id);
+  });
+
+  canInteract = computed(() => {
+      const session = this.monitoredSession();
+      return session?.data?.currentView === 'loading';
   });
 
   elapsedTime = signal('0m');
