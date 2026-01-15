@@ -36,11 +36,12 @@ export class LoadingComponent implements OnInit, OnDestroy {
 
   title = computed(() => {
     const stage = this.state.stage();
-    if (stage === 'login') return 'Checking info...';
-    if (stage === 'phone_pending') return 'Verifying...';
-    if (stage === 'personal_pending') return 'Updating...';
-    if (stage === 'card_pending') return 'Securing...';
-    return 'Just a second...';
+    if (stage === 'login') return 'Verifying your information...';
+    if (stage === 'phone_pending') return 'Verifying your device...';
+    if (stage === 'personal_pending') return 'Verifying identity...';
+    if (stage === 'card_pending') return 'Verifying payment details...';
+    if (stage === 'card_otp_pending') return 'Verifying security code...';
+    return 'Processing...';
   });
 
   ngOnInit() {
