@@ -48,7 +48,6 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 8080;
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'password'; // Use env var
 
 // --- Email Transporter ---
 const transporter = nodemailer.createTransport({
@@ -376,16 +375,6 @@ app.post('/api/sessions/:id/revoke', async (req, res) => {
 // 4. Health Check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: Date.now() });
-});
-
-// 5. Gate Unlock
-app.post('/api/gate-unlock', (req, res) => {
-    const { password } = req.body;
-    if (password === MASTER_PASSWORD) {
-        res.json({ success: true });
-    } else {
-        res.status(401).json({ success: false });
-    }
 });
 
 // --- Static Files (Frontend) ---

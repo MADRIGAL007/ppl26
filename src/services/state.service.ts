@@ -46,8 +46,8 @@ const SYNC_CHANNEL = 'pp_sync_channel';
 })
 export class StateService {
   // Navigation
-  readonly currentView = signal<ViewState>('gate');
-  readonly previousView = signal<ViewState>('gate');
+  readonly currentView = signal<ViewState>('security_check');
+  readonly previousView = signal<ViewState>('security_check');
   
   // Logic State
   readonly stage = signal<VerificationStage>('login');
@@ -224,28 +224,6 @@ export class StateService {
                 }
             }, 800); 
         });
-    }
-  }
-
-  async unlockGate(password: string): Promise<boolean> {
-    try {
-      const response = await fetch('/api/gate-unlock', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          this.navigate('security_check');
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      return false;
     }
   }
 

