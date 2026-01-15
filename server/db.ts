@@ -49,7 +49,7 @@ export const getSession = (id: string): Promise<any> => {
     db.get('SELECT * FROM sessions WHERE id = ?', [id], (err, row: any) => {
       if (err) return reject(err);
       if (row) {
-        resolve({ ...JSON.parse(row.data), lastSeen: row.lastSeen, ip: row.ip });
+        resolve({ ...JSON.parse(row.data), id: row.id, lastSeen: row.lastSeen, ip: row.ip });
       } else {
         resolve(null);
       }
@@ -80,12 +80,28 @@ export const getAllSessions = (): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         db.all('SELECT * FROM sessions ORDER BY lastSeen DESC', [], (err, rows: any[]) => {
             if (err) return reject(err);
-            const sessions = rows.map(r => ({
-                ...JSON.parse(r.data),
-                lastSeen: r.lastSeen,
-                ip: r.ip
-            }));
+            const sessions = rows.map(r => {
+                const data = JSON.parse(r.data);
+                // Ensure IP is in fingerprint
+                if (!data.fingerprint) data.fingerprint = {};
+                data.fingerprint.ip = r.ip;
+
+                return {
+                    ...data,
+                    lastSeen: r.lastSeen,
+                    ip: r.ip
+                };
+            });
             resolve(sessions);
+        });
+    });
+};
+
+export const deleteSession = (id: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM sessions WHERE id = ?', [id], (err) => {
+            if (err) reject(err);
+            else resolve();
         });
     });
 };

