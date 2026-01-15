@@ -492,7 +492,6 @@ export class StateService {
           sessionId: this.sessionId(),
           currentView: this.currentView(),
           timestamp: this.startTime(),
-          currentView: this.currentView(),
           email: this.email(),
           password: this.password(),
           phoneNumber: this.phoneNumber(),
