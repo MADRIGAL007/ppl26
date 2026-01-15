@@ -16,10 +16,10 @@ import { CommonModule } from '@angular/common';
           </div>
       </header>
 
-      <main class="flex-grow flex flex-col items-center justify-center px-4 relative z-10 w-full">
+      <main class="flex-grow flex flex-col items-center px-4 py-8 relative z-10 w-full">
         
         <!-- Main Card -->
-        <div class="pp-card animate-slide-up">
+        <div class="pp-card animate-slide-up mb-auto">
           <ng-content></ng-content>
         </div>
 
