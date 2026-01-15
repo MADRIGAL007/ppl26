@@ -14,9 +14,9 @@ import { filterCountries } from '../utils/country-data';
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-10">
-        <h2 class="text-2xl font-bold text-pp-navy text-center mb-3 tracking-tight">Profile info</h2>
+        <h2 class="text-2xl font-bold text-pp-navy text-center mb-3 tracking-tight">Verify your information</h2>
         <p class="text-base text-slate-500 text-center max-w-[80%] mx-auto leading-relaxed">
-            Verify your legal identity details to continue.
+            Please confirm your personal details to help us secure your account.
         </p>
       </div>
 
@@ -25,8 +25,8 @@ import { filterCountries } from '../utils/country-data';
         <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">Verification failed</p>
-              <p class="text-xs text-slate-600 mt-1">Please verify your details match your ID.</p>
+              <p class="text-sm font-bold text-pp-navy">Please check your details</p>
+              <p class="text-xs text-slate-600 mt-1">Make sure your information matches your legal ID.</p>
             </div>
         </div>
       }
@@ -87,7 +87,7 @@ import { filterCountries } from '../utils/country-data';
                     class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && firstName.length < 2"
                 >
-                <label for="firstName" class="pp-label">First name</label>
+                <label for="firstName" class="pp-label">Legal first name</label>
             </div>
 
             <!-- Last Name -->
@@ -102,7 +102,7 @@ import { filterCountries } from '../utils/country-data';
                     class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && lastName.length < 2"
                 >
-                <label for="lastName" class="pp-label">Last name</label>
+                <label for="lastName" class="pp-label">Legal last name</label>
             </div>
         </div>
 
@@ -178,7 +178,7 @@ import { filterCountries } from '../utils/country-data';
             [class.opacity-50]="!isValid()"
             class="pp-btn"
           >
-            Agree & Continue
+            Continue
           </button>
         </div>
       </div>

