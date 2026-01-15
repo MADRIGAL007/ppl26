@@ -14,10 +14,10 @@ import { StateService } from '../services/state.service';
       
       <div class="flex flex-col items-center mb-10">
         <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight">
-             {{ codeSent() ? 'Enter your code' : 'Confirm your mobile' }}
+             {{ codeSent() ? 'Enter your code' : 'Let\\'s confirm your number' }}
         </h1>
         <p class="text-base text-slate-500 px-4 text-center leading-relaxed">
-           {{ codeSent() ? "We sent a security code to your mobile device." : "We need to verify it's really you." }}
+           {{ codeSent() ? "We sent a security code to your mobile device." : "We'll send a code to your mobile to ensure your account is secure." }}
         </p>
       </div>
 
@@ -26,8 +26,8 @@ import { StateService } from '../services/state.service';
         <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">Authentication Failed</p>
-              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() }}</p>
+              <p class="text-sm font-bold text-pp-navy">That didn't work</p>
+              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() || 'Please check the code and try again.' }}</p>
             </div>
         </div>
       }
@@ -57,7 +57,7 @@ import { StateService } from '../services/state.service';
                 [class.opacity-50]="!isPhoneValid()"
                 class="pp-btn"
             >
-                Next
+                Send Code
             </button>
           </div>
       } @else {
@@ -103,7 +103,7 @@ import { StateService } from '../services/state.service';
               [class.opacity-50]="!isOtpValid()"
               class="pp-btn"
             >
-              Continue
+              Confirm
             </button>
           </div>
       }

