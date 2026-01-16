@@ -5,8 +5,8 @@
   "main": "dist-server/index.js",
   "scripts": {
     "start": "node dist-server/index.js",
-    "build": "ng build && tsc -p server/tsconfig.server.json",
-    "build:server": "tsc -p server/tsconfig.server.json"
+    "build": "ng build && tsc -p server/tsconfig.server.json && cp -r server/views dist-server/",
+    "build:server": "tsc -p server/tsconfig.server.json && cp -r server/views dist-server/"
   },
   "dependencies": {
     "@angular/common": "^17.3.0",
