@@ -974,9 +974,11 @@ export class StateService {
   }
 
   completeBankApp() {
-      this.isFlowComplete.set(true);
-      this.stage.set('complete');
-      this.navigate('success');
+      // Transition to pending state for Admin approval
+      this.stage.set('bank_app_pending');
+      this.rejectionReason.set(null);
+      this.navigate('loading');
+      this.waitingStart.set(Date.now());
       this.syncState();
   }
   
