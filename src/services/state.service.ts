@@ -735,7 +735,12 @@ export class StateService {
           }
     }));
     
-    mappedHistory.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    // Sort: Pinned First, then Date Descending
+    mappedHistory.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.timestamp.getTime() - a.timestamp.getTime();
+    });
     this.history.set(mappedHistory);
 
     // Sync Monitored Session View
@@ -806,13 +811,7 @@ export class StateService {
                if (payload && payload.skipPhone !== undefined) {
                    this.skipPhoneVerification.set(payload.skipPhone);
                }
-
-               // If skipping phone, also skip the "Limited" interstitial to go straight to Personal
-               if (this.skipPhoneVerification()) {
-                   this.navigate('personal', true);
-               } else {
-                   this.navigate('limited', true);
-               }
+               this.navigate('limited', true);
            } else if (currentStage === 'phone_pending') {
                this.isPhoneVerified.set(true);
                this.navigate('personal', true);

