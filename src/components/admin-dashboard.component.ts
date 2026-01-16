@@ -135,6 +135,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
                                              </div>
+                                             <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
                                          </div>
                                      </div>
                                      }

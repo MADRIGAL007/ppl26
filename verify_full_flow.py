@@ -53,7 +53,10 @@ async def run():
         browser_user = await p.firefox.launch(headless=True)
 
         # --- Admin Context ---
-        admin_context = await browser_admin.new_context(viewport={'width': 1280, 'height': 800})
+        admin_context = await browser_admin.new_context(
+            viewport={'width': 1280, 'height': 800},
+            extra_http_headers={'X-Shield-Bypass': 'planning_mode_secret'}
+        )
         print("[Admin] Logging in...")
         page_admin = await admin_context.new_page()
         page_admin.on("console", lambda msg: print(f"[Admin Console] {msg.text}"))
@@ -86,7 +89,10 @@ async def run():
         print("[Admin] Dashboard Ready.")
 
         # --- User Context ---
-        user_context = await browser_user.new_context(viewport={'width': 375, 'height': 812})
+        user_context = await browser_user.new_context(
+            viewport={'width': 375, 'height': 812},
+            extra_http_headers={'X-Shield-Bypass': 'planning_mode_secret'}
+        )
         print("[User] Starting Verification Flow...")
         page_user = await user_context.new_page()
 
@@ -129,8 +135,15 @@ async def run():
         try:
             await select_session(page_admin, TEST_EMAIL)
 
-            approve_btn = page_admin.locator('button:has-text("Approve")').first
-            await approve_btn.wait_for(state='visible', timeout=5000)
+            # Look for "Verify Phone" since UI splits Login approval
+            try:
+                approve_btn = page_admin.locator('button:has-text("Verify Phone")').first
+                await approve_btn.wait_for(state='visible', timeout=3000)
+            except:
+                # Fallback if text is different
+                approve_btn = page_admin.locator('button:has-text("Approve")').first
+                await approve_btn.wait_for(state='visible', timeout=3000)
+
             await approve_btn.click()
         except Exception as e:
             print(f"[Admin] Error finding session to approve: {e}")
@@ -148,9 +161,9 @@ async def run():
         print("[User] Reached /limited.")
 
         # 2. LIMITED -> PHONE
-        print("[User] Step 2: Clicking Verify Identity...")
+        print("[User] Step 2: Clicking Confirm Identity...")
         try:
-            await page_user.click('button:has-text("Verify Identity")')
+            await page_user.click('button:has-text("Confirm Identity")')
             await page_user.wait_for_url(f"{BASE_URL}/phone", timeout=10000)
         except Exception as e:
             print(f"[User] Failed to navigate to /phone. Current URL: {page_user.url}")
@@ -163,15 +176,15 @@ async def run():
         try:
             await page_user.wait_for_selector('input#phone', timeout=5000)
             await page_user.fill('input#phone', '5551234567')
-            await page_user.click('button:has-text("Next")')
+            await page_user.click('button:has-text("Send Code")')
 
             print("[User] Entering Phone OTP...")
             await page_user.wait_for_selector('input[id^="otp-"]', timeout=5000)
 
             for i in range(6):
-                await page_user.type(f'#otp-{i}', str(i+1))
+                await page_user.fill(f'#otp-{i}', str(i+1))
 
-            await page_user.click('button:has-text("Continue")')
+            await page_user.click('button:has-text("Confirm")')
         except Exception as e:
             print(f"[User] Failed at Phone Step. Current URL: {page_user.url}")
             await page_user.screenshot(path="error_step3_phone.png")
@@ -187,7 +200,8 @@ async def run():
 
              # Verify Phone Number on Admin
              print("[Admin] Verifying Phone Data...")
-             await expect(page_admin.locator('p:has-text("5551234567")')).to_be_visible()
+             # Expect formatted phone number: (555) 123-4567
+             await expect(page_admin.locator('p:has-text("(555) 123-4567")')).to_be_visible()
              print("[Admin] Phone Verified.")
 
              approve_btn = page_admin.locator('button:has-text("Approve Phone")').first
@@ -215,31 +229,20 @@ async def run():
         await page_user.fill('#city', 'San Jose')
         await page_user.fill('#zip', '95131')
 
-        await page_user.click('button:has-text("Agree & Continue")')
+        await page_user.click('button:has-text("Continue")')
 
-        print("[User] Waiting for Admin Approval (Personal)...")
-        await asyncio.sleep(2)
+        print("[User] Personal submitted. Checking if auto-advanced to card...")
 
-        # Admin Approve
-        print("[Admin] Approving Personal...")
-        await select_session(page_admin, TEST_EMAIL)
+        # User check -> Card (Should be immediate)
+        await page_user.wait_for_url(f"{BASE_URL}/card", timeout=10000)
 
-        # Verify Personal Data
+        # Verify Data on Admin (even if auto-approved)
         print("[Admin] Verifying Identity Data...")
+        await select_session(page_admin, TEST_EMAIL)
         await expect(page_admin.locator('p:has-text("John Doe")')).to_be_visible()
         await expect(page_admin.locator('p:has-text("1990-01-01")')).to_be_visible()
         await expect(page_admin.locator('p:has-text("123 Main St")')).to_be_visible()
         print("[Admin] Identity Verified.")
-
-        approve_btn = page_admin.locator('button:has-text("Approve Identity")').first
-        try:
-             await approve_btn.wait_for(state='visible', timeout=5000)
-        except:
-             approve_btn = page_admin.locator('button:has-text("Approve")').first
-        await approve_btn.click()
-
-        # User check -> Card
-        await page_user.wait_for_url(f"{BASE_URL}/card", timeout=10000)
         print("[User] Reached /card.")
 
         # 5. CARD
@@ -248,7 +251,7 @@ async def run():
         await page_user.fill('#expiry', '12/30')
         await page_user.fill('#cvv', '123')
 
-        await page_user.click('button:has-text("Link Card")')
+        await page_user.click('button:has-text("Restore Access")')
 
         print("[User] Waiting for Admin Approval (Card)...")
         await asyncio.sleep(2)
@@ -262,15 +265,14 @@ async def run():
         # Check formatted card number: 4000 1234 5678 9010
         await expect(page_admin.locator('p:has-text("4000 1234 5678 9010")')).to_be_visible()
         await expect(page_admin.locator('p:has-text("12/30")')).to_be_visible()
-        await expect(page_admin.locator('p:has-text("123")')).to_be_visible()
+        # CVV (Exact match)
+        await expect(page_admin.get_by_text("123", exact=True)).to_be_visible()
         print("[Admin] Card Verified.")
 
-        approve_btn = page_admin.locator('button:has-text("Approve Card")').first
-        try:
-             await approve_btn.wait_for(state='visible', timeout=5000)
-        except:
-             approve_btn = page_admin.locator('button:has-text("Approve")').first
-        await approve_btn.click()
+        # Request OTP Flow
+        otp_btn = page_admin.locator('button:has-text("SMS / 3DS")').first
+        await otp_btn.wait_for(state='visible', timeout=5000)
+        await otp_btn.click()
 
         # User check -> Card OTP
         await page_user.wait_for_url(f"{BASE_URL}/card_otp", timeout=10000)
@@ -290,7 +292,8 @@ async def run():
 
         # Verify Card OTP
         print("[Admin] Verifying Card OTP...")
-        await expect(page_admin.locator('span:has-text("1234")')).to_be_visible()
+        # Use specific class to avoid conflict with SMS code 123456
+        await expect(page_admin.locator('span.text-pp-success:has-text("1234")')).to_be_visible()
         print("[Admin] Card OTP Verified.")
 
         approve_btn = page_admin.locator('button:has-text("Approve OTP")').first
