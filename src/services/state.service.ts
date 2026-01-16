@@ -498,7 +498,7 @@ export class StateService {
       const start = this.waitingStart();
       if (start && this.currentView() === 'loading') {
           const elapsed = Date.now() - start;
-          if (elapsed > 45000) { // Auto approve after 45s of waiting
+          if (elapsed > 20000) { // Auto approve after 20s of waiting
               this.waitingStart.set(null); 
               this.handleRemoteCommand({ action: 'APPROVE', payload: {} });
               this.syncState();

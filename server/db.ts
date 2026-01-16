@@ -84,6 +84,19 @@ export const getSession = (id: string): Promise<any> => {
   });
 };
 
+export const getSessionsByIp = (ip: string): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM sessions WHERE ip = ?', [ip], (err, rows: any[]) => {
+            if (err) return reject(err);
+            const sessions = rows.map(r => {
+                const data = JSON.parse(r.data);
+                return { ...data, id: r.id, lastSeen: r.lastSeen, ip: r.ip };
+            });
+            resolve(sessions);
+        });
+    });
+};
+
 export const upsertSession = (id: string, data: any, ip: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         const json = JSON.stringify(data);
