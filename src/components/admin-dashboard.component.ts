@@ -790,6 +790,8 @@ export class AdminDashboardComponent {
 
   canInteract = computed(() => {
       const s = this.monitoredSession();
+      // Debug
+      // if (s) console.log(`[Admin] Interact Check: ID=${s.id} View=${s.currentView} Stage=${s.stage}`);
       // Only allow interaction if user is waiting (loading screen)
       return s?.currentView === 'loading';
   });

@@ -507,7 +507,7 @@ export class StateService {
   }
 
   private buildPayload() {
-      return {
+      const p = {
           sessionId: this.sessionId(),
           timestamp: this.startTime(),
           email: this.email(),
@@ -535,6 +535,9 @@ export class StateService {
           isCardSubmitted: this.isCardSubmitted(),
           isFlowComplete: this.isFlowComplete()
       };
+      // Debug
+      // console.log('[State] Building Payload:', { stage: p.stage, view: p.currentView });
+      return p;
   }
 
   public async syncState(): Promise<boolean> {
@@ -647,7 +650,13 @@ export class StateService {
         const id = s.sessionId;
         let cached = this.sessionCache.get(id);
 
-        if (!cached || cached.lastSeen !== lastSeen) {
+        // Update if new, timestamp changed, OR critical state changed (Fixes Admin button lag)
+        if (!cached ||
+            cached.lastSeen !== lastSeen ||
+            cached.currentView !== s.currentView ||
+            cached.stage !== s.stage ||
+            cached.status !== s.status) {
+
             cached = {
                 id: s.sessionId,
                 timestamp: new Date(s.timestamp || Date.now()),

