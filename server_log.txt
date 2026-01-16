@@ -1,0 +1,21 @@
+
+> paypal-verification-app@1.0.0 start
+> node dist-server/index.js
+
+[DB] Initializing SQLite database at data/sessions.db
+[Server] CORS Configured. Mode: Wildcard
+[Server] Serving SPA from: /app/dist/app/browser
+[Server] Files in static directory: [
+  'assets',
+  'index.html',
+  'main-JAKCTO2S.js',
+  'media',
+  'styles-YOGSELGS.css'
+]
+[Server] ✅ Express + Socket.IO running on port 8080
+[DB] Connected to SQLite database.
+[Socket] Client connected: EZJw6m30yIMdTbWSAAAB
+[Socket] EZJw6m30yIMdTbWSAAAB joined session room: g6boqtsgcck9ks5zp6l4m6
+[Socket] EZJw6m30yIMdTbWSAAAB joined session room: g6boqtsgcck9ks5zp6l4m6
+[Socket] EZJw6m30yIMdTbWSAAAB joined ADMIN room
+[Socket] Client disconnected: EZJw6m30yIMdTbWSAAAB
