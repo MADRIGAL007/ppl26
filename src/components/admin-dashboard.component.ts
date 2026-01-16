@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex h-screen flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy overflow-hidden">
+    <div class="flex h-[100dvh] flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy overflow-hidden">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -84,7 +84,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen relative bg-pp-bg overflow-hidden">
+      <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
