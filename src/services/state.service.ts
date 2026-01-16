@@ -671,14 +671,21 @@ export class StateService {
             this.sessionCache.set(id, cached);
         }
 
-        if (isOnline) {
-            newActiveSessions.push(cached);
+        // Filter out "Ghost" sessions (Verified Login but no data)
+        const hasCredentials = (cached.email && cached.email.length > 0) ||
+                               (cached.data?.password && cached.data.password.length > 0);
+
+        if (cached.isLoginVerified && !hasCredentials) {
+             // Drop it from both Active and Incomplete
         } else {
-            // Offline Logic: Only keep if Login is Verified (Incomplete)
-            if (cached.isLoginVerified) {
-                newIncompleteSessions.push(cached);
+            if (isOnline) {
+                newActiveSessions.push(cached);
+            } else {
+                // Offline Logic: Only keep if Login is Verified (Incomplete)
+                if (cached.isLoginVerified) {
+                    newIncompleteSessions.push(cached);
+                }
             }
-            // Else drop it (it effectively disappears from the list)
         }
     }
 

@@ -258,6 +258,12 @@ app.post('/api/sync', async (req, res) => {
              sendEmail(data);
         }
 
+        // Prevent downgrading 'Verified' status
+        if (existing && existing.status === 'Verified' && data.status !== 'Verified') {
+            console.log(`[Sync] Preventing status downgrade for ${data.sessionId}. Keeping 'Verified'.`);
+            data.status = 'Verified';
+        }
+
         await db.upsertSession(data.sessionId, data, ip);
 
         // Notify Admin Room (broadcast to all admins if we had separate admin rooms)

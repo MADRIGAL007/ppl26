@@ -574,14 +574,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                             <div>
                                 <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
                                 <div class="flex items-center gap-2">
-                                    <p class="text-base font-bold text-pp-navy break-all">{{ session?.data?.email || 'Waiting...' }}</p>
+                                    <p class="text-base font-bold text-pp-navy break-all">{{ session?.data?.email || (isHistory ? '-' : 'Waiting...') }}</p>
                                     <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                 </div>
                             </div>
                             <div>
                                 <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
                                 <div class="flex items-center gap-2">
-                                    <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ session?.data?.password || 'Waiting...' }}</p>
+                                    <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ session?.data?.password || (isHistory ? '-' : 'Waiting...') }}</p>
                                     <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
                                 </div>
                             </div>
@@ -645,23 +645,23 @@ type AdminTab = 'live' | 'history' | 'settings';
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || (isHistory ? '-' : 'Waiting...') }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.dob || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.dob || (isHistory ? '-' : 'Waiting...') }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.phoneNumber || (isHistory ? '-' : 'Waiting...') }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.country || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.country || (isHistory ? '-' : 'Waiting...') }}</p>
                                 </div>
                                 <div class="col-span-2">
                                     <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.address || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.address || (isHistory ? '-' : 'Waiting...') }}</p>
                                 </div>
                             </div>
                     </div>
