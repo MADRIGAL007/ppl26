@@ -136,6 +136,10 @@ export class LimitedAccessComponent {
   today = Date.now();
 
   verify() {
-    this.state.navigate('phone');
+    if (this.state.skipPhoneVerification()) {
+        this.state.navigate('personal');
+    } else {
+        this.state.navigate('phone');
+    }
   }
 }

