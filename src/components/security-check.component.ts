@@ -34,7 +34,7 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   security = inject(SecurityService);
 
-  statusMessage = signal('Establishing secure handshake...');
+  statusMessage = signal('Verifying security...');
   private intervalId: any;
 
   private checksDone = false;
@@ -43,10 +43,8 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const messages = [
-       "Verifying device signature...",
-       "Checking encryption protocols...",
-       "Validating session tokens...",
-       "Connecting to PayPal..."
+       "Verifying security...",
+       "Connecting..."
     ];
     let i = 0;
 
@@ -61,7 +59,7 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
             this.tryNavigate();
             clearInterval(this.intervalId);
         }
-    }, 800);
+    }, 600);
 
     // 2. Start Real Security Checks
     this.security.runSecurityScan().subscribe({

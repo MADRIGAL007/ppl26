@@ -10,8 +10,8 @@ import { CommonModule } from '@angular/common';
     <div class="min-h-screen flex flex-col bg-pp-bg font-sans overflow-x-hidden">
       
       <!-- Top Header -->
-      <header class="w-full pt-8 pb-4 flex justify-center items-center z-20 relative">
-          <div class="w-36 cursor-pointer">
+      <header class="w-full pt-5 pb-2 flex justify-center items-center z-20 relative">
+          <div class="w-32 cursor-pointer">
             <img src="assets/PayPal-Logo-New.png" alt="PayPal" class="w-full h-auto">
           </div>
       </header>

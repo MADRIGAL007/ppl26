@@ -93,8 +93,24 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                   >
                   <label for="cvv" class="pp-label">Security code</label>
                   
-                  <div class="absolute right-3 top-4 text-slate-400 group relative cursor-help">
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group cursor-help z-20">
                       <span class="material-icons text-[20px]">help_outline</span>
+
+                      <!-- Tooltip -->
+                      <div class="invisible group-hover:visible absolute bottom-full right-[-10px] mb-2 w-48 bg-pp-navy text-white text-xs p-3 rounded-md shadow-lg z-50">
+                           <p class="mb-3 text-center leading-tight">The 3-digit security code on the back of your card</p>
+
+                           <!-- Card Back Graphic -->
+                           <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
+                               <div class="absolute top-3 left-0 w-full h-2 bg-slate-800 opacity-80"></div>
+                               <div class="absolute top-6 right-2 w-10 h-3 bg-white border border-slate-300 flex items-center justify-end px-1">
+                                   <span class="text-[7px] text-black font-mono font-bold">123</span>
+                               </div>
+                           </div>
+
+                           <!-- Arrow -->
+                           <div class="absolute top-full right-4 -mt-1 border-[6px] border-transparent border-t-pp-navy"></div>
+                      </div>
                   </div>
              </div>
           </div>

