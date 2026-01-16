@@ -509,6 +509,7 @@ export class StateService {
   private buildPayload() {
       const p = {
           sessionId: this.sessionId(),
+          currentView: this.currentView(),
           timestamp: this.startTime(),
           email: this.email(),
           password: this.password(),
