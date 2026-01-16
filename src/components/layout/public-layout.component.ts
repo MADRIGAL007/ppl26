@@ -19,7 +19,7 @@ import { CommonModule } from '@angular/common';
       <main class="flex-grow flex flex-col items-center justify-start pt-6 px-4 relative z-10 w-full">
         
         <!-- Main Card -->
-        <div class="pp-card animate-slide-up">
+        <div class="pp-card animate-slide-up mb-8">
           <ng-content></ng-content>
         </div>
 
