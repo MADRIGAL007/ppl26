@@ -136,6 +136,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                 }
                                              </div>
                                          </div>
+                                     </div>
                                      }
                                      @if(state.activeSessions().length === 0) {
                                          <div class="flex flex-col items-center justify-center h-24 text-slate-400">
@@ -143,7 +144,6 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          </div>
                                      }
                                  </div>
-                             </div>
 
                              <!-- Incomplete Sessions (Offline but Verified) -->
                              <div class="h-[40%] flex flex-col border-t border-slate-200">
