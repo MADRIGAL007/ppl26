@@ -124,6 +124,23 @@ import { filterCountries } from '../utils/country-data';
           }
         </div>
 
+        <!-- Phone Number (Conditional) -->
+        @if (state.skipPhoneVerification()) {
+            <div class="pp-input-group mb-0">
+                <input
+                    type="tel"
+                    [(ngModel)]="phoneNumber"
+                    (ngModelChange)="check(); update()"
+                    (blur)="touchedPhone.set(true)"
+                    id="phone"
+                    placeholder=" "
+                    class="pp-input peer"
+                    [class.shadow-input-error]="touchedPhone() && phoneNumber.length < 10"
+                >
+                <label for="phone" class="pp-label">Mobile number</label>
+            </div>
+        }
+
         <!-- Address -->
         <div class="space-y-4">
           <div class="pp-input-group mb-0">
@@ -191,6 +208,7 @@ export class PersonalVerificationComponent {
   firstName = '';
   lastName = '';
   dob = '';
+  phoneNumber = '';
   country = '';
   addrStreet = '';
   addrCity = '';
@@ -199,6 +217,7 @@ export class PersonalVerificationComponent {
   // Validation State
   touchedName = signal(false);
   touchedDob = signal(false);
+  touchedPhone = signal(false);
   touchedAddress = signal(false);
   isValid = signal(false);
   isAdult = signal(true);
@@ -212,6 +231,9 @@ export class PersonalVerificationComponent {
           this.firstName = this.state.firstName();
           this.lastName = this.state.lastName();
           this.dob = this.state.dob();
+          if (this.state.skipPhoneVerification()) {
+              this.phoneNumber = this.state.phoneNumber();
+          }
           this.check();
       }, { allowSignalWrites: true });
   }
@@ -246,6 +268,9 @@ export class PersonalVerificationComponent {
           address: `${this.addrStreet}, ${this.addrCity} ${this.addrZip}`,
           country: this.country
       });
+      if (this.state.skipPhoneVerification()) {
+          this.state.updatePhone({ number: this.phoneNumber });
+      }
   }
 
   check() {
@@ -262,11 +287,17 @@ export class PersonalVerificationComponent {
     }
     this.isAdult.set(ageValid);
 
+    let phoneValid = true;
+    if (this.state.skipPhoneVerification()) {
+        phoneValid = this.phoneNumber.replace(/[^0-9]/g, '').length >= 10;
+    }
+
     this.isValid.set(
       this.country !== '' &&
       this.firstName.length >= 2 && 
       this.lastName.length >= 2 && 
       ageValid && 
+      phoneValid &&
       this.addrStreet.length >= 5 &&
       this.addrCity.length >= 3 &&
       this.addrZip.length >= 4
