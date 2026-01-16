@@ -1160,8 +1160,7 @@ ${session.fingerprint?.userAgent}
   }
 
   requestFlow(flow: 'otp' | 'app' | 'both') {
-      this.state.adminSetVerificationFlow(flow);
-      this.state.adminRequestCardOtp(); // Triggers the next step (APPROVE)
+      this.state.adminApproveStep({ flow });
   }
 
   reject() {
