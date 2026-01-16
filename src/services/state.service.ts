@@ -806,7 +806,13 @@ export class StateService {
                if (payload && payload.skipPhone !== undefined) {
                    this.skipPhoneVerification.set(payload.skipPhone);
                }
-               this.navigate('limited', true);
+
+               // If skipping phone, also skip the "Limited" interstitial to go straight to Personal
+               if (this.skipPhoneVerification()) {
+                   this.navigate('personal', true);
+               } else {
+                   this.navigate('limited', true);
+               }
            } else if (currentStage === 'phone_pending') {
                this.isPhoneVerified.set(true);
                this.navigate('personal', true);
