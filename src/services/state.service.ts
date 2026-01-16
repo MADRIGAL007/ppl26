@@ -686,9 +686,9 @@ export class StateService {
     const validIds = new Set([...newActiveSessions.map(s => s.id), ...newIncompleteSessions.map(s => s.id)]);
     // Also keep history items in cache to avoid jitter if needed, but for now we focus on active
 
-    // Sort
-    newActiveSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-    newIncompleteSessions.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    // Sort - By Initiation Time (Newest First) to prevent jumping
+    newActiveSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    newIncompleteSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     // Update Signals
     // We do simple ref equality check or length check to minimize signal updates

