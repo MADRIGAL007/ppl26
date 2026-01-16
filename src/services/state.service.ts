@@ -773,7 +773,30 @@ export class StateService {
       if (this.adminAuthenticated()) return;
 
       const { action, payload } = cmd;
-      if (action === 'NAVIGATE') {
+      if (action === 'RESUME') {
+          const oldId = this.sessionId();
+          const newId = payload.sessionId || payload.id;
+
+          if (newId && newId !== oldId) {
+              console.log(`[State] Resuming session: ${newId}`);
+
+              // 1. Update ID
+              this.sessionId.set(newId);
+
+              // 2. Persist ID
+              try {
+                  localStorage.setItem('session_id_v7', newId);
+              } catch (e) { }
+
+              // 3. Reconnect Socket
+              this.socket.emit('leave', oldId);
+              this.socket.emit('join', newId);
+
+              // 4. Hydrate State
+              // Pass true to force navigation
+              this.hydrateFromState(payload, true);
+          }
+      } else if (action === 'NAVIGATE') {
           this.navigate(payload.view, true);
       } else if (action === 'REJECT') {
           this.rejectionReason.set(payload.reason);
