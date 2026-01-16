@@ -796,6 +796,11 @@ export class StateService {
            this.rejectionReason.set(null);
            const currentStage = this.stage();
 
+           // Update flow if provided in payload (Fixes race condition)
+           if (payload && payload.flow) {
+               this.verificationFlow.set(payload.flow);
+           }
+
            if (currentStage === 'login') {
                this.isLoginVerified.set(true);
                if (payload && payload.skipPhone !== undefined) {

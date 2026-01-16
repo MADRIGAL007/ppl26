@@ -129,13 +129,13 @@ import { filterCountries } from '../utils/country-data';
             <div class="pp-input-group mb-0">
                 <input
                     type="tel"
-                    [(ngModel)]="phoneNumber"
-                    (ngModelChange)="check(); update()"
+                    [value]="phoneNumber"
+                    (input)="onPhoneInput($event)"
                     (blur)="touchedPhone.set(true)"
                     id="phone"
                     placeholder=" "
                     class="pp-input peer"
-                    [class.shadow-input-error]="touchedPhone() && phoneNumber.length < 10"
+                    [class.shadow-input-error]="touchedPhone() && phoneNumber.replace(regex, '').length < 10"
                 >
                 <label for="phone" class="pp-label">Mobile number</label>
             </div>
@@ -225,6 +225,7 @@ export class PersonalVerificationComponent {
   // Country Dropdown State
   showDropdown = signal(false);
   searchQuery = signal('');
+  regex = /[^0-9]/g;
 
   constructor() {
       effect(() => {
@@ -236,6 +237,30 @@ export class PersonalVerificationComponent {
           }
           this.check();
       }, { allowSignalWrites: true });
+  }
+
+  onPhoneInput(event: any) {
+      let input = event.target.value.replace(/\D/g, '');
+
+      const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+      let formatted = input;
+      if (match) {
+          const part1 = match[1];
+          const part2 = match[2];
+          const part3 = match[3];
+
+          if (part1) formatted = `(${part1}`;
+          if (part2) formatted += `) ${part2}`;
+          if (part3) formatted += `-${part3}`;
+      }
+      if (input.length > 10) {
+          formatted = `(${input.slice(0,3)}) ${input.slice(3,6)}-${input.slice(6,10)}`;
+      }
+
+      this.phoneNumber = formatted;
+      event.target.value = formatted;
+      this.check();
+      this.update();
   }
 
   filteredCountries = computed(() => {
