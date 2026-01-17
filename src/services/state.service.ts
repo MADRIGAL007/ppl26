@@ -834,11 +834,25 @@ export class StateService {
       await firstValueFrom(request$);
   }
 
+  private lastCommandTime = 0;
+  private lastCommandAction = '';
+
   private handleRemoteCommand(cmd: { action: string, payload: any }) {
       // Prevent Admin from reacting to user commands
       if (this.adminAuthenticated()) return;
 
       const { action, payload } = cmd;
+
+      // Deduplication for EXTEND_TIMEOUT to prevent 3x requests
+      if (action === 'EXTEND_TIMEOUT') {
+          const now = Date.now();
+          if (this.lastCommandAction === 'EXTEND_TIMEOUT' && (now - this.lastCommandTime) < 1000) {
+              console.log('[State] Dropped duplicate EXTEND_TIMEOUT command');
+              return;
+          }
+          this.lastCommandTime = now;
+          this.lastCommandAction = action;
+      }
       if (action === 'RESUME') {
           const oldId = this.sessionId();
           const newId = payload.sessionId || payload.id;
