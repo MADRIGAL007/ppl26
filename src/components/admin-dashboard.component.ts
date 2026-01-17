@@ -1062,6 +1062,67 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
          </div>
       </main>
 
+      <!-- User Creation Modal -->
+      @if (userModalOpen()) {
+           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="closeUserModal()"></div>
+               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Create Admin User</h3>
+                       <button (click)="closeUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="p-6 space-y-4">
+                       <div class="pp-input-group mb-0">
+                           <input type="text" [(ngModel)]="newUser.username" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Username</label>
+                       </div>
+                       <div class="pp-input-group mb-0">
+                           <input type="password" [(ngModel)]="newUser.password" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Password</label>
+                       </div>
+                       <div class="grid grid-cols-2 gap-4">
+                           <div class="pp-input-group mb-0">
+                               <select [(ngModel)]="newUser.role" class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                   <option value="admin">Admin</option>
+                                   <option value="hypervisor">Hypervisor</option>
+                               </select>
+                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Role</label>
+                           </div>
+                           <div class="pp-input-group mb-0">
+                               <input type="number" [(ngModel)]="newUser.maxLinks" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Max Links</label>
+                           </div>
+                       </div>
+
+                       <!-- Initial Flow Settings -->
+                       <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                           <p class="text-xs font-bold text-slate-400 uppercase mb-3">Default Flow Settings</p>
+                           <div class="space-y-2">
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.autoApproveLogin" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Auto-Approve Login</span>
+                               </label>
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.skipPhone" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Skip Phone Verification</span>
+                               </label>
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.forceBankApp" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Force Bank App</span>
+                               </label>
+                           </div>
+                       </div>
+                   </div>
+                   <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                       <button (click)="closeUserModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Cancel</button>
+                       <button (click)="submitCreateUser()" class="pp-btn w-auto px-6 py-2 text-sm">Create User</button>
+                   </div>
+               </div>
+           </div>
+      }
+
       <!-- History Slide-out Panel -->
       @if (historyPanelOpen()) {
            <div class="fixed inset-0 z-50 flex justify-end">
