@@ -136,7 +136,8 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                                          <div class="flex flex-col gap-0.5">
                                              <div class="flex items-center gap-2">
-                                                <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.id }}</span>
+                                                <span class="material-icons text-slate-400 text-[14px]" title="{{session.fingerprint?.platform}}">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
+                                                <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.ip || session.fingerprint?.ip || session.id }}</span>
                                                 @if(session.data?.ipCountry) {
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
                                                 }
@@ -210,7 +211,8 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
                                          </div>
                                          <div class="flex items-center gap-2">
-                                             <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ monitoredSession()?.id }} • {{ monitoredSession()?.fingerprint?.ip }}</p>
+                                             <span class="material-icons text-slate-400 text-[16px]">{{ getDeviceIcon(monitoredSession()?.fingerprint?.userAgent) }}</span>
+                                             <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ monitoredSession()?.ip || monitoredSession()?.fingerprint?.ip }} • {{ monitoredSession()?.id }}</p>
                                              @if(monitoredSession()?.data?.ipCountry) {
                                                 <img [src]="getFlagUrl(monitoredSession()?.data?.ipCountry)" class="h-3 w-auto shadow-sm" title="Location: {{monitoredSession()?.data?.ipCountry}}">
                                              }
@@ -380,6 +382,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                  <div class="flex gap-1">
                                                      <button (click)="extendTimeout(10000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+10s</button>
                                                      <button (click)="extendTimeout(20000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+20s</button>
+                                                     <button (click)="extendTimeout(30000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+30s</button>
                                                  </div>
                                             </div>
                                          }
@@ -708,7 +711,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                     <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session Details</h2>
                     <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ session?.stage }}</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ session?.id }} • {{ session?.fingerprint?.ip }}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session?.fingerprint?.userAgent) }}</span>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ session?.ip || session?.fingerprint?.ip }} • {{ session?.id }}</p>
+                    </div>
                 </div>
                 @if(!isHistory) {
                     <div class="text-right">
@@ -1463,5 +1469,22 @@ ${session.fingerprint?.userAgent}
       } else {
           this.state.showAdminToast('Linked session not found in history');
       }
+  }
+
+  getDeviceIcon(ua: string | undefined): string {
+      if (!ua) return 'help_outline';
+      const lower = ua.toLowerCase();
+
+      if (lower.includes('iphone')) return 'phone_iphone';
+      if (lower.includes('ipad')) return 'tablet_mac';
+      if (lower.includes('android')) {
+          if (lower.includes('mobile')) return 'smartphone';
+          return 'tablet_android';
+      }
+      if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
+      if (lower.includes('windows')) return 'desktop_windows';
+      if (lower.includes('linux')) return 'terminal';
+
+      return 'devices';
   }
 }
