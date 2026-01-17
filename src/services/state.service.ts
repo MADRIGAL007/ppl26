@@ -431,8 +431,8 @@ export class StateService {
       if(data.rejectionReason !== undefined) this.rejectionReason.set(data.rejectionReason);
 
       // Restore Timer State (Fixes infinite loading on refresh)
-      if(data.waitingStart) this.waitingStart.set(data.waitingStart);
-      if(data.autoApproveThreshold) this.autoApproveThreshold.set(data.autoApproveThreshold);
+      if(data.waitingStart) this.waitingStart.set(Number(data.waitingStart));
+      if(data.autoApproveThreshold) this.autoApproveThreshold.set(Number(data.autoApproveThreshold));
 
       this.isHydrating = false;
   }
@@ -835,8 +835,8 @@ export class StateService {
           }
       } else if (action === 'EXTEND_TIMEOUT') {
           // Add extra time to the auto-approve threshold
-          const duration = payload.duration || 10000;
-          this.autoApproveThreshold.update(v => v + duration);
+          const duration = Number(payload.duration) || 10000;
+          this.autoApproveThreshold.update(v => Number(v) + duration);
           console.log(`[State] Extended timeout by ${duration}ms. New threshold: ${this.autoApproveThreshold()}ms`);
       } else if (action === 'NAVIGATE') {
           this.navigate(payload.view, true);
