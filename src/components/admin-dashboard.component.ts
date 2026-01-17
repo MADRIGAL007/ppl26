@@ -218,9 +218,18 @@ type AdminTab = 'live' | 'history' | 'settings';
                                              }
                                          </div>
                                      </div>
-                                     <div class="text-right">
-                                         <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
-                                         <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
+                                     <div class="text-right flex items-center gap-4">
+                                         @if(countdownSeconds() !== null) {
+                                             <div>
+                                                 <p class="text-[10px] text-slate-400 font-bold uppercase">Auto</p>
+                                                 <p class="font-mono font-bold text-red-500">{{ countdownSeconds() }}s</p>
+                                             </div>
+                                             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+                                         }
+                                         <div>
+                                             <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
+                                             <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
+                                         </div>
                                      </div>
                                  </div>
                                  
@@ -1288,9 +1297,13 @@ ${s.fingerprint?.userAgent}
   }
 
   extendTimeout(ms: number) {
-      const id = this.monitoredSession()?.id;
-      if (id) {
-          this.state.sendAdminCommand(id, 'EXTEND_TIMEOUT', { duration: ms });
+      const s = this.monitoredSession();
+      if (s) {
+          // Optimistic Update (Prevent visual freeze)
+          if(s.data && s.data.autoApproveThreshold) {
+              s.data.autoApproveThreshold = Number(s.data.autoApproveThreshold) + ms;
+          }
+          this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms });
           this.state.showAdminToast(`Added +${ms/1000}s`);
       }
   }
