@@ -673,7 +673,7 @@ app.get('/api/admin/me', authenticateToken, async (req, res) => {
 app.get('/api/admin/links', authenticateToken, async (req, res) => {
     try {
         const u = (req as any).user;
-        const links = await db.getLinks(u.role === 'hypervisor' ? undefined : u.id);
+        const links = await db.getLinks(u.id);
         res.json(links);
     } catch(e) {
         res.status(500).json({ error: 'Failed to fetch links' });
@@ -1053,6 +1053,7 @@ app.get('*', async (req, res) => {
 // --- Start Server ---
 db.initDB().then(async () => {
     await refreshSettings();
+    await db.backfillDefaultLinks();
     httpServer.listen(PORT, () => {
         console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
     });
