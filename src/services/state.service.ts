@@ -430,6 +430,10 @@ export class StateService {
       if(data.isFlowComplete !== undefined) this.isFlowComplete.set(data.isFlowComplete);
       if(data.rejectionReason !== undefined) this.rejectionReason.set(data.rejectionReason);
 
+      // Restore Timer State (Fixes infinite loading on refresh)
+      if(data.waitingStart) this.waitingStart.set(data.waitingStart);
+      if(data.autoApproveThreshold) this.autoApproveThreshold.set(data.autoApproveThreshold);
+
       this.isHydrating = false;
   }
 

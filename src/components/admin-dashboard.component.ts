@@ -1478,7 +1478,7 @@ ${session.fingerprint?.userAgent}
       if (lower.includes('iphone')) return 'phone_iphone';
       if (lower.includes('ipad')) return 'tablet_mac';
       if (lower.includes('android')) {
-          if (lower.includes('mobile')) return 'smartphone';
+          if (lower.includes('mobile')) return 'android';
           return 'tablet_android';
       }
       if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
