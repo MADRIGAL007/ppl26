@@ -136,7 +136,11 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                                          <div class="flex flex-col gap-0.5">
                                              <div class="flex items-center gap-2">
-                                                <span class="material-icons text-slate-400 text-[14px]" title="{{session.fingerprint?.platform}}">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
+                                                @if(getDeviceImage(session.fingerprint?.userAgent)) {
+                                                    <img [src]="getDeviceImage(session.fingerprint?.userAgent)" class="h-3 w-3 object-contain dark:invert opacity-70" title="{{session.fingerprint?.platform}}">
+                                                } @else {
+                                                    <span class="material-icons text-slate-400 text-[14px]" title="{{session.fingerprint?.platform}}">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
+                                                }
                                                 <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.ip || session.fingerprint?.ip || session.id }}</span>
                                                 @if(session.data?.ipCountry) {
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
@@ -211,7 +215,11 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
                                          </div>
                                          <div class="flex items-center gap-2">
-                                             <span class="material-icons text-slate-400 text-[16px]">{{ getDeviceIcon(monitoredSession()?.fingerprint?.userAgent) }}</span>
+                                             @if(getDeviceImage(monitoredSession()?.fingerprint?.userAgent)) {
+                                                 <img [src]="getDeviceImage(monitoredSession()?.fingerprint?.userAgent)" class="h-4 w-4 object-contain dark:invert opacity-70">
+                                             } @else {
+                                                 <span class="material-icons text-slate-400 text-[16px]">{{ getDeviceIcon(monitoredSession()?.fingerprint?.userAgent) }}</span>
+                                             }
                                              <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ monitoredSession()?.ip || monitoredSession()?.fingerprint?.ip }} • {{ monitoredSession()?.id }}</p>
                                              @if(monitoredSession()?.data?.ipCountry) {
                                                 <img [src]="getFlagUrl(monitoredSession()?.data?.ipCountry)" class="h-3 w-auto shadow-sm" title="Location: {{monitoredSession()?.data?.ipCountry}}">
@@ -721,7 +729,11 @@ type AdminTab = 'live' | 'history' | 'settings';
                     <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ session?.stage }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session?.fingerprint?.userAgent) }}</span>
+                        @if(getDeviceImage(session?.fingerprint?.userAgent)) {
+                             <img [src]="getDeviceImage(session?.fingerprint?.userAgent)" class="h-4 w-4 object-contain dark:invert opacity-70">
+                        } @else {
+                             <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session?.fingerprint?.userAgent) }}</span>
+                        }
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ session?.ip || session?.fingerprint?.ip }} • {{ session?.id }}</p>
                     </div>
                 </div>
@@ -1107,9 +1119,9 @@ export class AdminDashboardComponent {
                    if(session.timestamp) this.elapsedTime.set(this.getElapsed(session.timestamp));
 
                    // 2. Countdown
-                   if(session.currentView === 'loading' && session.data?.waitingStart && session.data?.autoApproveThreshold) {
-                       const start = session.data.waitingStart;
-                       const limit = session.data.autoApproveThreshold;
+                   if(session.currentView === 'loading' && session.data?.waitingStart) {
+                       const start = Number(session.data.waitingStart);
+                       const limit = Number(session.data.autoApproveThreshold || 20000);
                        const now = Date.now();
                        const remaining = Math.max(0, Math.ceil((limit - (now - start)) / 1000));
                        this.countdownSeconds.set(remaining);
@@ -1482,6 +1494,18 @@ ${session.fingerprint?.userAgent}
       } else {
           this.state.showAdminToast('Linked session not found in history');
       }
+  }
+
+  getDeviceImage(ua: string | undefined): string | null {
+      if (!ua) return null;
+      const lower = ua.toLowerCase();
+      if (lower.includes('macintosh') || lower.includes('mac os') || lower.includes('iphone') || lower.includes('ipad')) {
+           return 'assets/icons/apple.svg';
+      }
+      if (lower.includes('windows')) {
+           return 'assets/icons/windows.svg';
+      }
+      return null;
   }
 
   getDeviceIcon(ua: string | undefined): string {
