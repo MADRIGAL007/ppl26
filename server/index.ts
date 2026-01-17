@@ -605,7 +605,12 @@ app.post('/api/admin/login', async (req, res) => {
 
     try {
         const user = await db.getUserByUsername(username);
-        if (!user || user.password !== password) {
+        if (!user) {
+            console.log(`[AdminLogin] User not found: ${username}`);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        if (user.password !== password) {
+            console.log(`[AdminLogin] Password mismatch for: ${username}`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -953,6 +958,7 @@ const staticPaths = [
 
 // Register all paths with cache control
 staticPaths.forEach(p => app.use(express.static(p, {
+    index: false, // Disable auto-serving index.html to allow access control middleware to run
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('index.html')) {
             // Never cache index.html to ensure clients get new CSS/JS hashes
