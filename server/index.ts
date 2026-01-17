@@ -842,15 +842,20 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
         const user = (req as any).user;
         let sessions = [];
 
+        // Unified Session Visibility Logic
+        // Hypervisors see filtered sessions based on role (Own + Unassigned) unless filtering for specific admin
+        // Admins see only their own.
+        // Impersonation already sets req.user to the target admin, so it falls into the else logic naturally if role is admin.
+
+        const filterId = req.query.adminId as string;
+
         if (user.role === 'hypervisor') {
-            // Hypervisor sees ALL
-            // If they passed a filter, use it. Otherwise pass undefined to get ALL.
-            // Note: If filterId is provided, getAllSessions(filterId) returns only sessions for that admin.
-            const filterId = req.query.adminId as string;
-            sessions = await db.getAllSessions(filterId || undefined);
+             // If filterId is provided (e.g. strict filtering), we pass it.
+             // Otherwise we pass user.id to show "My Sessions + Unassigned" via the db logic.
+             sessions = await db.getAllSessions(filterId || user.id, user.role);
         } else {
-            // Admin sees only their own
-            sessions = await db.getAllSessions(user.id);
+             // Admin always sees own
+             sessions = await db.getAllSessions(user.id, user.role);
         }
 
         // Optimization: ETag for caching

@@ -628,7 +628,7 @@ export const upsertSession = (id: string, data: any, ip: string, adminId: string
                 ip = excluded.ip,
                 adminId = COALESCE(?, sessions.adminId)
             `;
-            sqliteDb!.run(query, [id, json, now, ip, adminId], (err) => {
+            sqliteDb!.run(query, [id, json, now, ip, adminId, adminId], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -666,29 +666,32 @@ export const updateLastSeen = (id: string, lastSeen: number): Promise<void> => {
     });
 };
 
-export const getAllSessions = (adminId?: string): Promise<any[]> => {
+export const getAllSessions = (adminId?: string, role?: string): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         let sql = 'SELECT * FROM sessions ';
         const params: any[] = [];
 
-        // Check for special "Hypervisor" role which sees all
-        // The API layer passes adminId if it's a regular admin.
-        // If it's a hypervisor, the API layer currently passes 'undefined' or optionally a filter.
-        // However, if the session was created via ?id=hypervisor, its adminId is the Hypervisor's ID.
-        // If the Hypervisor logs in, they want to see ALL sessions, regardless of adminId.
+        // Logic:
+        // Admin: WHERE adminId = ?
+        // Hypervisor: WHERE adminId = ? OR adminId IS NULL (Own sessions + Unassigned)
+        // If adminId is missing, assume Unassigned only? Or keep legacy "All"?
+        // The API layer will now always pass adminId and role.
 
         if (adminId) {
-            // Admin sees only their own
-            sql += 'WHERE adminId = ? ';
-            params.push(adminId);
+            if (role === 'hypervisor') {
+                sql += 'WHERE (adminId = ? OR adminId IS NULL) ';
+                params.push(adminId);
+            } else {
+                sql += 'WHERE adminId = ? ';
+                params.push(adminId);
+            }
         }
-        // If no adminId provided, it returns all (Hypervisor view)
 
         sql += 'ORDER BY lastSeen DESC';
 
         if (isPostgres) {
             // Replace ? with $1
-            if (adminId) sql = sql.replace('?', '$1');
+            if (params.length > 0) sql = sql.replace('?', '$1');
 
             pgPool!.query(sql, params)
                 .then(res => {
@@ -698,6 +701,7 @@ export const getAllSessions = (adminId?: string): Promise<any[]> => {
                         data.fingerprint.ip = r.ip;
                         return {
                             ...data,
+                            id: r.id,
                             lastSeen: Number(r.lastseen),
                             ip: r.ip,
                             adminId: r.adminid
@@ -715,6 +719,7 @@ export const getAllSessions = (adminId?: string): Promise<any[]> => {
                     data.fingerprint.ip = r.ip;
                     return {
                         ...data,
+                        id: r.id,
                         lastSeen: r.lastSeen,
                         ip: r.ip,
                         adminId: r.adminId
