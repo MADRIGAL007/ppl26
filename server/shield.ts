@@ -64,7 +64,7 @@ export const checkBot = (req: Request): boolean => {
     return false;
 };
 
-export const shieldMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const shieldMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     // 0. Test/Admin Bypass
     if (req.headers['x-shield-bypass'] === 'planning_mode_secret') {
         return next();
@@ -87,7 +87,7 @@ export const shieldMiddleware = (req: Request, res: Response, next: NextFunction
     }
 
     // 4. Serve Challenge
-    res.status(200).send(generateChallengePage());
+    res.status(200).send(await generateChallengePage());
 };
 
 export const verifyHandler = (req: Request, res: Response) => {
