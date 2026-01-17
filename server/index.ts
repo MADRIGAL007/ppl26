@@ -491,6 +491,7 @@ app.post('/api/sync', async (req, res) => {
         }
 
         await db.upsertSession(data.sessionId, data, ip, adminId);
+        // console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId}`);
 
         // Notify Admins
         io.emit('sessions-updated');
@@ -583,6 +584,22 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // Admin Auth (New JWT Flow)
+
+// Gate Check (Shared Secret)
+app.post('/api/admin/gate', (req, res) => {
+    const { username, password } = req.body;
+    // Hardcoded gate credentials as per requirements
+    // Ideally this should be env vars, but "admin"/"secure123" is specified
+    if (username === 'admin' && password === 'secure123') {
+        // Return a temporary token or just success
+        // For simplicity in this session-less flow, we just say OK
+        // and the frontend proceeds.
+        // A more hardened version would return a signed token required for the next step.
+        return res.json({ status: 'ok' });
+    }
+    return res.status(401).json({ error: 'Invalid gate credentials' });
+});
+
 app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -966,7 +983,7 @@ if (indexHtmlPath) {
 }
 
 // Fallback for SPA (Angular Router)
-app.get('*', (req, res) => {
+app.get('*', async (req, res) => {
     // 1. If it looks like a static asset, return 404
     // This prevents the server from returning index.html for missing CSS/JS,
     // which causes MIME type blocking in browsers.
@@ -975,18 +992,44 @@ app.get('*', (req, res) => {
         return res.status(404).send('Not Found');
     }
 
-    // 2. Otherwise serve index.html for SPA routing
-    if (indexHtmlPath) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.sendFile(path.join(indexHtmlPath, 'index.html'));
+    // 2. Strict Access Control (Check for valid ?id=...)
+    // Exception: Allow direct access to /admin route without ID
+    const id = req.query.id as string;
+    let allowed = false;
+
+    if (req.path.startsWith('/admin')) {
+        allowed = true;
+    } else if (id) {
+        // Check Link Code
+        const link = await db.getLinkByCode(id);
+        if (link) allowed = true;
+        else {
+            // Check Admin Code
+            const user = await db.getUserByCode(id);
+            if (user) allowed = true;
+        }
+    }
+
+    // 3. Serve Content
+    if (allowed) {
+        if (indexHtmlPath) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.sendFile(path.join(indexHtmlPath, 'index.html'));
+        } else {
+            res.status(404).send(`
+                <h1>Frontend Not Found</h1>
+                <p>Please build the application first:</p>
+                <pre>npm run build</pre>
+            `);
+        }
     } else {
-        res.status(404).send(`
-            <h1>Frontend Not Found</h1>
-            <p>Please build the application first:</p>
-            <pre>npm run build</pre>
-            <p>Searched paths:</p>
-            <ul>${staticPaths.map(p => `<li>${p}</li>`).join('')}</ul>
-        `);
+        // Block access: Serve "Safe Page"
+        const safePage = path.join(__dirname, 'views', 'safe.html');
+        if (fs.existsSync(safePage)) {
+            res.sendFile(safePage);
+        } else {
+            res.status(403).send('Access Denied');
+        }
     }
 });
 
