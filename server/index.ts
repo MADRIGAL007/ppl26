@@ -354,6 +354,13 @@ app.post('/api/sync', async (req, res) => {
              const link = await db.getLinkByCode(data.adminCode);
              if (link) {
                  adminId = link.adminId;
+                 // Increment clicks here to ensure it's counted when session starts
+                 // We don't want to double count if the frontend calls track/click too,
+                 // but often frontend blocks fail. This ensures reliability.
+                 // Only increment if this is a "New" session (no ID in DB yet)?
+                 // For now, we increment on sync if it's the first sync?
+                 // Let's stick to the track/click endpoint for explicit clicks,
+                 // but ensure the adminId mapping is robust.
              } else {
                  // Check LEGACY User Code
                  const admin = await db.getUserByCode(data.adminCode);

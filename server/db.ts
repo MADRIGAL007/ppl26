@@ -393,6 +393,8 @@ export const getLinks = (adminId?: string): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         let sql = 'SELECT * FROM admin_links';
         const params: any[] = [];
+        // Only filter if adminId is provided AND it's not a Hypervisor view request.
+        // But here we rely on the caller to pass undefined for Hypervisor.
         if (adminId) {
             sql += ' WHERE adminId = ?';
             params.push(adminId);
