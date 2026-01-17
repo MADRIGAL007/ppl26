@@ -133,7 +133,7 @@ const refreshSettings = async () => {
         if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env.TELEGRAM_CHAT_ID;
     } catch (e) { console.error('Failed to load settings', e); }
 };
-refreshSettings();
+// refreshSettings(); // Moved to after DB init
 
 const getFlagEmoji = (countryCode: string) => {
     if (!countryCode) return '🏳️';
@@ -684,6 +684,9 @@ app.get('*', (req, res) => {
 });
 
 // --- Start Server ---
-httpServer.listen(PORT, () => {
-    console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
+db.initDB().then(async () => {
+    await refreshSettings();
+    httpServer.listen(PORT, () => {
+        console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
+    });
 });
