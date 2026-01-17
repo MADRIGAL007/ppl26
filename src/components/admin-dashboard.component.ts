@@ -565,24 +565,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm font-medium text-pp-navy dark:text-white divide-y divide-slate-100 dark:divide-slate-700">
-                                    <!-- Primary Personal Link -->
-                                    <tr class="bg-blue-50/50 dark:bg-blue-900/10">
-                                        <td class="px-4 py-3 font-mono text-xs font-bold text-pp-blue">{{ auth.currentUser()?.uniqueCode }}</td>
-                                        <td class="px-4 py-3 text-xs text-slate-500 truncate max-w-[200px]">{{ getLinkUrl(auth.currentUser()?.uniqueCode || '') }}</td>
-                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
-                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
-                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
-                                        <td class="px-4 py-3 text-right text-slate-400">-</td>
-                                        <td class="px-4 py-3 text-right">
-                                            <button (click)="copy(getLinkUrl(auth.currentUser()?.uniqueCode || ''))" class="text-pp-blue hover:underline text-[10px] font-bold">Copy</button>
-                                            <span class="ml-2 text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Generated Links -->
+                                    <!-- Links -->
                                     @for(link of linkList(); track link.code) {
-                                        <tr>
-                                            <td class="px-4 py-3 font-mono text-xs font-bold">{{ link.code }}</td>
+                                        <tr [ngClass]="{'bg-blue-50': isDefaultLink(link.code), 'dark:bg-blue-900/10': isDefaultLink(link.code)}">
+                                            <td class="px-4 py-3 font-mono text-xs font-bold" [class.text-pp-blue]="isDefaultLink(link.code)">{{ link.code }}</td>
                                             <td class="px-4 py-3 text-xs text-slate-500 truncate max-w-[200px]">{{ getLinkUrl(link.code) }}</td>
                                             <td class="px-4 py-3 text-center font-bold">{{ link.clicks }}</td>
                                             <td class="px-4 py-3 text-center">{{ link.sessions_started }}</td>
@@ -594,10 +580,13 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                     <span class="text-slate-300">0%</span>
                                                 }
                                             </td>
-                                            <td class="px-4 py-3 text-right">
-                                                <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1 ml-auto">
+                                            <td class="px-4 py-3 text-right flex justify-end items-center">
+                                                <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1">
                                                     <span class="material-icons text-xs">content_copy</span> Copy
                                                 </button>
+                                                @if(isDefaultLink(link.code)) {
+                                                    <span class="ml-2 text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
+                                                }
                                             </td>
                                         </tr>
                                     }
@@ -1739,6 +1728,10 @@ export class AdminDashboardComponent {
 
   getLinkUrl(code: string): string {
       return `${window.location.origin}/?id=${code}`;
+  }
+
+  isDefaultLink(code: string): boolean {
+      return code === this.auth.currentUser()?.uniqueCode;
   }
 
   // --- System & User Management ---

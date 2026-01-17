@@ -255,19 +255,40 @@ export const createUser = (user: any): Promise<void> => {
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             `;
             pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links])
-                .then(() => resolve())
+                .then(async () => {
+                    try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
+                    resolve();
+                })
                 .catch(reject);
         } else {
             const query = `
                 INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links], (err) => {
+            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links], async (err) => {
                 if (err) reject(err);
-                else resolve();
+                else {
+                    try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
+                    resolve();
+                }
             });
         }
     });
+};
+
+export const backfillDefaultLinks = async (): Promise<void> => {
+    try {
+        const users = await getAllUsers();
+        for (const user of users) {
+             const existing = await getLinkByCode(user.uniqueCode);
+             if (!existing) {
+                 console.log(`[DB] Backfilling default link for ${user.username} (${user.uniqueCode})`);
+                 await createLink(user.id, user.uniqueCode);
+             }
+        }
+    } catch (e) {
+        console.error('[DB] Failed to backfill links:', e);
+    }
 };
 
 export const updateUser = (id: string, updates: any): Promise<void> => {
@@ -800,5 +821,6 @@ export default {
     incrementLinkSessions,
     // Audit
     logAudit,
-    getAuditLogs
+    getAuditLogs,
+    backfillDefaultLinks
 };
