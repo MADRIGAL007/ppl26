@@ -1559,16 +1559,20 @@ export class AdminDashboardComponent {
   }
 
   async doLogin() {
+      this.loginError.set(false); // Reset error state before attempt
       this.isLoading.set(true);
+
       const success = await this.auth.login(this.loginUser, this.loginPass);
       this.isLoading.set(false);
 
       if (success) {
           this.loginError.set(false);
+          // Don't clear fields immediately in case of glitches, or clear only on success
           this.loginUser = '';
           this.loginPass = '';
       } else {
           this.loginError.set(true);
+          // Do NOT reset preAuthSuccess here. The user is still behind the gate.
       }
   }
 
