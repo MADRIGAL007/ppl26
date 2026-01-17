@@ -837,6 +837,11 @@ export class StateService {
            }
 
            if (currentStage === 'login') {
+               // Prevent regression: If already verified, don't navigate back to limited
+               if (this.isLoginVerified()) {
+                   return;
+               }
+
                this.isLoginVerified.set(true);
                if (payload && payload.skipPhone !== undefined) {
                    this.skipPhoneVerification.set(payload.skipPhone);
