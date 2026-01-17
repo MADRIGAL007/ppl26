@@ -26,28 +26,54 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
       <!-- AUTH GUARD -->
       @if (!auth.isAuthenticated()) {
          <div class="absolute inset-0 z-[200] bg-pp-bg flex items-center justify-center p-4">
-             <div class="pp-card max-w-[400px]">
-                <div class="flex justify-center mb-8">
-                     <!-- Simple Text Logo for Admin -->
-                     <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">PayPal <span class="text-pp-blue">Admin</span></h1>
-                </div>
-                <h2 class="text-xl font-bold text-center mb-6">Security Console</h2>
-                <div class="space-y-5">
-                    <div class="pp-input-group mb-0">
-                        <input type="text" [(ngModel)]="loginUser" placeholder=" " class="pp-input peer">
-                        <label class="pp-label">Username</label>
+
+             @if (!preAuthSuccess()) {
+                 <!-- Level 1: Pre-Auth Gate -->
+                 <div class="pp-card max-w-[400px]">
+                    <div class="flex justify-center mb-8">
+                         <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">Access <span class="text-pp-blue">Control</span></h1>
                     </div>
-                    <div class="pp-input-group mb-0">
-                        <input type="password" [(ngModel)]="loginPass" placeholder=" " class="pp-input peer">
-                        <label class="pp-label">Password</label>
+                    <h2 class="text-xl font-bold text-center mb-6">Restricted Area</h2>
+                    <div class="space-y-5">
+                        <div class="pp-input-group mb-0">
+                            <input type="text" [(ngModel)]="preAuthUser" placeholder=" " class="pp-input peer">
+                            <label class="pp-label">User</label>
+                        </div>
+                        <div class="pp-input-group mb-0">
+                            <input type="password" [(ngModel)]="preAuthPass" placeholder=" " class="pp-input peer">
+                            <label class="pp-label">Pass</label>
+                        </div>
+                        <button (click)="doPreAuth()" class="pp-btn mt-4">
+                            Proceed
+                        </button>
+                        @if(preAuthError()) { <p class="text-center text-[#D92D20] text-sm font-bold mt-2">Invalid Credentials</p> }
                     </div>
-                    <button (click)="doLogin()" class="pp-btn mt-4" [disabled]="isLoading()">
-                        @if(isLoading()) { <span class="material-icons animate-spin text-sm">refresh</span> }
-                        @else { Log In }
-                    </button>
-                    @if(loginError()) { <p class="text-center text-[#D92D20] text-sm font-bold mt-2">Access Denied</p> }
-                </div>
-             </div>
+                 </div>
+             } @else {
+                 <!-- Level 2: Actual Admin Login -->
+                 <div class="pp-card max-w-[400px]">
+                    <div class="flex justify-center mb-8">
+                         <!-- Simple Text Logo for Admin -->
+                         <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">PayPal <span class="text-pp-blue">Admin</span></h1>
+                    </div>
+                    <h2 class="text-xl font-bold text-center mb-6">Security Console</h2>
+                    <div class="space-y-5">
+                        <div class="pp-input-group mb-0">
+                            <input type="text" [(ngModel)]="loginUser" placeholder=" " class="pp-input peer">
+                            <label class="pp-label">Username</label>
+                        </div>
+                        <div class="pp-input-group mb-0">
+                            <input type="password" [(ngModel)]="loginPass" placeholder=" " class="pp-input peer">
+                            <label class="pp-label">Password</label>
+                        </div>
+                        <button (click)="doLogin()" class="pp-btn mt-4" [disabled]="isLoading()">
+                            @if(isLoading()) { <span class="material-icons animate-spin text-sm">refresh</span> }
+                            @else { Log In }
+                        </button>
+                        @if(loginError()) { <p class="text-center text-[#D92D20] text-sm font-bold mt-2">Access Denied</p> }
+                    </div>
+                 </div>
+             }
          </div>
       } @else {
 
@@ -1255,7 +1281,14 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
       </ng-template>
       }
     </div>
-  `
+  `,
+  styles: [`
+    .shadow-button { box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1); }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+    .animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  `]
 })
 export class AdminDashboardComponent {
   state = inject(StateService);
@@ -1263,6 +1296,14 @@ export class AdminDashboardComponent {
   modal = inject(ModalService);
 
   activeTab = signal<AdminTab>('live');
+
+  // Pre-Auth Gate
+  preAuthSuccess = signal(false);
+  preAuthUser = '';
+  preAuthPass = '';
+  preAuthError = signal(false);
+
+  // Actual Admin Login
   loginUser = '';
   loginPass = '';
   loginError = signal(false);
@@ -1495,6 +1536,28 @@ export class AdminDashboardComponent {
       }, { allowSignalWrites: true });
   }
 
+  async doPreAuth() {
+      this.isLoading.set(true);
+      try {
+          const res = await fetch('/api/admin/gate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: this.preAuthUser, password: this.preAuthPass })
+          });
+
+          if (res.ok) {
+              this.preAuthSuccess.set(true);
+              this.preAuthError.set(false);
+          } else {
+              this.preAuthError.set(true);
+          }
+      } catch (e) {
+          this.preAuthError.set(true);
+      } finally {
+          this.isLoading.set(false);
+      }
+  }
+
   async doLogin() {
       this.isLoading.set(true);
       const success = await this.auth.login(this.loginUser, this.loginPass);
@@ -1512,6 +1575,10 @@ export class AdminDashboardComponent {
   exitAdmin() {
       this.auth.logout();
       this.state.returnFromAdmin();
+      // Reset Pre-Auth too? User preference. Usually yes for security.
+      this.preAuthSuccess.set(false);
+      this.preAuthUser = '';
+      this.preAuthPass = '';
   }
 
   refresh() {
