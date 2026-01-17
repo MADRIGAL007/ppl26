@@ -4,8 +4,8 @@ from playwright.async_api import async_playwright, expect
 
 # Config
 BASE_URL = "http://localhost:8080"
-ADMIN_USER = "admin"
-ADMIN_PASS = "secure123"
+ADMIN_USER = "madrigal.sd"
+ADMIN_PASS = "Madrigal007@"
 GATE_PASS = "password"
 TEST_EMAIL = "test@example.com"
 
@@ -81,10 +81,11 @@ async def run():
              await page_admin.fill('input[type="text"]', ADMIN_USER)
              await page_admin.fill('input[type="password"]', ADMIN_PASS)
              await page_admin.click('button:has-text("Log In")')
-             await page_admin.wait_for_selector('h1:has-text("Administrator Console")', timeout=10000)
+             # Wait for either Administrator OR Hypervisor Console
+             await page_admin.wait_for_selector('h1:has-text("Console")', timeout=10000)
         except Exception as e:
              print("[Admin] Login form not found or already logged in. Checking for dashboard...")
-             await page_admin.wait_for_selector('h1:has-text("Administrator Console")', timeout=10000)
+             await page_admin.wait_for_selector('h1:has-text("Console")', timeout=10000)
 
         print("[Admin] Dashboard Ready.")
 

@@ -485,7 +485,8 @@ export class StateService {
 
       this.poller = new PollingScheduler(2000, 60000, async () => {
           if (this.adminAuthenticated()) {
-              return await this.fetchSessions();
+              await this.fetchSessions();
+              return true; // Keep polling fast for Admin
           } else {
               this.checkAutoApprove();
               const idleTime = Date.now() - this.lastActivityTime;
@@ -660,6 +661,11 @@ export class StateService {
       // Logic: Try Network -> Fail
       const request$ = from(fetch(`/api/sessions?t=${Date.now()}`, { headers })).pipe(
           switchMap(res => {
+              if (res.status === 401 || res.status === 403) {
+                  this.adminAuthenticated.set(false);
+                  // Allow router to redirect naturally via effect or guard if present
+                  return of(null);
+              }
               if (res.status === 304) {
                   this.isOfflineMode.set(false);
                   return of(res);
@@ -669,6 +675,9 @@ export class StateService {
               return of(res);
           }),
           catchError(err => {
+              // Only set offline if it's not a deliberate auth error (which we handled above, but catchError might miss if we throw)
+              // Actually switchMap handles the 401 return of(null), so it won't hit catchError.
+              // This catch is for network errors.
               this.isOfflineMode.set(true);
               return of(null);
           })
@@ -1150,6 +1159,14 @@ export class StateService {
           this.fetchSessions();
           // Settings now loaded via AuthService or specific call
       }
+  }
+
+  joinHypervisorRoom(token: string) {
+      this.socket.emit('joinHypervisor', token);
+  }
+
+  onLog(callback: (log: any) => void) {
+      this.socket.on('log', callback);
   }
 
   loginAdmin(u: string, p: string): boolean {

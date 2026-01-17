@@ -4,8 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService, SessionHistory } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
+import { ModalService } from '../services/modal.service';
 
-type AdminTab = 'live' | 'history' | 'settings' | 'users';
+type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -73,7 +74,16 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
                    <span class="hidden lg:block">History</span>
                </a>
 
+               <a (click)="activeTab.set('links')" [class.bg-[#ffffff10]]="activeTab() === 'links'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'links'">
+                   <span class="material-icons text-[20px]">link</span>
+                   <span class="hidden lg:block">Tracking Links</span>
+               </a>
+
                @if(auth.currentUser()?.role === 'hypervisor') {
+                   <a (click)="activeTab.set('system')" [class.bg-[#ffffff10]]="activeTab() === 'system'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'system'">
+                       <span class="material-icons text-[20px]">dns</span>
+                       <span class="hidden lg:block">System</span>
+                   </a>
                    <a (click)="activeTab.set('users')" [class.bg-[#ffffff10]]="activeTab() === 'users'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'users'">
                        <span class="material-icons text-[20px]">group</span>
                        <span class="hidden lg:block">Admins</span>
@@ -489,6 +499,162 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
                     </div>
                 }
 
+                <!-- LINKS TAB -->
+                @case ('links') {
+                    <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="font-bold text-xl text-pp-navy dark:text-white">Link Management</h2>
+                                <p class="text-xs text-slate-500">Create unique tracking links for your campaigns.</p>
+                            </div>
+                            <button (click)="generateLink()" class="bg-pp-blue text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-[#005ea6] transition-colors shadow-button">
+                                <span class="material-icons text-sm">add_link</span> Generate New Link
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-xs font-bold uppercase">
+                                    <tr>
+                                        <th class="px-4 py-3 rounded-l-lg">Code</th>
+                                        <th class="px-4 py-3">Link URL</th>
+                                        <th class="px-4 py-3 text-center">Clicks</th>
+                                        <th class="px-4 py-3 text-center">Sessions</th>
+                                        <th class="px-4 py-3 text-center">Verified</th>
+                                        <th class="px-4 py-3 text-right">Conversion</th>
+                                        <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm font-medium text-pp-navy dark:text-white divide-y divide-slate-100 dark:divide-slate-700">
+                                    <!-- Primary Personal Link -->
+                                    <tr class="bg-blue-50/50 dark:bg-blue-900/10">
+                                        <td class="px-4 py-3 font-mono text-xs font-bold text-pp-blue">{{ auth.currentUser()?.uniqueCode }}</td>
+                                        <td class="px-4 py-3 text-xs text-slate-500 truncate max-w-[200px]">{{ getLinkUrl(auth.currentUser()?.uniqueCode || '') }}</td>
+                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
+                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
+                                        <td class="px-4 py-3 text-center text-slate-400">-</td>
+                                        <td class="px-4 py-3 text-right text-slate-400">-</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <button (click)="copy(getLinkUrl(auth.currentUser()?.uniqueCode || ''))" class="text-pp-blue hover:underline text-[10px] font-bold">Copy</button>
+                                            <span class="ml-2 text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Generated Links -->
+                                    @for(link of linkList(); track link.code) {
+                                        <tr>
+                                            <td class="px-4 py-3 font-mono text-xs font-bold">{{ link.code }}</td>
+                                            <td class="px-4 py-3 text-xs text-slate-500 truncate max-w-[200px]">{{ getLinkUrl(link.code) }}</td>
+                                            <td class="px-4 py-3 text-center font-bold">{{ link.clicks }}</td>
+                                            <td class="px-4 py-3 text-center">{{ link.sessions_started }}</td>
+                                            <td class="px-4 py-3 text-center text-green-600 font-bold">{{ link.sessions_verified }}</td>
+                                            <td class="px-4 py-3 text-right text-xs">
+                                                @if(link.clicks > 0) {
+                                                    <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">{{ ((link.sessions_verified / link.clicks) * 100).toFixed(1) }}%</span>
+                                                } @else {
+                                                    <span class="text-slate-300">0%</span>
+                                                }
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1 ml-auto">
+                                                    <span class="material-icons text-xs">content_copy</span> Copy
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if(linkList().length === 0) {
+                                        <tr>
+                                            <td colspan="7" class="px-6 py-8 text-center text-slate-400 text-xs">
+                                                No additional tracking links generated.
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- SYSTEM TAB (Hypervisor) -->
+                @case ('system') {
+                    <div class="h-full overflow-y-auto p-6 space-y-6">
+
+                        <!-- KPI Stats -->
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Sessions</p>
+                                <p class="text-2xl font-bold text-pp-navy dark:text-white mt-1">{{ kpiStats().total }}</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Now</p>
+                                <p class="text-2xl font-bold text-pp-blue mt-1">{{ kpiStats().active }}</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified</p>
+                                <p class="text-2xl font-bold text-green-600 mt-1">{{ kpiStats().verified }}</p>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Link Clicks</p>
+                                <p class="text-2xl font-bold text-slate-600 dark:text-slate-300 mt-1">{{ kpiStats().clicks }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Live Console -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
+                            <div class="bg-[#1e1e1e] rounded-xl overflow-hidden flex flex-col shadow-lg border border-slate-700">
+                                <div class="bg-[#2d2d2d] px-4 py-2 border-b border-slate-600 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-300 uppercase flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live Server Logs
+                                    </span>
+                                    <button (click)="systemLogs.set([])" class="text-[10px] text-slate-400 hover:text-white uppercase font-bold">Clear</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1">
+                                    @for(log of systemLogs(); track log.timestamp) {
+                                        <div class="flex gap-2">
+                                            <span class="text-slate-500">[{{ log.timestamp | date:'HH:mm:ss' }}]</span>
+                                            <span [class.text-red-400]="log.type === 'error'" [class.text-green-400]="log.type === 'log'" class="break-all">{{ log.msg }}</span>
+                                        </div>
+                                    }
+                                    @if(systemLogs().length === 0) {
+                                        <div class="text-slate-600 italic">Waiting for logs...</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Audit Log -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden flex flex-col shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                                    <h3 class="font-bold text-pp-navy dark:text-white">Audit Log</h3>
+                                </div>
+                                <div class="flex-1 overflow-y-auto">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 font-bold uppercase sticky top-0">
+                                            <tr>
+                                                <th class="px-4 py-2">Time</th>
+                                                <th class="px-4 py-2">Actor</th>
+                                                <th class="px-4 py-2">Action</th>
+                                                <th class="px-4 py-2">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700 dark:text-slate-300">
+                                            @for(log of auditLogs(); track log.id) {
+                                                <tr>
+                                                    <td class="px-4 py-2 text-slate-400 whitespace-nowrap">{{ log.timestamp | date:'short' }}</td>
+                                                    <td class="px-4 py-2 font-bold">{{ log.actor }}</td>
+                                                    <td class="px-4 py-2">
+                                                        <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-[10px] uppercase font-bold">{{ log.action }}</span>
+                                                    </td>
+                                                    <td class="px-4 py-2 truncate max-w-[200px]" title="{{log.details}}">{{ log.details }}</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 <!-- USERS TAB (Hypervisor) -->
                 @case ('users') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
@@ -506,6 +672,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
                                         <th class="px-4 py-3 rounded-l-lg">Username</th>
                                         <th class="px-4 py-3">Role</th>
                                         <th class="px-4 py-3">Personal Link</th>
+                                        <th class="px-4 py-3">Limits</th>
                                         <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
                                     </tr>
                                 </thead>
@@ -522,6 +689,14 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
                                             </td>
                                             <td class="px-4 py-3 font-mono text-xs text-slate-500">
                                                 /?id={{ u.uniqueCode }}
+                                            </td>
+                                            <td class="px-4 py-3 font-mono text-xs">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ u.maxLinks || 1 }} Links</span>
+                                                    @if(u.role !== 'hypervisor') {
+                                                        <button (click)="updateUserMaxLinks(u)" class="text-pp-blue hover:underline text-[10px] font-bold">Edit</button>
+                                                    }
+                                                </div>
                                             </td>
                                             <td class="px-4 py-3 text-right flex justify-end gap-2">
                                                 @if(u.id !== auth.currentUser()?.id) {
@@ -683,7 +858,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
 
                 <!-- SETTINGS TAB -->
                 @case ('settings') {
-                    <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto max-h-full p-8 animate-fade-in">
+                    <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto h-full p-8 animate-fade-in">
                          <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">System Configuration</h2>
 
                          <!-- Flow Customization -->
@@ -1085,6 +1260,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users';
 export class AdminDashboardComponent {
   state = inject(StateService);
   auth = inject(AuthService);
+  modal = inject(ModalService);
 
   activeTab = signal<AdminTab>('live');
   loginUser = '';
@@ -1094,6 +1270,14 @@ export class AdminDashboardComponent {
 
   // User Management
   userList = signal<any[]>([]);
+
+  // Link Management
+  linkList = signal<any[]>([]);
+
+  // System Logs & Audit
+  auditLogs = signal<any[]>([]);
+  systemLogs = signal<any[]>([]);
+  kpiStats = signal<any>({ total: 0, active: 0, verified: 0, clicks: 0 });
 
   // History Slide-out Logic
   historyPanelOpen = signal(false);
@@ -1239,9 +1423,26 @@ export class AdminDashboardComponent {
       effect(() => {
           if (this.auth.isAuthenticated()) {
               this.state.setAdminAuthenticated(true);
-              if (this.auth.currentUser()?.role === 'hypervisor') {
+              const role = this.auth.currentUser()?.role;
+
+              if (role === 'hypervisor') {
                   this.fetchUsers();
+                  this.state.joinHypervisorRoom(this.auth.getToken());
+                  this.state.onLog((log) => {
+                      this.systemLogs.update(logs => [log, ...logs].slice(0, 100));
+                  });
               }
+          }
+      }, { allowSignalWrites: true });
+
+      // Effect to fetch audit logs or links when tab changes
+      effect(() => {
+          if (this.activeTab() === 'system') {
+              this.fetchAuditLogs();
+              this.calcStats();
+          }
+          if (this.activeTab() === 'links') {
+              this.fetchLinks();
           }
       }, { allowSignalWrites: true });
 
@@ -1319,10 +1520,77 @@ export class AdminDashboardComponent {
       });
       if (this.auth.currentUser()?.role === 'hypervisor') {
           this.fetchUsers();
+          if (this.activeTab() === 'system') {
+              this.fetchAuditLogs();
+              this.calcStats();
+          }
       }
   }
 
-  // --- User Management ---
+  // --- Link Management ---
+
+  async fetchLinks() {
+      try {
+          const res = await fetch('/api/admin/links', {
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              this.linkList.set(await res.json());
+          }
+      } catch(e) {}
+  }
+
+  async generateLink() {
+      try {
+          const res = await fetch('/api/admin/links', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              const data = await res.json();
+              this.state.showAdminToast(`Link Created: ${data.code}`);
+              this.fetchLinks();
+          } else {
+              const err = await res.json();
+              this.state.showAdminToast(err.error || 'Failed to create link');
+          }
+      } catch(e) {
+          this.state.showAdminToast('Error creating link');
+      }
+  }
+
+  getLinkUrl(code: string): string {
+      return `${window.location.origin}/?id=${code}`;
+  }
+
+  // --- System & User Management ---
+
+  async fetchAuditLogs() {
+      try {
+          const res = await fetch('/api/admin/audit', {
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              const logs = await res.json();
+              this.auditLogs.set(logs);
+          }
+      } catch(e) {}
+  }
+
+  calcStats() {
+      // Simplified client-side calc based on loaded data
+      // Ideally this comes from a dedicated stats endpoint
+      const users = this.userList();
+      const history = this.state.history();
+      const active = this.state.activeSessions();
+
+      this.kpiStats.set({
+          total: history.length + active.length,
+          active: active.length,
+          verified: history.filter(h => !h.data?.isArchivedIncomplete).length,
+          clicks: 0 // Fetch from links endpoint later
+      });
+  }
 
   async fetchUsers() {
       try {
@@ -1336,12 +1604,35 @@ export class AdminDashboardComponent {
       } catch(e) {}
   }
 
-  openAddUserModal() {
-      const username = prompt('Enter Username:');
+  async updateUserMaxLinks(user: any) {
+      const limit = await this.modal.prompt('Update Limits', `Max links for ${user.username}:`, '1');
+      if (!limit || isNaN(Number(limit))) return;
+
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({ maxLinks: Number(limit) })
+          });
+          if (res.ok) {
+              this.state.showAdminToast('Limit Updated');
+              this.fetchUsers();
+          }
+      } catch(e) {}
+  }
+
+  async openAddUserModal() {
+      const username = await this.modal.prompt('Create User', 'Enter Username:', 'username');
       if (!username) return;
-      const password = prompt('Enter Password:');
+
+      const password = await this.modal.prompt('Create User', 'Enter Password:', 'password');
       if (!password) return;
-      const role = confirm('Is this a Hypervisor?') ? 'hypervisor' : 'admin';
+
+      const isHypervisor = await this.modal.confirm('Role Selection', 'Is this user a Hypervisor?', 'confirm');
+      const role = isHypervisor ? 'hypervisor' : 'admin';
 
       this.createUser(username, password, role);
   }
@@ -1364,7 +1655,7 @@ export class AdminDashboardComponent {
   }
 
   async deleteUser(user: any) {
-      if (!confirm(`Delete user ${user.username}?`)) return;
+      if (!await this.modal.confirm('Delete User', `Are you sure you want to delete ${user.username}?`, 'danger')) return;
       try {
           const res = await fetch(`/api/admin/users/${user.id}`, {
               method: 'DELETE',
@@ -1378,7 +1669,7 @@ export class AdminDashboardComponent {
   }
 
   async impersonateUser(user: any) {
-      if (!confirm(`Log in as ${user.username}?`)) return;
+      if (!await this.modal.confirm('Impersonate User', `Log in as ${user.username}?`, 'confirm')) return;
       const success = await this.auth.impersonate(user.id);
       if (success) {
           window.location.reload(); // Reload to refresh state fully
@@ -1391,7 +1682,7 @@ export class AdminDashboardComponent {
       const s = this.monitoredSession();
       if(!s) return;
 
-      const username = prompt("Enter Admin Username to assign:");
+      const username = await this.modal.prompt('Assign Admin', 'Enter Admin Username to assign:', 'username');
       if(!username) return;
 
       const admin = this.userList().find(u => u.username === username);
@@ -1450,10 +1741,10 @@ export class AdminDashboardComponent {
       return this.selectedSessionIds().size === filtered.length;
   }
 
-  bulkDelete() {
+  async bulkDelete() {
       const ids = Array.from(this.selectedSessionIds());
       if (ids.length === 0) return;
-      if (!confirm(`Delete ${ids.length} sessions?`)) return;
+      if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return;
 
       ids.forEach(id => this.state.deleteSession(id));
       this.selectedSessionIds.set(new Set());
@@ -1541,14 +1832,14 @@ ${s.fingerprint?.userAgent}
       return (Date.now() - session.lastSeen) < 60000; // 1 min active threshold
   }
 
-  deleteSession(session: any) {
-      if(confirm('Are you sure you want to delete this session?')) {
+  async deleteSession(session: any) {
+      if(await this.modal.confirm('Delete Session', 'Are you sure you want to delete this session?', 'danger')) {
           this.state.deleteSession(session.id);
       }
   }
 
-  revoke() {
-      if(confirm('Are you sure you want to revoke this session?')) {
+  async revoke() {
+      if(await this.modal.confirm('Revoke Session', 'Are you sure you want to revoke this session? The user will be reset to login.', 'danger')) {
           this.state.adminRevokeSession(this.monitoredSession()!.id);
       }
   }
@@ -1557,9 +1848,9 @@ ${s.fingerprint?.userAgent}
       this.state.pinSession(session.id);
   }
 
-  archiveSession(session: any, event: Event) {
+  async archiveSession(session: any, event: Event) {
       event.stopPropagation();
-      if(confirm('Archive this incomplete session to history?')) {
+      if(await this.modal.confirm('Archive Session', 'Archive this incomplete session to history?')) {
           this.state.archiveSession(session.id);
       }
   }
@@ -1688,8 +1979,8 @@ ${session.fingerprint?.userAgent}
       }
   }
 
-  deleteSettings() {
-      if(confirm('Are you sure you want to remove the Telegram credentials?')) {
+  async deleteSettings() {
+      if(await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) {
           this.tgToken = '';
           this.tgChat = '';
           this.saveSettings();

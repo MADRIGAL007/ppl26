@@ -56,14 +56,14 @@ const seedHypervisor = async () => {
         role: 'hypervisor',
         uniqueCode: 'hypervisor', // Not really used for traffic, but good to have
         settings: JSON.stringify({}),
-        telegramConfig: JSON.stringify({})
+        telegramConfig: JSON.stringify({}),
+        maxLinks: 100 // Hypervisor gets more
     };
 
-    console.log('[DB] Seeding Hypervisor...');
-
-    // Check if exists first to avoid duplicates on restart (though we are dropping legacy, good practice)
+    // Check if exists first to avoid duplicates on restart
     const exists = await getUserByUsername('madrigal.sd');
     if (!exists) {
+        console.log('[DB] Seeding Hypervisor...');
         await createUser(hyperUser);
         console.log('[DB] Hypervisor seeded.');
     }
@@ -72,40 +72,10 @@ const seedHypervisor = async () => {
 const initSqliteSchema = () => {
     if (!sqliteDb) return;
     sqliteDb.serialize(() => {
-        // Migration Check: If sessions table exists but lacks adminId, drop it (Legacy wipe)
-        sqliteDb!.get("PRAGMA table_info(sessions)", [], (err, rows: any) => {
-             // If table doesn't exist, this is fine.
-             // If it exists, we check columns.
-             // But sqliteDb.serialize runs sequentially? Actually async callbacks don't block serialize queue?
-             // Simplest "One Time" hack: We rely on the fact that if we are adding new columns, we want to reset.
-             // But checking columns is async.
-
-             // Better approach for this task: Remove the unconditional DROP.
-             // The user can manually clear data if needed, or we assume the first deploy does it.
-             // But to be robust against restarts:
-             // I will remove the DROP line.
-             // IF the table exists and is missing columns, queries will fail.
-             // So I should probably add a logic to add the column if missing, OR drop if missing.
-
-             // For this specific request "Legacy Data: Delete them", I'll implement a 'soft' migration:
-             // I'll try to ALTER TABLE ADD COLUMN. If it fails (already exists), fine.
-             // But the requirement was DELETE legacy data.
-
-             // I will comment out the DROP line, assuming the environment has been reset or
-             // I'll leave it to the user to clear data volume if they want a wipe.
-             // Wait, I can't leave broken schema.
-
-             // I'll stick to: "CREATE TABLE IF NOT EXISTS" with the new schema.
-             // If legacy table exists, I must drop it.
-             // How to detect legacy table synchronously? I can't easily in this structure.
-
-             // Correct Fix: Remove the DROP. Add a column check (try/catch) or just rely on the fact
-             // that this code will be deployed to a fresh env or the user accepts the wipe ONCE.
-             // But to satisfy the reviewer "operational flaw", I MUST remove the unconditional drop.
+        // Schema Migration: Add maxLinks to users if missing
+        sqliteDb!.run(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`, (err) => {
+             // Ignore error if column exists
         });
-
-        // Removing unconditional drop to prevent data loss on restart.
-        // sqliteDb!.run(`DROP TABLE IF EXISTS sessions`);
 
         sqliteDb!.run(`
             CREATE TABLE IF NOT EXISTS users (
@@ -115,7 +85,8 @@ const initSqliteSchema = () => {
                 role TEXT,
                 uniqueCode TEXT UNIQUE,
                 settings TEXT,
-                telegramConfig TEXT
+                telegramConfig TEXT,
+                maxLinks INTEGER DEFAULT 1
             )
         `);
 
@@ -140,10 +111,34 @@ const initSqliteSchema = () => {
                 payload TEXT
             )
         `);
+
         sqliteDb!.run(`
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT
+            )
+        `);
+
+        // New Tables
+        sqliteDb!.run(`
+            CREATE TABLE IF NOT EXISTS admin_links (
+                code TEXT PRIMARY KEY,
+                adminId TEXT,
+                clicks INTEGER DEFAULT 0,
+                sessions_started INTEGER DEFAULT 0,
+                sessions_verified INTEGER DEFAULT 0,
+                created_at INTEGER,
+                FOREIGN KEY(adminId) REFERENCES users(id)
+            )
+        `);
+
+        sqliteDb!.run(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp INTEGER,
+                actor TEXT,
+                action TEXT,
+                details TEXT
             )
         `);
 
@@ -156,13 +151,10 @@ const initPostgresSchema = async () => {
     if (!pgPool) return;
     const client = await pgPool.connect();
     try {
-        // Migration: Check if column exists, if not drop (Legacy wipe)
+        // Migration: Add maxLinks
         try {
-            await client.query('SELECT adminId FROM sessions LIMIT 1');
-        } catch (e) {
-            // Column missing or table missing -> Drop to ensure clean slate for migration
-            await client.query(`DROP TABLE IF EXISTS sessions`);
-        }
+            await client.query('ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1');
+        } catch (e) { /* Ignore if exists */ }
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
@@ -172,7 +164,8 @@ const initPostgresSchema = async () => {
                 role TEXT,
                 uniqueCode TEXT UNIQUE,
                 settings TEXT,
-                telegramConfig TEXT
+                telegramConfig TEXT,
+                maxLinks INTEGER DEFAULT 1
             )
         `);
 
@@ -185,8 +178,6 @@ const initPostgresSchema = async () => {
                 adminId TEXT
             )
         `);
-        // Foreign key constraint usually added but for simplicity in hybrid logic we keep loose or add:
-        // await client.query('ALTER TABLE sessions ADD CONSTRAINT fk_admin FOREIGN KEY (adminId) REFERENCES users(id)');
 
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
@@ -206,6 +197,28 @@ const initPostgresSchema = async () => {
             )
         `);
 
+        // New Tables
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS admin_links (
+                code TEXT PRIMARY KEY,
+                adminId TEXT,
+                clicks INTEGER DEFAULT 0,
+                sessions_started INTEGER DEFAULT 0,
+                sessions_verified INTEGER DEFAULT 0,
+                created_at BIGINT
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id SERIAL PRIMARY KEY,
+                timestamp BIGINT,
+                actor TEXT,
+                action TEXT,
+                details TEXT
+            )
+        `);
+
         await seedHypervisor();
     } finally {
         client.release();
@@ -216,21 +229,23 @@ const initPostgresSchema = async () => {
 
 export const createUser = (user: any): Promise<void> => {
     return new Promise((resolve, reject) => {
-        const { id, username, password, role, uniqueCode, settings, telegramConfig } = user;
+        const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
+        const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
+
         if (isPostgres) {
             const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             `;
-            pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig])
+            pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links])
                 .then(() => resolve())
                 .catch(reject);
         } else {
             const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig], (err) => {
+            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -239,9 +254,6 @@ export const createUser = (user: any): Promise<void> => {
 };
 
 export const updateUser = (id: string, updates: any): Promise<void> => {
-    // Helper to dynamic update
-    // Note: This is a bit simplified.
-    // For now, full overwrite or specific fields
     return new Promise(async (resolve, reject) => {
         try {
             const current = await getUserById(id);
@@ -251,16 +263,16 @@ export const updateUser = (id: string, updates: any): Promise<void> => {
 
             if (isPostgres) {
                 const query = `
-                    UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6
-                    WHERE id=$7
+                    UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7
+                    WHERE id=$8
                 `;
-                await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, id]);
+                await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, id]);
             } else {
                 const query = `
-                    UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?
+                    UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?
                     WHERE id=?
                 `;
-                sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, id], (err) => {
+                sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, id], (err) => {
                     if (err) throw err;
                 });
             }
@@ -342,6 +354,118 @@ export const getAllUsers = (): Promise<any[]> => {
     });
 };
 
+// --- Links Management ---
+
+export const createLink = (adminId: string, code: string): Promise<void> => {
+    const now = Date.now();
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query(`INSERT INTO admin_links (code, adminId, created_at) VALUES ($1, $2, $3)`, [code, adminId, now])
+                .then(() => resolve())
+                .catch(reject);
+        } else {
+            sqliteDb!.run(`INSERT INTO admin_links (code, adminId, created_at) VALUES (?, ?, ?)`, [code, adminId, now], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    });
+};
+
+export const getLinks = (adminId?: string): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+        let sql = 'SELECT * FROM admin_links';
+        const params: any[] = [];
+        if (adminId) {
+            sql += ' WHERE adminId = ?';
+            params.push(adminId);
+        }
+        sql += ' ORDER BY created_at DESC';
+
+        if (isPostgres) {
+            if (adminId) sql = sql.replace('?', '$1');
+            pgPool!.query(sql, params).then(res => resolve(res.rows)).catch(reject);
+        } else {
+            sqliteDb!.all(sql, params, (err, rows: any[]) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        }
+    });
+};
+
+export const getLinkByCode = (code: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('SELECT * FROM admin_links WHERE code = $1', [code]).then(res => resolve(res.rows[0])).catch(reject);
+        } else {
+            sqliteDb!.get('SELECT * FROM admin_links WHERE code = ?', [code], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        }
+    });
+};
+
+export const incrementLinkClicks = (code: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('UPDATE admin_links SET clicks = clicks + 1 WHERE code = $1', [code]).then(() => resolve()).catch(reject);
+        } else {
+            sqliteDb!.run('UPDATE admin_links SET clicks = clicks + 1 WHERE code = ?', [code], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    });
+};
+
+export const incrementLinkSessions = (code: string, type: 'started' | 'verified'): Promise<void> => {
+    const col = type === 'started' ? 'sessions_started' : 'sessions_verified';
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query(`UPDATE admin_links SET ${col} = ${col} + 1 WHERE code = $1`, [code]).then(() => resolve()).catch(reject);
+        } else {
+            sqliteDb!.run(`UPDATE admin_links SET ${col} = ${col} + 1 WHERE code = ?`, [code], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    });
+};
+
+// --- Audit Logs ---
+
+export const logAudit = (actor: string, action: string, details: string): Promise<void> => {
+    const now = Date.now();
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query(`INSERT INTO audit_logs (timestamp, actor, action, details) VALUES ($1, $2, $3, $4)`, [now, actor, action, details])
+                .then(() => resolve())
+                .catch(e => { console.error('Audit Log Error', e); resolve(); });
+        } else {
+            sqliteDb!.run(`INSERT INTO audit_logs (timestamp, actor, action, details) VALUES (?, ?, ?, ?)`, [now, actor, action, details], (err) => {
+                if (err) console.error('Audit Log Error', err);
+                resolve();
+            });
+        }
+    });
+};
+
+export const getAuditLogs = (limit = 100): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT $1', [limit])
+                .then(res => resolve(res.rows))
+                .catch(reject);
+        } else {
+            sqliteDb!.all('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT ?', [limit], (err, rows: any[]) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        }
+    });
+};
 
 // --- Settings ---
 
@@ -444,16 +568,6 @@ export const upsertSession = (id: string, data: any, ip: string, adminId: string
 
     return new Promise((resolve, reject) => {
         if (isPostgres) {
-            // Logic: If adminId is provided, use it. If not, retain existing?
-            // Or if provided as null, does it mean unassign?
-            // Usually we only set adminId once or on update.
-            // If adminId is passed, we update it. If null, we might want to COALESCE or keep existing.
-            // But strict upsert is better.
-
-            // To support "keep existing adminId if not provided", we need to know if it's new.
-            // But for now, let's assume we pass adminId if we know it.
-            // If adminId is null, we should probably NOT overwrite it if it exists.
-
             const query = `
                 INSERT INTO sessions (id, data, lastSeen, ip, adminId)
                 VALUES ($1, $2, $3, $4, $5)
@@ -652,5 +766,14 @@ export default {
     getUserById,
     getUserByUsername,
     getUserByCode,
-    getAllUsers
+    getAllUsers,
+    // Links
+    createLink,
+    getLinks,
+    getLinkByCode,
+    incrementLinkClicks,
+    incrementLinkSessions,
+    // Audit
+    logAudit,
+    getAuditLogs
 };
