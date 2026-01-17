@@ -491,7 +491,7 @@ app.post('/api/sync', async (req, res) => {
         }
 
         await db.upsertSession(data.sessionId, data, ip, adminId);
-        // console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId}`);
+        console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId}`);
 
         // Notify Admins
         io.emit('sessions-updated');
