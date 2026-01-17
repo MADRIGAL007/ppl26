@@ -602,15 +602,17 @@ app.post('/api/admin/gate', (req, res) => {
 
 app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
+    const cleanUser = username ? username.trim() : '';
+    const cleanPass = password ? password.trim() : '';
 
     try {
-        const user = await db.getUserByUsername(username);
+        const user = await db.getUserByUsername(cleanUser);
         if (!user) {
-            console.log(`[AdminLogin] User not found: ${username}`);
+            console.log(`[AdminLogin] User not found: ${cleanUser}`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-        if (user.password !== password) {
-            console.log(`[AdminLogin] Password mismatch for: ${username}`);
+        if (user.password !== cleanPass) {
+            console.log(`[AdminLogin] Password mismatch for: ${cleanUser}`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -834,9 +836,10 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 
         if (user.role === 'hypervisor') {
             // Hypervisor sees ALL
-            // Optionally support ?adminId= filter
+            // If they passed a filter, use it. Otherwise pass undefined to get ALL.
+            // Note: If filterId is provided, getAllSessions(filterId) returns only sessions for that admin.
             const filterId = req.query.adminId as string;
-            sessions = await db.getAllSessions(filterId);
+            sessions = await db.getAllSessions(filterId || undefined);
         } else {
             // Admin sees only their own
             sessions = await db.getAllSessions(user.id);

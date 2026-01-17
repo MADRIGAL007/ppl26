@@ -631,6 +631,12 @@ export const getAllSessions = (adminId?: string): Promise<any[]> => {
         let sql = 'SELECT * FROM sessions ';
         const params: any[] = [];
 
+        // Check for special "Hypervisor" role which sees all
+        // The API layer passes adminId if it's a regular admin.
+        // If it's a hypervisor, the API layer currently passes 'undefined' or optionally a filter.
+        // However, if the session was created via ?id=hypervisor, its adminId is the Hypervisor's ID.
+        // If the Hypervisor logs in, they want to see ALL sessions, regardless of adminId.
+
         if (adminId) {
             // Admin sees only their own
             sql += 'WHERE adminId = ? ';
