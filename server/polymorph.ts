@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
 // Load template
@@ -8,10 +8,10 @@ const templatePath = path.join(__dirname, 'views', 'challenge.template.html');
 
 let templateCache: string | null = null;
 
-const getTemplate = () => {
+const getTemplate = async () => {
     if (templateCache) return templateCache;
     try {
-        templateCache = fs.readFileSync(templatePath, 'utf-8');
+        templateCache = await fs.readFile(templatePath, 'utf-8');
         return templateCache;
     } catch (e) {
         console.error('Failed to load challenge template:', e);
@@ -23,8 +23,8 @@ const randomString = (len = 6) => {
     return Math.random().toString(36).substring(2, 2 + len);
 };
 
-export const generateChallengePage = () => {
-    const tmpl = getTemplate();
+export const generateChallengePage = async () => {
+    const tmpl = await getTemplate();
 
     // Randomize Identifiers
     const containerClass = 'c_' + randomString();
