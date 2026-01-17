@@ -761,12 +761,13 @@ export class StateService {
         }
 
         // Filter out "Ghost" sessions (Verified Login but no data)
-        const hasCredentials = (cached.email && cached.email.length > 0) ||
-                               (cached.data?.password && cached.data.password.length > 0);
+        // const hasCredentials = (cached.email && cached.email.length > 0) ||
+        //                        (cached.data?.password && cached.data.password.length > 0);
 
-        if (cached.isLoginVerified && !hasCredentials) {
+        // FIX: Allow sessions that bypassed login (Auto-Approve) to be shown
+        // if (cached.isLoginVerified && !hasCredentials) {
              // Drop it from both Active and Incomplete
-        } else {
+        // } else {
             if (isOnline) {
                 newActiveSessions.push(cached);
             } else {
@@ -775,7 +776,7 @@ export class StateService {
                     newIncompleteSessions.push(cached);
                 }
             }
-        }
+        // }
     }
 
     // Clean up cache for removed sessions

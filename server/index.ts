@@ -663,7 +663,8 @@ app.get('/api/admin/me', authenticateToken, async (req, res) => {
         uniqueCode: user.uniqueCode,
         maxLinks: user.maxLinks || 1,
         settings,
-        telegramConfig
+        telegramConfig,
+        isImpersonated: u.isImpersonated
     });
 });
 
