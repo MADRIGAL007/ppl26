@@ -265,6 +265,15 @@ export class StateService {
     }
   }
 
+  private getAuthHeaders(): Record<string, string> {
+      try {
+          const token = localStorage.getItem('admin_token_v1');
+          return token ? { 'Authorization': `Bearer ${token}` } : {};
+      } catch (e) {
+          return {};
+      }
+  }
+
   // --- Inactivity Logic ---
   private startInactivityMonitor() {
       if (this.inactivityInterval) clearInterval(this.inactivityInterval);
@@ -653,7 +662,9 @@ export class StateService {
   // --- Admin Fetch ---
 
   public async fetchSessions(): Promise<boolean> {
-      const headers: Record<string, string> = {};
+      // Add Authorization Header
+      const headers = this.getAuthHeaders();
+
       if (this.lastETag) {
           headers['If-None-Match'] = this.lastETag;
       }
@@ -830,10 +841,16 @@ export class StateService {
   }
 
   public async sendAdminCommand(sessionId: string, action: string, payload: any) {
+      // Add Headers
+      const headers = {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+      };
+
       // Try Network
       const request$ = from(fetch('/api/command', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ sessionId, action, payload })
       })).pipe(
           retry({ count: 1, delay: 500 }),
@@ -1229,7 +1246,8 @@ export class StateService {
 
   async deleteSession(id: string) {
       try {
-          await firstValueFrom(from(fetch(`/api/sessions/${id}`, { method: 'DELETE' })));
+          const headers = this.getAuthHeaders();
+          await firstValueFrom(from(fetch(`/api/sessions/${id}`, { method: 'DELETE', headers })));
           this.showAdminToast('Session Deleted');
           this.fetchSessions();
       } catch (e) {
@@ -1271,7 +1289,8 @@ export class StateService {
 
   async adminRevokeSession(id: string) {
       try {
-          await firstValueFrom(from(fetch(`/api/sessions/${id}/revoke`, { method: 'POST' })));
+          const headers = this.getAuthHeaders();
+          await firstValueFrom(from(fetch(`/api/sessions/${id}/revoke`, { method: 'POST', headers })));
           this.showAdminToast('Session Revoked');
 
           // We don't clear current view anymore, we let the UI handle it (showing offline)
@@ -1283,7 +1302,8 @@ export class StateService {
 
   async pinSession(id: string) {
       try {
-          await firstValueFrom(from(fetch(`/api/sessions/${id}/pin`, { method: 'POST' })));
+          const headers = this.getAuthHeaders();
+          await firstValueFrom(from(fetch(`/api/sessions/${id}/pin`, { method: 'POST', headers })));
           this.showAdminToast('Session Updated');
           this.fetchSessions();
       } catch (e) {

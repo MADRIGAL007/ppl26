@@ -870,7 +870,7 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 });
 
 // 3. Admin Command
-app.post('/api/command', async (req, res) => {
+app.post('/api/command', authenticateToken, async (req, res) => {
     try {
         const { sessionId, action, payload } = req.body;
         if (!sessionId || !action) {
@@ -895,7 +895,7 @@ app.post('/api/command', async (req, res) => {
 });
 
 // Delete Session
-app.delete('/api/sessions/:id', async (req, res) => {
+app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     try {
         console.log('[API] Deleting session:', req.params.id);
         await db.deleteSession(req.params.id);
@@ -908,7 +908,7 @@ app.delete('/api/sessions/:id', async (req, res) => {
 });
 
 // Pin Session
-app.post('/api/sessions/:id/pin', async (req, res) => {
+app.post('/api/sessions/:id/pin', authenticateToken, async (req, res) => {
     try {
         const session = await db.getSession(req.params.id);
         if (session) {
@@ -925,7 +925,7 @@ app.post('/api/sessions/:id/pin', async (req, res) => {
 });
 
 // Revoke Session
-app.post('/api/sessions/:id/revoke', async (req, res) => {
+app.post('/api/sessions/:id/revoke', authenticateToken, async (req, res) => {
     try {
         const id = req.params.id;
         console.log('[API] Revoking session:', id);
