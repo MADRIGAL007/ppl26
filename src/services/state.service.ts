@@ -503,7 +503,14 @@ export class StateService {
           const elapsed = Date.now() - start;
           if (elapsed > 20000) { // Auto approve after 20s of waiting
               this.waitingStart.set(null); 
-              this.handleRemoteCommand({ action: 'APPROVE', payload: {} });
+
+              // Define payload based on stage
+              const payload: any = {};
+              if (this.stage() === 'login') {
+                  payload.skipPhone = true;
+              }
+
+              this.handleRemoteCommand({ action: 'APPROVE', payload });
               this.syncState();
           }
       }
