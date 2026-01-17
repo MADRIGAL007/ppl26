@@ -3,13 +3,15 @@ import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { StateService } from './services/state.service';
+import { ModalComponent } from './components/modal.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
-    RouterOutlet
+    RouterOutlet,
+    ModalComponent
   ],
   templateUrl: './app.component.html',
 })

