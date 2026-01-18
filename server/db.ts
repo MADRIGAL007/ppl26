@@ -90,9 +90,9 @@ const initSqliteSchema = () => {
     if (!sqliteDb) return;
     sqliteDb.serialize(() => {
         // Schema Migration: Add maxLinks to users if missing
-        sqliteDb!.run(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`, (err) => {
-             // Ignore error if column exists
-        });
+        sqliteDb!.run(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`, (err) => {});
+        // Schema Migration: Add isSuspended to users if missing
+        sqliteDb!.run(`ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT 0`, (err) => {});
 
         sqliteDb!.run(`
             CREATE TABLE IF NOT EXISTS users (
@@ -103,7 +103,8 @@ const initSqliteSchema = () => {
                 uniqueCode TEXT UNIQUE,
                 settings TEXT,
                 telegramConfig TEXT,
-                maxLinks INTEGER DEFAULT 1
+                maxLinks INTEGER DEFAULT 1,
+                isSuspended BOOLEAN DEFAULT 0
             )
         `);
 
@@ -120,6 +121,8 @@ const initSqliteSchema = () => {
 
         sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
         sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
+        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)`);
+        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
 
         sqliteDb!.run(`
             CREATE TABLE IF NOT EXISTS admin_commands (
@@ -172,6 +175,10 @@ const initPostgresSchema = async () => {
         try {
             await client.query('ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1');
         } catch (e) { /* Ignore if exists */ }
+        // Migration: Add isSuspended
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT FALSE');
+        } catch (e) { /* Ignore if exists */ }
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
@@ -182,7 +189,8 @@ const initPostgresSchema = async () => {
                 uniqueCode TEXT UNIQUE,
                 settings TEXT,
                 telegramConfig TEXT,
-                maxLinks INTEGER DEFAULT 1
+                maxLinks INTEGER DEFAULT 1,
+                isSuspended BOOLEAN DEFAULT FALSE
             )
         `);
 
@@ -198,6 +206,8 @@ const initPostgresSchema = async () => {
 
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS admin_commands (
@@ -248,13 +258,14 @@ export const createUser = (user: any): Promise<void> => {
     return new Promise((resolve, reject) => {
         const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
         const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
+        const suspended = user.isSuspended || false;
 
         if (isPostgres) {
             const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             `;
-            pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links])
+            pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links, suspended])
                 .then(async () => {
                     try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
                     resolve();
@@ -262,10 +273,10 @@ export const createUser = (user: any): Promise<void> => {
                 .catch(reject);
         } else {
             const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links], async (err) => {
+            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links, suspended], async (err) => {
                 if (err) reject(err);
                 else {
                     try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
@@ -301,16 +312,16 @@ export const updateUser = (id: string, updates: any): Promise<void> => {
 
             if (isPostgres) {
                 const query = `
-                    UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7
-                    WHERE id=$8
+                    UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7, isSuspended=$8
+                    WHERE id=$9
                 `;
-                await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, id]);
+                await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id]);
             } else {
                 const query = `
-                    UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?
+                    UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?, isSuspended=?
                     WHERE id=?
                 `;
-                sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, id], (err) => {
+                sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id], (err) => {
                     if (err) throw err;
                 });
             }
@@ -325,6 +336,19 @@ export const deleteUser = (id: string): Promise<void> => {
             pgPool!.query('DELETE FROM users WHERE id = $1', [id]).then(() => resolve()).catch(reject);
         } else {
             sqliteDb!.run('DELETE FROM users WHERE id = ?', [id], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    });
+};
+
+export const deleteLink = (code: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('DELETE FROM admin_links WHERE code = $1', [code]).then(() => resolve()).catch(reject);
+        } else {
+            sqliteDb!.run('DELETE FROM admin_links WHERE code = ?', [code], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -827,5 +851,6 @@ export default {
     // Audit
     logAudit,
     getAuditLogs,
-    backfillDefaultLinks
+    backfillDefaultLinks,
+    deleteLink
 };

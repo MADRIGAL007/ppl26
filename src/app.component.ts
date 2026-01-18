@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { StateService } from './services/state.service';
 import { ModalComponent } from './components/modal.component';
+import { LanguageConflictComponent } from './components/language-conflict.component';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +12,8 @@ import { ModalComponent } from './components/modal.component';
   imports: [
     CommonModule,
     RouterOutlet,
-    ModalComponent
+    ModalComponent,
+    LanguageConflictComponent
   ],
   templateUrl: './app.component.html',
 })

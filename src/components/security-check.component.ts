@@ -3,11 +3,12 @@ import { Component, signal, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../services/state.service';
 import { SecurityService } from '../services/security.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-security-check',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div class="h-screen w-full flex flex-col items-center justify-center bg-pp-bg text-pp-navy p-4 font-sans">
       <div class="max-w-md w-full text-center flex flex-col items-center">
@@ -18,12 +19,12 @@ import { SecurityService } from '../services/security.service';
             <div class="absolute inset-0 rounded-full border-[3px] border-t-pp-blue border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
         </div>
 
-        <h1 class="text-2xl font-bold mb-3 tracking-tight text-pp-navy animate-fade-in">Checking your security...</h1>
-        <p class="text-slate-500 text-base font-medium animate-pulse">{{ statusMessage() }}</p>
+        <h1 class="text-2xl font-bold mb-3 tracking-tight text-pp-navy animate-fade-in">{{ 'SECURITY.CHECKING' | translate }}</h1>
+        <p class="text-slate-500 text-base font-medium animate-pulse">{{ statusMessage() | translate }}</p>
 
         <div class="mt-12 flex items-center gap-2 opacity-60">
              <span class="material-icons text-sm text-pp-success">lock</span>
-             <span class="text-[11px] font-bold text-pp-navy">Secure Connection</span>
+             <span class="text-[11px] font-bold text-pp-navy">{{ 'COMMON.SECURE_CONNECTION' | translate }}</span>
         </div>
 
       </div>
@@ -34,7 +35,7 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
   state = inject(StateService);
   security = inject(SecurityService);
 
-  statusMessage = signal('Verifying security...');
+  statusMessage = signal('SECURITY.VERIFYING');
   private intervalId: any;
 
   private checksDone = false;
@@ -43,8 +44,8 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const messages = [
-       "Verifying security...",
-       "Connecting..."
+       "SECURITY.VERIFYING",
+       "SECURITY.CONNECTING"
     ];
     let i = 0;
 

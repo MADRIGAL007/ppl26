@@ -1,22 +1,29 @@
-
 <router-outlet></router-outlet>
 <app-modal></app-modal>
+<app-language-conflict></app-language-conflict>
 
 <!-- Session Timeout Warning Modal -->
-<!-- Defensive check: ensure showTimeoutWarning exists before calling -->
 @if (state.showTimeoutWarning && state.showTimeoutWarning()) {
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-8 relative z-10 animate-fade-in text-center">
-        <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span class="material-icons text-3xl text-amber-600">timer</span>
+<div class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"></div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[400px] p-8 relative z-10 animate-fade-in text-center border border-slate-100">
+
+        <!-- Logo/Icon -->
+        <div class="w-16 h-16 mx-auto mb-6 bg-[#003087] rounded-full flex items-center justify-center shadow-lg shadow-blue-900/20">
+             <span class="font-bold text-3xl text-white italic">P</span>
         </div>
-        <h2 class="text-xl font-bold text-[#2c2e2f] mb-2">Session Expiring</h2>
-        <p class="text-sm text-[#5e6c75] mb-6">
-            For your security, your session will time out in <span class="font-bold text-[#d92d20]">{{ state.timeoutCountdown ? state.timeoutCountdown() : 0 }}s</span> due to inactivity.
+
+        <h2 class="text-2xl font-bold text-[#001435] mb-3 tracking-tight">Session Expiring</h2>
+
+        <p class="text-[15px] leading-relaxed text-[#243c5a] mb-8">
+            For your security, we will automatically log you out in <span class="font-bold text-[#d92d20] tabular-nums">{{ state.timeoutCountdown ? state.timeoutCountdown() : 0 }} seconds</span> to protect your account.
         </p>
-        <button (click)="state.extendSession()" class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold py-3.5 px-6 rounded-full transition-all duration-200 shadow-md">
-            Extend Session
+
+        <button (click)="state.extendSession()" class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold text-[15px] py-4 px-6 rounded-full transition-all duration-300 shadow-xl shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]">
+            Stay Logged In
         </button>
     </div>
 </div>

