@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
-import { filterCountries } from '../utils/country-data';
+import { filterCountries, Country } from '../utils/country-data';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
@@ -65,9 +65,9 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                         >
                     </div>
                     <ul class="max-h-60 overflow-y-auto">
-                        @for(c of filteredCountries(); track c) {
+                        @for(c of filteredCountries(); track c.code) {
                             <li (click)="selectCountry(c)" class="px-5 py-3 hover:bg-blue-50 hover:text-pp-blue cursor-pointer text-sm text-pp-navy transition-colors font-bold border-b border-slate-50 last:border-0">
-                                {{ c }}
+                                {{ c.name }}
                             </li>
                         }
                     </ul>
@@ -278,8 +278,8 @@ export class PersonalVerificationComponent {
       }
   }
 
-  selectCountry(c: string) {
-      this.country = c;
+  selectCountry(c: Country) {
+      this.country = c.name;
       this.showDropdown.set(false);
       this.searchQuery.set('');
       this.check();

