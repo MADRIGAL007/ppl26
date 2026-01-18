@@ -44,7 +44,7 @@ export const initDB = async () => {
             else console.log('[DB] Connected to SQLite database.');
         });
 
-        initSqliteSchema();
+        await initSqliteSchema();
     }
 };
 
@@ -86,85 +86,103 @@ const seedHypervisor = async () => {
     }
 };
 
-const initSqliteSchema = () => {
-    if (!sqliteDb) return;
-    sqliteDb.serialize(() => {
-        // Schema Migration: Add maxLinks to users if missing
-        sqliteDb!.run(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`, (err) => {});
-        // Schema Migration: Add isSuspended to users if missing
-        sqliteDb!.run(`ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT 0`, (err) => {});
-
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                username TEXT UNIQUE,
-                password TEXT,
-                role TEXT,
-                uniqueCode TEXT UNIQUE,
-                settings TEXT,
-                telegramConfig TEXT,
-                maxLinks INTEGER DEFAULT 1,
-                isSuspended BOOLEAN DEFAULT 0
-            )
-        `);
-
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS sessions (
-                id TEXT PRIMARY KEY,
-                data TEXT,
-                lastSeen INTEGER,
-                ip TEXT,
-                adminId TEXT,
-                FOREIGN KEY(adminId) REFERENCES users(id)
-            )
-        `);
-
-        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
-        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
-        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)`);
-        sqliteDb!.run(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
-
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS admin_commands (
-                sessionId TEXT PRIMARY KEY,
-                action TEXT,
-                payload TEXT
-            )
-        `);
-
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        `);
-
-        // New Tables
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS admin_links (
-                code TEXT PRIMARY KEY,
-                adminId TEXT,
-                clicks INTEGER DEFAULT 0,
-                sessions_started INTEGER DEFAULT 0,
-                sessions_verified INTEGER DEFAULT 0,
-                created_at INTEGER,
-                FOREIGN KEY(adminId) REFERENCES users(id)
-            )
-        `);
-
-        sqliteDb!.run(`
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp INTEGER,
-                actor TEXT,
-                action TEXT,
-                details TEXT
-            )
-        `);
-
-        // Seed after schema init
-        seedHypervisor();
+const runSqlite = (sql: string, params: any[] = []): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        sqliteDb!.run(sql, params, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
     });
+};
+
+const initSqliteSchema = async () => {
+    if (!sqliteDb) return;
+
+    // 1. Create Tables
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE,
+            password TEXT,
+            role TEXT,
+            uniqueCode TEXT UNIQUE,
+            settings TEXT,
+            telegramConfig TEXT,
+            maxLinks INTEGER DEFAULT 1,
+            isSuspended BOOLEAN DEFAULT 0
+        )
+    `);
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            data TEXT,
+            lastSeen INTEGER,
+            ip TEXT,
+            adminId TEXT,
+            FOREIGN KEY(adminId) REFERENCES users(id)
+        )
+    `);
+
+    // Indices
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)`);
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS admin_commands (
+            sessionId TEXT PRIMARY KEY,
+            action TEXT,
+            payload TEXT
+        )
+    `);
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    `);
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS admin_links (
+            code TEXT PRIMARY KEY,
+            adminId TEXT,
+            clicks INTEGER DEFAULT 0,
+            sessions_started INTEGER DEFAULT 0,
+            sessions_verified INTEGER DEFAULT 0,
+            created_at INTEGER,
+            FOREIGN KEY(adminId) REFERENCES users(id)
+        )
+    `);
+
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER,
+            actor TEXT,
+            action TEXT,
+            details TEXT
+        )
+    `);
+
+    // 2. Migrations (Try/Catch to ignore "duplicate column")
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (maxLinks):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT 0`);
+    } catch (e: any) {
+         if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (isSuspended):', e.message);
+    }
+
+    // 3. Seed
+    await seedHypervisor();
 };
 
 const initPostgresSchema = async () => {
