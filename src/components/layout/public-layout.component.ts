@@ -1,11 +1,12 @@
 
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div class="min-h-screen flex flex-col bg-pp-bg font-sans overflow-x-hidden">
       
@@ -26,13 +27,13 @@ import { CommonModule } from '@angular/common';
         <!-- Modern Footer (2026 Style) -->
         <div class="mt-auto mb-8 w-full max-w-[480px]">
            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-bold text-slate-400">
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">Contact</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">Privacy</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">Legal</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">Worldwide</a>
+              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.CONTACT' | translate }}</a>
+              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.PRIVACY' | translate }}</a>
+              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.LEGAL' | translate }}</a>
+              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.WORLDWIDE' | translate }}</a>
            </div>
            <div class="text-center mt-4 text-[11px] text-slate-300">
-              © 1999-2026 PayPal Inc. All rights reserved.
+              {{ 'COMMON.COPYRIGHT' | translate }}
            </div>
         </div>
       </main>

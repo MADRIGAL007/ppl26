@@ -1,116 +1,110 @@
-import { Injectable, signal } from '@angular/core';
-import { Router } from '@angular/router';
 
-export interface User {
-    id: string;
-    username: string;
-    role: 'hypervisor' | 'admin';
-    uniqueCode?: string;
-    settings?: any;
-    telegramConfig?: any;
-}
+import { Injectable, signal, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { StateService } from './state.service';
 
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class AuthService {
-    readonly currentUser = signal<User | null>(null);
-    readonly isAuthenticated = signal<boolean>(false);
+  private router = inject(Router);
+  private state = inject(StateService);
 
-    private readonly TOKEN_KEY = 'admin_token_v1';
+  readonly currentUser = signal<any>(null);
+  readonly token = signal<string | null>(null);
 
-    constructor(private router: Router) {
-        // Hydrate from storage
-        this.loadToken();
-    }
+  constructor() {
+      // Hydrate
+      if (typeof localStorage !== 'undefined') {
+          const t = localStorage.getItem('admin_token_v1');
+          if (t) this.verifyToken(t);
+      }
+  }
 
-    private loadToken() {
-        if (typeof localStorage === 'undefined') return;
+  async login(username: string, password: string): Promise<boolean> {
+      try {
+          const res = await fetch('/api/admin/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+          });
 
-        const token = localStorage.getItem(this.TOKEN_KEY);
-        if (token) {
-            this.fetchMe(token).then(success => {
-                if (!success) this.logout();
-            });
-        }
-    }
+          if (res.ok) {
+              const data = await res.json();
+              this.setSession(data.token, data.user);
+              return true;
+          }
+      } catch (e) {}
+      return false;
+  }
 
-    async login(username: string, password: string): Promise<boolean> {
-        try {
-            const res = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+  async verifyToken(t: string) {
+      try {
+          const res = await fetch('/api/admin/me', {
+              headers: { 'Authorization': `Bearer ${t}` }
+          });
+          if (res.ok) {
+              const user = await res.json();
+              this.setSession(t, user);
+              this.state.setAdminAuthenticated(true);
+          } else {
+              this.logout();
+          }
+      } catch(e) {
+          this.logout();
+      }
+  }
 
-            if (res.ok) {
-                const data = await res.json();
-                this.setSession(data.token, data.user);
-                return true;
-            }
-        } catch (e) { console.error(e); }
-        return false;
-    }
+  setSession(t: string, user: any) {
+      this.token.set(t);
+      this.currentUser.set(user);
+      localStorage.setItem('admin_token_v1', t);
+  }
 
-    async impersonate(userId: string): Promise<boolean> {
-        try {
-            const token = this.getToken();
-            const res = await fetch(`/api/admin/impersonate/${userId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+  logout() {
+      // Check if we are impersonating
+      const parentToken = sessionStorage.getItem('hv_parent_token');
+      if (parentToken) {
+          // Restore Hypervisor
+          sessionStorage.removeItem('hv_parent_token');
+          this.verifyToken(parentToken);
+          window.location.reload(); // Clean state
+      } else {
+          // Full Logout
+          this.token.set(null);
+          this.currentUser.set(null);
+          localStorage.removeItem('admin_token_v1');
+          this.state.setAdminAuthenticated(false);
+          this.router.navigate(['login']);
+      }
+  }
 
-            if (res.ok) {
-                const data = await res.json();
-                // We overwrite the token, effectively logging in as that user
-                // To support "Back to Hypervisor", we might want to store the old token?
-                // For simplicity now, we just swap. Hypervisor can just re-login or use incognito.
-                // Or better: The prompt said "Impersonate", implying temporary access.
-                // If I swap token, I lose Hypervisor privilege unless I stored it.
-                // Let's swap for now to meet the "Login as that admin" requirement fully.
+  async impersonate(userId: string): Promise<boolean> {
+      try {
+          const res = await fetch(`/api/admin/impersonate/${userId}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${this.token()}` }
+          });
 
-                // We need to fetch the user details for this new token
-                await this.fetchMe(data.token);
-                return true;
-            }
-        } catch (e) { console.error(e); }
-        return false;
-    }
+          if (res.ok) {
+              const data = await res.json();
+              // Save parent token
+              sessionStorage.setItem('hv_parent_token', this.token()!);
 
-    logout() {
-        localStorage.removeItem(this.TOKEN_KEY);
-        this.currentUser.set(null);
-        this.isAuthenticated.set(false);
-        this.router.navigate(['/admin/login']);
-    }
+              // Set new session
+              this.setSession(data.token, { ...this.currentUser(), isImpersonated: true });
 
-    getToken(): string | null {
-        return localStorage.getItem(this.TOKEN_KEY);
-    }
+              return true;
+          }
+      } catch (e) {}
+      return false;
+  }
 
-    private setSession(token: string, user: User) {
-        localStorage.setItem(this.TOKEN_KEY, token);
-        this.currentUser.set(user);
-        this.isAuthenticated.set(true);
-    }
+  isAuthenticated() {
+      return !!this.token();
+  }
 
-    private async fetchMe(token: string): Promise<boolean> {
-        try {
-            const res = await fetch('/api/admin/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const user = await res.json();
-                this.currentUser.set(user);
-                this.isAuthenticated.set(true);
-                // Also update localStorage if we are just verifying
-                localStorage.setItem(this.TOKEN_KEY, token);
-                return true;
-            }
-        } catch (e) { }
-        return false;
-    }
+  getToken() {
+      return this.token();
+  }
 }
