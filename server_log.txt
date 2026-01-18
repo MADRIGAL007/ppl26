@@ -2,20 +2,21 @@
 > paypal-verification-app@1.0.0 start
 > node dist-server/index.js
 
-[DB] Initializing SQLite database at data/sessions.db
-[Server] CORS Configured. Mode: Wildcard
-[Server] Serving SPA from: /app/dist/app/browser
-[Server] Files in static directory: [
-  'assets',
-  'index.html',
-  'main-JAKCTO2S.js',
-  'media',
-  'styles-YOGSELGS.css'
-]
-[Server] ✅ Express + Socket.IO running on port 8080
-[DB] Connected to SQLite database.
-[Socket] Client connected: EZJw6m30yIMdTbWSAAAB
-[Socket] EZJw6m30yIMdTbWSAAAB joined session room: g6boqtsgcck9ks5zp6l4m6
-[Socket] EZJw6m30yIMdTbWSAAAB joined session room: g6boqtsgcck9ks5zp6l4m6
-[Socket] EZJw6m30yIMdTbWSAAAB joined ADMIN room
-[Socket] Client disconnected: EZJw6m30yIMdTbWSAAAB
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module '/app/dist-server/index.js'
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v22.21.1
