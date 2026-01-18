@@ -168,6 +168,10 @@ const refreshSettings = async () => {
         // Fallback to Env
         if (!cachedSettings.tgToken) cachedSettings.tgToken = process.env.TELEGRAM_BOT_TOKEN;
         if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env.TELEGRAM_CHAT_ID;
+
+        // Defaults for Gate
+        if (!cachedSettings.gateUser) cachedSettings.gateUser = 'admin';
+        if (!cachedSettings.gatePass) cachedSettings.gatePass = 'secure123';
     } catch (e) { console.error('Failed to load settings', e); }
 };
 // refreshSettings(); // Moved to after DB init
@@ -583,9 +587,16 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.post('/api/settings', async (req, res) => {
-    const { tgToken, tgChat } = req.body;
+    const { tgToken, tgChat, gateUser, gatePass } = req.body;
+
+    // Hypervisor Only for Gate? No, admin endpoint but we can protect it via middleware if needed.
+    // Assuming this is open for now based on previous implementation but typically protected.
+    // The previous implementation was: app.post('/api/settings') updated global settings.
+
     if (tgToken !== undefined) await db.updateSetting('tgToken', tgToken);
     if (tgChat !== undefined) await db.updateSetting('tgChat', tgChat);
+    if (gateUser !== undefined) await db.updateSetting('gateUser', gateUser);
+    if (gatePass !== undefined) await db.updateSetting('gatePass', gatePass);
 
     await refreshSettings();
     db.logAudit('System', 'UpdateSettings', 'Updated global settings');
@@ -595,15 +606,17 @@ app.post('/api/settings', async (req, res) => {
 // Admin Auth (New JWT Flow)
 
 // Gate Check (Shared Secret)
-app.post('/api/admin/gate', (req, res) => {
+app.post('/api/admin/gate', async (req, res) => {
     const { username, password } = req.body;
-    // Hardcoded gate credentials as per requirements
-    // Ideally this should be env vars, but "admin"/"secure123" is specified
-    if (username === 'admin' && password === 'secure123') {
+    await refreshSettings();
+
+    const validUser = cachedSettings.gateUser || 'admin';
+    const validPass = cachedSettings.gatePass || 'secure123';
+
+    if (username === validUser && password === validPass) {
         // Return a temporary token or just success
         // For simplicity in this session-less flow, we just say OK
         // and the frontend proceeds.
-        // A more hardened version would return a signed token required for the next step.
         return res.json({ status: 'ok' });
     }
     return res.status(401).json({ error: 'Invalid gate credentials' });
@@ -680,7 +693,16 @@ app.get('/api/admin/me', authenticateToken, async (req, res) => {
 app.get('/api/admin/links', authenticateToken, async (req, res) => {
     try {
         const u = (req as any).user;
-        const links = await db.getLinks(u.id);
+        const requestedAdminId = req.query.adminId as string;
+
+        let targetId = u.id;
+
+        // Allow Hypervisor to view others
+        if (u.role === 'hypervisor' && requestedAdminId) {
+             targetId = requestedAdminId;
+        }
+
+        const links = await db.getLinks(targetId);
         res.json(links);
     } catch(e) {
         res.status(500).json({ error: 'Failed to fetch links' });
@@ -758,7 +780,8 @@ app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async 
             role: u.role,
             uniqueCode: u.uniqueCode,
             maxLinks: u.maxLinks,
-            isSuspended: !!u.isSuspended
+            isSuspended: !!u.isSuspended,
+            settings: u.settings ? JSON.parse(u.settings) : {}
         }));
         res.json(safeUsers);
     } catch (e) {

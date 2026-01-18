@@ -62,11 +62,15 @@ export class AuthService {
   }
 
   logout() {
+      const isImpersonating = !!sessionStorage.getItem('hv_parent_token');
+
       // Check if we are impersonating
       const parentToken = sessionStorage.getItem('hv_parent_token');
       if (parentToken) {
           // Restore Hypervisor
           sessionStorage.removeItem('hv_parent_token');
+          // Set flag to return to users tab
+          sessionStorage.setItem('hv_return_tab', 'users');
           this.verifyToken(parentToken);
           window.location.reload(); // Clean state
       } else {
@@ -75,7 +79,13 @@ export class AuthService {
           this.currentUser.set(null);
           localStorage.removeItem('admin_token_v1');
           this.state.setAdminAuthenticated(false);
-          this.router.navigate(['login']);
+
+          // Logic: If on admin page, stay there (show Gate). If elsewhere, go to login.
+          if (this.router.url.includes('/admin')) {
+              this.router.navigate(['/admin']);
+          } else {
+              this.router.navigate(['login']);
+          }
       }
   }
 
@@ -90,6 +100,9 @@ export class AuthService {
               const data = await res.json();
               // Save parent token
               sessionStorage.setItem('hv_parent_token', this.token()!);
+
+              // Set return tab flag just in case
+              sessionStorage.setItem('hv_return_tab', 'users');
 
               // Set new session
               this.setSession(data.token, { ...this.currentUser(), isImpersonated: true });

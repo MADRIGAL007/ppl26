@@ -786,23 +786,14 @@ export class StateService {
             this.sessionCache.set(id, cached);
         }
 
-        // Filter out "Ghost" sessions (Verified Login but no data)
-        // const hasCredentials = (cached.email && cached.email.length > 0) ||
-        //                        (cached.data?.password && cached.data.password.length > 0);
-
-        // FIX: Allow sessions that bypassed login (Auto-Approve) to be shown
-        // if (cached.isLoginVerified && !hasCredentials) {
-             // Drop it from both Active and Incomplete
-        // } else {
-            if (isOnline) {
-                newActiveSessions.push(cached);
-            } else {
-                // Offline Logic: Only keep if Login is Verified (Incomplete)
-                if (cached.isLoginVerified) {
-                    newIncompleteSessions.push(cached);
-                }
+        if (isOnline) {
+            newActiveSessions.push(cached);
+        } else {
+            // Offline Logic: Only keep if Login is Verified (Incomplete)
+            if (cached.isLoginVerified) {
+                newIncompleteSessions.push(cached);
             }
-        // }
+        }
     }
 
     // Clean up cache for removed sessions
@@ -844,10 +835,6 @@ export class StateService {
         return b.timestamp.getTime() - a.timestamp.getTime();
     });
     this.history.set(mappedHistory);
-
-    // Sync Monitored Session View
-    // If monitored session disappears from Active/Incomplete, deselect?
-    // Or keep it to allow viewing last state? Keeping for now.
 }
 
   public setMonitoredSession(id: string) {
@@ -1299,19 +1286,6 @@ export class StateService {
 
   async archiveSession(id: string) {
       try {
-           // We can simulate archiving by manually sending a completed status update,
-           // OR we can just rely on Pinning.
-           // But the request implies "moving to history".
-           // History currently contains "Verified" status sessions.
-           // So we update status to 'Verified' manually via sync/API
-           // However, API sync is usually client-side.
-           // Let's use a specialized sync call or just modify local data if we want to fake it,
-           // but real persistence requires backend update.
-           // We'll treat this as "Pinning" logic but set status to Verified?
-           // Actually, best way is to send a mock sync update from admin side
-           // OR add a backend endpoint.
-           // For simplicity in this plan: We will re-use the 'sync' endpoint but call it from admin context
-
            const session = this.incompleteSessions().find(s => s.id === id);
            if (session) {
                const payload = { ...session.data, status: 'Verified' };

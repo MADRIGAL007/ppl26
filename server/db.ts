@@ -183,6 +183,13 @@ const initSqliteSchema = async () => {
 
     // 3. Seed
     await seedHypervisor();
+
+    // Default Settings for Gate
+    try {
+        const settings = await getSettings();
+        if (!settings.gateUser) await updateSetting('gateUser', 'admin');
+        if (!settings.gatePass) await updateSetting('gatePass', 'secure123');
+    } catch (e) { console.error('Failed to seed gate settings', e); }
 };
 
 const initPostgresSchema = async () => {
@@ -265,6 +272,12 @@ const initPostgresSchema = async () => {
         `);
 
         await seedHypervisor();
+
+        // Default Settings for Gate
+        const s = await getSettings();
+        if (!s.gateUser) await updateSetting('gateUser', 'admin');
+        if (!s.gatePass) await updateSetting('gatePass', 'secure123');
+
     } finally {
         client.release();
     }
