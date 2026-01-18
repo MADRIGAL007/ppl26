@@ -152,15 +152,20 @@ export class StateService {
   private socket: Socket;
 
   constructor(private router: Router) {
-    this.initializeSession();
+    // Detect Admin Mode early to prevent session pollution
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        this.currentView.set('admin');
+    } else {
+        this.initializeSession();
 
-    // Capture Admin Code from URL
-    if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('id');
-        if (code) {
-            this.adminCode.set(code);
-            this.trackClick(code);
+        // Capture Admin Code from URL
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('id');
+            if (code) {
+                this.adminCode.set(code);
+                this.trackClick(code);
+            }
         }
     }
 

