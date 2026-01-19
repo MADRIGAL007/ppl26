@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_change_me';
+const JWT_SECRET = process.env['JWT_SECRET'] || 'super_secret_jwt_key_change_me';
 
 export const signToken = (payload: any) => {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });

