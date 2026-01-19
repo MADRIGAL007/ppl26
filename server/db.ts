@@ -5,8 +5,8 @@ import fs from 'fs';
 import crypto from 'crypto';
 
 // --- Configuration ---
-const DATA_DIR = process.env.DATA_DIR || './data';
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATA_DIR = process.env['DATA_DIR'] || './data';
+const DATABASE_URL = process.env['DATABASE_URL'];
 
 let sqliteDb: sqlite3.Database | null = null;
 let pgPool: Pool | null = null;
