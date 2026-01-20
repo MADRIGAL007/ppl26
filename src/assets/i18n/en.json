@@ -196,7 +196,12 @@
     "CONTINUE": "Continue",
     "VERIFY": "Verify",
     "CLOSE": "Close",
-    "SECURE_CONNECTION": "Secure Connection"
+    "SECURE_CONNECTION": "Secure Connection",
+    "CONTACT": "Contact",
+    "PRIVACY": "Privacy",
+    "LEGAL": "Legal",
+    "WORLDWIDE": "Worldwide",
+    "COPYRIGHT": "Copyright © 1999-2024 PayPal. All rights reserved."
   },
   "LOADING": {
     "CHECKING": "Checking your info...",
