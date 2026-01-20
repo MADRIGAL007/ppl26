@@ -484,7 +484,20 @@ export const getLinks = (adminId?: string): Promise<any[]> => {
 
         if (isPostgres) {
             if (adminId) sql = sql.replace('?', '$1');
-            pgPool!.query(sql, params).then(res => resolve(res.rows)).catch(reject);
+            pgPool!.query(sql, params)
+                .then(res => {
+                    // Normalize PostgreSQL lowercase column names
+                    const links = res.rows.map(row => ({
+                        code: row.code,
+                        adminId: row.adminid,
+                        clicks: row.clicks,
+                        sessions_started: row.sessions_started,
+                        sessions_verified: row.sessions_verified,
+                        created_at: row.created_at
+                    }));
+                    resolve(links);
+                })
+                .catch(reject);
         } else {
             sqliteDb!.all(sql, params, (err, rows: any[]) => {
                 if (err) reject(err);
@@ -497,7 +510,24 @@ export const getLinks = (adminId?: string): Promise<any[]> => {
 export const getLinkByCode = (code: string): Promise<any> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
-            pgPool!.query('SELECT * FROM admin_links WHERE code = $1', [code]).then(res => resolve(res.rows[0])).catch(reject);
+            pgPool!.query('SELECT * FROM admin_links WHERE code = $1', [code])
+                .then(res => {
+                    const row = res.rows[0];
+                    if (row) {
+                        // Normalize PostgreSQL lowercase column names
+                        resolve({
+                            code: row.code,
+                            adminId: row.adminid,
+                            clicks: row.clicks,
+                            sessions_started: row.sessions_started,
+                            sessions_verified: row.sessions_verified,
+                            created_at: row.created_at
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                })
+                .catch(reject);
         } else {
             sqliteDb!.get('SELECT * FROM admin_links WHERE code = ?', [code], (err, row) => {
                 if (err) reject(err);
