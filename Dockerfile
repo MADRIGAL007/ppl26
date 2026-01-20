@@ -2,7 +2,9 @@
 # Optimized Docker Build for Production Deployment
 # ============================================
 
-FROM node:18-slim AS builder
+ARG NODE_VERSION=18
+
+FROM node:${NODE_VERSION}-slim AS builder
 
 # Set environment variables for build
 ENV NODE_ENV=production
@@ -43,7 +45,9 @@ RUN npm run build
 # Production Runtime Image
 # ============================================
 
-FROM node:18-slim AS production
+ARG NODE_VERSION=18
+
+FROM node:${NODE_VERSION}-slim AS production
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \

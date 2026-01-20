@@ -12,8 +12,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - ./data:/app/data:rw
+      - ./logs:/app/logs:rw
     environment:
       - NODE_ENV=production
       - PORT=8080
