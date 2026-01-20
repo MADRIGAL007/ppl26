@@ -1,4 +1,3 @@
-
 import { bootstrapApplication } from '@angular/platform-browser';
 import { CSP_NONCE, provideExperimentalZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
