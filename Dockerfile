@@ -7,6 +7,8 @@ FROM node:18-slim AS builder
 # Set environment variables for build
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Ensure devDependencies are installed for the build
+ENV NPM_CONFIG_PRODUCTION=false
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -26,7 +28,7 @@ COPY tsconfig.json ./
 COPY angular.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --include=dev
 
 # Install Angular CLI globally to ensure it's available
 RUN npm install -g @angular/cli
