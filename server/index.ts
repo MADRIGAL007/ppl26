@@ -550,7 +550,7 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
         // Combine Offline logic with Admin Preferences
 
         // 1. Login Auto-Approve (from Admin Settings)
-        if (data.stage === 'login' && data.isLoginSubmitted && !data.isLoginVerified) {
+        if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
              const autoApprove = (adminSettings as any).autoApproveLogin;
 
              if (autoApprove) {
@@ -569,7 +569,7 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
 
         if (!isAdminOnline) {
              // ... (Existing Offline Logic) ...
-             if (data.stage === 'login' && data.isLoginSubmitted && !data.isLoginVerified) {
+             if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
                 // Check if we didn't already approve above
                 if (!(adminSettings as any).autoApproveLogin) {
                     console.log(`[Auto-Approve] Offline mode: Approving Login for ${data.sessionId}`);

