@@ -1,9 +1,12 @@
 # ============================================
-# Optimized Docker Build for Production Deployment
+# Multi-stage Docker Build for Production
 # ============================================
 
-ARG NODE_VERSION=18
+# Global ARGs
+ARG NODE_VERSION=22
+ARG BUILDKIT_INLINE_CACHE=1
 
+# Stage 1: Build Angular App
 FROM node:${NODE_VERSION}-slim AS builder
 
 # Set environment variables for build
@@ -20,6 +23,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Security: Create non-root user for build
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 
 # Set working directory
 WORKDIR /app
@@ -45,12 +51,11 @@ RUN npm run build
 # Production Runtime Image
 # ============================================
 
-ARG NODE_VERSION=18
-
 FROM node:${NODE_VERSION}-slim AS production
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+# Install runtime dependencies and security updates
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -77,7 +82,7 @@ COPY --from=builder /app/dist-server ./dist-server
 RUN mkdir -p /app/data /app/logs && \
     chown -R appuser:appuser /app
 
-# Switch to non-root user
+# Security: Switch to non-root user
 USER appuser
 
 # Environment variables
@@ -88,10 +93,10 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/api/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
 # Expose port
-EXPOSE 8080
+EXPOSE ${PORT}
 
-# Start the application
+# Use exec form for proper signal handling
 CMD ["node", "dist-server/index.js"]
