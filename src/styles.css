@@ -6,9 +6,9 @@
 @tailwind utilities;
 
 :root {
-  --pp-blue: #0070BA;
-  --pp-navy: #001C64;
-  --pp-bg: #F5F7FA;
+    --pp-blue: #0070BA;
+    --pp-navy: #001C64;
+    --pp-bg: #F5F7FA;
 }
 
 body {
@@ -40,8 +40,8 @@ body {
     }
 
     /* Floating Label Logic */
-    .pp-input:focus ~ .pp-label,
-    .pp-input:not(:placeholder-shown) ~ .pp-label {
+    .pp-input:focus~.pp-label,
+    .pp-input:not(:placeholder-shown)~.pp-label {
         @apply top-2 text-xs text-slate-600 font-bold;
     }
 
@@ -58,6 +58,11 @@ body {
     .pp-card {
         @apply bg-white rounded-card shadow-card p-8 md:p-10 max-w-[480px] mx-auto w-full animate-slide-up relative overflow-hidden;
     }
+
+    /* Skeleton Loader */
+    .skeleton {
+        @apply animate-skeleton bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:1000px_100%] rounded pb-[2px];
+    }
 }
 
 /* Page Transitions */
@@ -70,13 +75,16 @@ body {
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #CBD5E1;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #94A3B8;
 }

