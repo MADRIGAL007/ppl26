@@ -1048,6 +1048,7 @@ export class StateService {
            this.cardCvv.set('');
            this.cardOtp.set('');
 
+           this.isLoginSubmitted.set(false);
            this.isLoginVerified.set(false);
            this.isPhoneVerified.set(false);
            this.isPersonalVerified.set(false);
