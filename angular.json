@@ -25,7 +25,10 @@
             "assets": [
               "src/assets"
             ],
-            "scripts": []
+            "scripts": [],
+            "security": {
+              "autoCsp": false
+            }
           },
           "configurations": {
             "production": {
@@ -73,11 +76,10 @@
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              "src/favicon.ico",
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.css"
             ],
             "scripts": []
           }

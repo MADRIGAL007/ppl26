@@ -12,8 +12,16 @@ WORKDIR /app
 COPY package*.json ./
 RUN apt-get update && apt-get install -y curl jq && \
     npm install --package-lock-only --ignore-scripts && \
-    npm audit --audit-level high --json | jq -e '.vulnerabilities.high > 0' && \
-    echo "Security vulnerabilities found!" || echo "No critical vulnerabilities"
+    npm audit --audit-level high --json > /tmp/audit.json || true && \
+    HIGH_VULNS=$(jq -r '.metadata.vulnerabilities.high // 0' /tmp/audit.json) && \
+    CRITICAL_VULNS=$(jq -r '.metadata.vulnerabilities.critical // 0' /tmp/audit.json) && \
+    echo "High: $HIGH_VULNS, Critical: $CRITICAL_VULNS" && \
+    if [ "$HIGH_VULNS" -gt 0 ] || [ "$CRITICAL_VULNS" -gt 0 ]; then \
+      echo "Security vulnerabilities found! High: $HIGH_VULNS, Critical: $CRITICAL_VULNS"; \
+      exit 1; \
+    else \
+      echo "No high or critical vulnerabilities found"; \
+    fi
 
 # Stage 2: Build Angular App
 FROM node:${NODE_VERSION}-slim AS build-ui
