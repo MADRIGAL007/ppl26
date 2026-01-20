@@ -21,6 +21,7 @@
     "docker:run": "docker run -p 8080:8080 --env-file .env paypal-verifier",
     "deploy:check": "npm run build && npm run test && npm run security:check",
     "deploy:build": "npm ci --legacy-peer-deps && npm run build:prod",
+    "render:build": "npm run build:prod",
     "deploy:verify": "./scripts/verify-deployment.sh",
     "health:check": "curl -f http://localhost:8080/api/health || exit 1",
     "health:check:script": "./scripts/health-check.sh"
