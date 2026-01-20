@@ -24,6 +24,7 @@ import {
   sanitizeMiddleware
 } from './middleware/security';
 import logger, { logSecurity, logAudit, stream } from './utils/logger';
+import { verifyPassword } from './utils/password';
 import {
   validateSessionSync,
   validateAdminLogin,
@@ -662,9 +663,14 @@ app.post('/api/admin/login', strictRateLimit, validateAdminLogin, validateInput,
             console.log(`[AdminLogin] User not found: ${cleanUser}`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-        if (user.password !== cleanPass) {
+        const passwordCheck = await verifyPassword(cleanPass, user.password);
+        if (!passwordCheck.valid) {
             console.log(`[AdminLogin] Password mismatch for: ${cleanUser}`);
             return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        if (passwordCheck.needsUpgrade && passwordCheck.hashed) {
+            await db.updateUser(user.id, { password: passwordCheck.hashed });
         }
 
         if (user.isSuspended) {
@@ -1078,6 +1084,21 @@ staticPaths.forEach(p => app.use(express.static(p, {
 
 // Pre-resolve the path containing index.html to avoid per-request I/O
 const indexHtmlPath = staticPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+const indexHtmlFile = indexHtmlPath ? path.join(indexHtmlPath, 'index.html') : null;
+let cachedIndexHtml: string | null = null;
+if (indexHtmlFile && fs.existsSync(indexHtmlFile)) {
+    cachedIndexHtml = fs.readFileSync(indexHtmlFile, 'utf-8');
+}
+
+const safePagePath = path.join(__dirname, 'views', 'safe.html');
+let cachedSafePage: string | null = null;
+if (fs.existsSync(safePagePath)) {
+    cachedSafePage = fs.readFileSync(safePagePath, 'utf-8');
+}
+
+const renderWithNonce = (template: string, nonce: string) => {
+    return template.replace(/%CSP_NONCE%/g, nonce);
+};
 
 if (indexHtmlPath) {
     console.log(`[Server] Serving SPA from: ${indexHtmlPath}`);
@@ -1124,7 +1145,13 @@ app.get('*', async (req, res) => {
     if (allowed) {
         if (indexHtmlPath) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.sendFile(path.join(indexHtmlPath, 'index.html'));
+            const nonce = (res.locals as any).cspNonce || '';
+            if (cachedIndexHtml) {
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.send(renderWithNonce(cachedIndexHtml, nonce));
+            } else {
+                res.sendFile(path.join(indexHtmlPath, 'index.html'));
+            }
         } else {
             res.status(404).send(`
                 <h1>Frontend Not Found</h1>
@@ -1134,9 +1161,14 @@ app.get('*', async (req, res) => {
         }
     } else {
         // Block access: Serve "Safe Page"
-        const safePage = path.join(__dirname, 'views', 'safe.html');
-        if (fs.existsSync(safePage)) {
-            res.sendFile(safePage);
+        if (fs.existsSync(safePagePath)) {
+            const nonce = (res.locals as any).cspNonce || '';
+            if (cachedSafePage) {
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.send(renderWithNonce(cachedSafePage, nonce));
+            } else {
+                res.sendFile(safePagePath);
+            }
         } else {
             res.status(403).send('Access Denied');
         }
