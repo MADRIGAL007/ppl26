@@ -28,6 +28,9 @@ COPY angular.json ./
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci --legacy-peer-deps
 
+# Install Angular CLI globally to ensure it's available
+RUN npm install -g @angular/cli
+
 # Copy source code
 COPY . .
 
