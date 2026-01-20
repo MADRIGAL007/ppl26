@@ -56,12 +56,16 @@ export const sanitizeHtml = (unsafe: string): string => {
 };
 
 // Content Security Policy middleware
+// Note: Using 'unsafe-inline' for styles because Angular component styles and Tailwind
+// generate inline styles that don't have nonce attributes. Angular 18 doesn't support
+// automatic nonce injection for component styles.
 export const cspMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const nonce = crypto.randomBytes(16).toString('base64');
   (res.locals as any).cspNonce = nonce;
 
-  const scriptSrc = ["'self'", `'nonce-${nonce}'`];
-  const styleSrc = ["'self'", `'nonce-${nonce}'`, 'https://fonts.googleapis.com'];
+  // Scripts still use nonce for security, but styles need 'unsafe-inline' for Angular
+  const scriptSrc = ["'self'", `'nonce-${nonce}'`, "'unsafe-inline'"];
+  const styleSrc = ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
   const fontSrc = ["'self'", 'https://fonts.gstatic.com', 'data:'];
 
   res.setHeader('Content-Security-Policy',

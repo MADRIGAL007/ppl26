@@ -25,10 +25,7 @@
             "assets": [
               "src/assets"
             ],
-            "scripts": [],
-            "security": {
-              "autoCsp": false
-            }
+            "scripts": []
           },
           "configurations": {
             "production": {
