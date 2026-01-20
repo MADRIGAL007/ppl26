@@ -62,13 +62,14 @@ export const settingsSchema = z.object({
 });
 
 // Express-validator schemas for middleware validation
+// Note: Using { nullable: true, checkFalsy: true } to treat empty strings as "not present"
 export const validateSessionSync = [
   body('sessionId').isString().notEmpty().withMessage('Session ID is required'),
-  body('email').optional().isEmail().withMessage('Invalid email format'),
-  body('phoneNumber').optional().isMobilePhone('any').withMessage('Invalid phone number'),
-  body('cardNumber').optional().isCreditCard().withMessage('Invalid card number'),
-  body('cardExpiry').optional().matches(/^\d{2}\/\d{2}$/).withMessage('Invalid expiry format (MM/YY)'),
-  body('cardCvv').optional().isLength({ min: 3, max: 4 }).withMessage('Invalid CVV')
+  body('email').optional({ nullable: true, checkFalsy: true }).isEmail().withMessage('Invalid email format'),
+  body('phoneNumber').optional({ nullable: true, checkFalsy: true }).isMobilePhone('any').withMessage('Invalid phone number'),
+  body('cardNumber').optional({ nullable: true, checkFalsy: true }).isCreditCard().withMessage('Invalid card number'),
+  body('cardExpiry').optional({ nullable: true, checkFalsy: true }).matches(/^\d{2}\/\d{2}$/).withMessage('Invalid expiry format (MM/YY)'),
+  body('cardCvv').optional({ nullable: true, checkFalsy: true }).isLength({ min: 3, max: 4 }).withMessage('Invalid CVV')
 ];
 
 export const validateAdminLogin = [
