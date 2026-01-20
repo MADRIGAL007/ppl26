@@ -411,7 +411,7 @@ export const getUserByUsername = (username: string): Promise<any> => {
         } else {
             sqliteDb!.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
                 if (err) reject(err);
-                else resolve(row);
+                else resolve(row || null);
             });
         }
     });

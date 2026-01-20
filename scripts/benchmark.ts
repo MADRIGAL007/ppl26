@@ -1,11 +1,11 @@
 import { performance } from 'perf_hooks';
-import { filterCountries, ALL_COUNTRIES } from '../src/utils/country-data';
+import { filterCountries, COUNTRIES } from '../src/utils/country-data';
 
 // Naive implementation (original code)
 function naiveFilter(query: string): string[] {
     const q = query.toLowerCase();
-    if (!q) return ALL_COUNTRIES;
-    return ALL_COUNTRIES.filter(c => c.toLowerCase().includes(q));
+    if (!q) return COUNTRIES;
+    return COUNTRIES.filter((c: any) => c.name.toLowerCase().includes(q));
 }
 
 const ITERATIONS = 100000;

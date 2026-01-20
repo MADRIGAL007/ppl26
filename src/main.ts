@@ -1,6 +1,6 @@
 
 import { bootstrapApplication } from '@angular/platform-browser';
-import { ɵprovideZonelessChangeDetection } from '@angular/core';
+import { provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { AppComponent } from './app.component';
@@ -8,7 +8,7 @@ import { routes } from './app/app.routes';
 
 bootstrapApplication(AppComponent, {
   providers: [
-    ɵprovideZonelessChangeDetection(),
+    provideZoneChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withFetch())
   ]

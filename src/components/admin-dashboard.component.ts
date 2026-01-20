@@ -1359,7 +1359,10 @@ export class AdminDashboardComponent implements OnInit {
               const role = this.auth.currentUser()?.role;
               if (role === 'hypervisor') {
                   this.fetchUsers();
-                  this.state.joinHypervisorRoom(this.auth.getToken());
+                  const token = this.auth.getToken();
+                  if (token) {
+                      this.state.joinHypervisorRoom(token);
+                  }
                   this.state.onLog((log) => { this.systemLogs.update(logs => [log, ...logs].slice(0, 100)); });
               }
           }
