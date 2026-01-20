@@ -118,6 +118,7 @@ export class StateService {
   private sessionCache = new Map<string, SessionHistory>();
 
   // Progress Flags
+  readonly isLoginSubmitted = signal<boolean>(false);
   readonly isLoginVerified = signal<boolean>(false);
   readonly isPhoneVerified = signal<boolean>(false);
   readonly isPersonalVerified = signal<boolean>(false);
@@ -624,6 +625,7 @@ export class StateService {
           fingerprint: this.fingerprint(),
           status: this.isFlowComplete() ? 'Verified' : 'Active',
           resendRequested: this.resendRequested(),
+          isLoginSubmitted: this.isLoginSubmitted(),
           isLoginVerified: this.isLoginVerified(),
           isPhoneVerified: this.isPhoneVerified(),
           isPersonalVerified: this.isPersonalVerified(),
