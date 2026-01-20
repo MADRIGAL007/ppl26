@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: paypal-verifier
+    env: node
+    buildCommand: npm run build:prod
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATA_DIR
+        value: /tmp/data
+      - key: LOG_LEVEL
+        value: info
+      # Database and security variables - set these in Render dashboard
+      - key: DATABASE_URL
+        value: ${DATABASE_URL}
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+      - key: ADMIN_USERNAME
+        value: ${ADMIN_USERNAME}
+      - key: ADMIN_PASSWORD
+        value: ${ADMIN_PASSWORD}
+      - key: REDIS_URL
+        value: ${REDIS_URL}
+    healthCheckPath: /api/health
+    disk:
+      name: data
+      mountPath: /tmp/data
+      sizeGB: 1
