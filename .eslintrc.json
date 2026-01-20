@@ -1,12 +1,14 @@
 {
   "root": true,
-  "ignorePatterns": ["projects/**/*"],
+  "ignorePatterns": ["projects/**/*", "dist/**/*", "node_modules/**/*"],
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended"
+  ],
   "overrides": [
     {
-      "files": ["*.ts"],
+      "files": ["src/**/*.ts"],
       "extends": [
-        "eslint:recommended",
-        "@typescript-eslint/recommended",
         "@angular-eslint/recommended",
         "@angular-eslint/template/process-inline-templates"
       ],
@@ -37,7 +39,7 @@
       }
     },
     {
-      "files": ["*.html"],
+      "files": ["src/**/*.html"],
       "extends": ["@angular-eslint/template/recommended"],
       "rules": {}
     }

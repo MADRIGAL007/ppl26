@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="csp-nonce" content="%CSP_NONCE%">
   <title>Log in to your PayPal account</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +16,7 @@
 <body class="bg-brand-50 text-[#001C64] antialiased font-sans">
   <app-root></app-root>
   <noscript>
-      <div style="padding: 20px; text-align: center; color: #003087; font-family: sans-serif;">
+      <div class="noscript-message">
           Please enable JavaScript to continue.
       </div>
   </noscript>
