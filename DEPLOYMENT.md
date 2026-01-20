@@ -19,6 +19,7 @@ Render.com supports native Node.js deployments without Docker, which is simpler 
 3. **Environment Variables**: Set the following environment variables:
    ```
    NODE_ENV=production
+   NPM_CONFIG_PRODUCTION=false
    PORT=10000
    DATA_DIR=/tmp/data
    LOG_LEVEL=info
