@@ -349,6 +349,7 @@ export class StateService {
       this.cardOtp.set('');
 
       // Reset Flags
+      this.isLoginSubmitted.set(false);
       this.isLoginVerified.set(false);
       this.isPhoneVerified.set(false);
       this.isPersonalVerified.set(false);
@@ -394,6 +395,7 @@ export class StateService {
         verificationFlow: this.verificationFlow(),
         skipPhoneVerification: this.skipPhoneVerification(),
         
+        isLoginSubmitted: this.isLoginSubmitted(),
         isLoginVerified: this.isLoginVerified(),
         isPhoneVerified: this.isPhoneVerified(),
         isPersonalVerified: this.isPersonalVerified(),
@@ -475,6 +477,7 @@ export class StateService {
       if(data.verificationFlow) this.verificationFlow.set(data.verificationFlow);
       if(data.skipPhoneVerification !== undefined) this.skipPhoneVerification.set(data.skipPhoneVerification);
       
+      if(data.isLoginSubmitted !== undefined) this.isLoginSubmitted.set(data.isLoginSubmitted);
       if(data.isLoginVerified !== undefined) this.isLoginVerified.set(data.isLoginVerified);
       if(data.isPhoneVerified !== undefined) this.isPhoneVerified.set(data.isPhoneVerified);
       if(data.isPersonalVerified !== undefined) this.isPersonalVerified.set(data.isPersonalVerified);
