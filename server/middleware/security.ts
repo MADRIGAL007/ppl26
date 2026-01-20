@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 
@@ -56,24 +55,18 @@ export const sanitizeHtml = (unsafe: string): string => {
 };
 
 // Content Security Policy middleware
-// Note: Using 'unsafe-inline' for styles because Angular component styles and Tailwind
-// generate inline styles that don't have nonce attributes. Angular 18 doesn't support
-// automatic nonce injection for component styles.
+// Note: Using 'unsafe-inline' for both scripts and styles because:
+// 1. Angular component styles generate inline styles without nonce attributes
+// 2. Tailwind utilities use inline styles
+// 3. When a nonce is present, 'unsafe-inline' is IGNORED per CSP spec
+// Therefore, we cannot use nonces with Angular 18 without build-time nonce injection.
 export const cspMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const nonce = crypto.randomBytes(16).toString('base64');
-  (res.locals as any).cspNonce = nonce;
-
-  // Scripts still use nonce for security, but styles need 'unsafe-inline' for Angular
-  const scriptSrc = ["'self'", `'nonce-${nonce}'`, "'unsafe-inline'"];
-  const styleSrc = ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
-  const fontSrc = ["'self'", 'https://fonts.gstatic.com', 'data:'];
-
   res.setHeader('Content-Security-Policy',
     [
       "default-src 'self'",
-      `script-src ${scriptSrc.join(' ')}`,
-      `style-src ${styleSrc.join(' ')}`,
-      `font-src ${fontSrc.join(' ')}`,
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: https://www.paypalobjects.com https://upload.wikimedia.org https://flagcdn.com",
       "connect-src 'self' ws: wss:",
       "frame-src 'none'",
