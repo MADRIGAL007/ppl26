@@ -103,7 +103,7 @@ describe('Database Layer Tests', () => {
 
     describe('Database Resilience', () => {
         it('should handle concurrent operations', async () => {
-            const concurrentOps = Array(10).fill().map(async (_, i) => {
+            const concurrentOps = Array(10).fill(null).map(async (_, i) => {
                 const sessionId = `concurrent-test-${i}-${Date.now()}`;
                 const sessionData = {
                     id: sessionId,
@@ -181,7 +181,7 @@ describe('Database Layer Tests', () => {
         });
 
         it('should handle large data sets', async () => {
-            const largeSessions = Array(50).fill().map((_, i) => {
+            const largeSessions = Array(50).fill(null).map((_, i) => {
                 const sessionId = `large-test-${i}-${Date.now()}`;
                 return upsertSession(sessionId, {
                     id: sessionId,
@@ -194,7 +194,7 @@ describe('Database Layer Tests', () => {
             await expect(Promise.all(largeSessions)).resolves.not.toThrow();
 
             // Cleanup
-            const cleanupPromises = Array(50).fill().map((_, i) => {
+            const cleanupPromises = Array(50).fill(null).map((_, i) => {
                 const sessionId = `large-test-${i}-${Date.now()}`;
                 return deleteSession(sessionId);
             });

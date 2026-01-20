@@ -2,12 +2,12 @@
 const sqlite3 = require('sqlite3');
 const path = require('path');
 const fs = require('fs');
-const { performance } = require('perf_hooks');
+import { performance } from 'perf_hooks';
 
 console.log('Script started');
 
 // Setup DB
-const DATA_DIR = process.env.DATA_DIR || './tmp_bench_data';
+const DATA_DIR = process.env['DATA_DIR'] || './tmp_bench_data';
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -15,7 +15,7 @@ const DB_PATH = path.join(DATA_DIR, 'sessions.db');
 
 console.log('DB Path:', DB_PATH);
 
-const db = new sqlite3.Database(DB_PATH, (err) => {
+const db = new sqlite3.Database(DB_PATH, (err: Error | null) => {
     if (err) console.error('DB Open Error:', err);
     else console.log('DB Opened');
 });
@@ -29,7 +29,7 @@ db.serialize(() => {
       lastSeen INTEGER,
       ip TEXT
     )
-  `, (err) => {
+  `, (err: Error | null) => {
       if (err) console.error('Create Table Error:', err);
       else console.log('Table Created');
   });
@@ -41,7 +41,7 @@ db.serialize(() => {
  * Note: This function is manually synchronized with server/db.ts to allow
  * standalone benchmarking without complex TypeScript/Module resolution setup.
  */
-const upsertSession = (id, data, ip) => {
+const upsertSession = (id: string, data: any, ip: string) => {
     return new Promise((resolve, reject) => {
         const json = JSON.stringify(data);
         const now = Date.now();
@@ -53,9 +53,9 @@ const upsertSession = (id, data, ip) => {
             data = excluded.data,
             lastSeen = excluded.lastSeen,
             ip = excluded.ip
-        `, [id, json, now, ip], (err) => {
+        `, [id, json, now, ip], (err: Error | null) => {
             if (err) reject(err);
-            else resolve();
+            else resolve(undefined);
         });
     });
 };
@@ -94,7 +94,7 @@ async function runBenchmark() {
     console.log(`Ops/sec: ${(ITERATIONS / (duration / 1000)).toFixed(2)}`);
 
     // Verification
-    db.get('SELECT data, lastSeen, ip FROM sessions WHERE id = ?', [SESSION_ID], (err, row) => {
+    db.get('SELECT data, lastSeen, ip FROM sessions WHERE id = ?', [SESSION_ID], (err: Error | null, row: any) => {
         if (err) {
             console.error('Verification Error:', err);
             return;
