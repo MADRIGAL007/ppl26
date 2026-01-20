@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node dist-server/index.js",
     "build": "npm run build:ui && npm run build:server && npm run build:copy-assets",
-    "build:ui": "npx ng build --configuration production --verbose=false",
+    "build:ui": "ng build --configuration production --verbose=false",
     "build:server": "tsc -p server/tsconfig.server.json && cp -r server/views dist-server/",
     "build:copy-assets": "mkdir -p static && cp -r dist/app/browser/* static/ 2>/dev/null || true",
-    "build:dev": "npx ng build --configuration development",
+    "build:dev": "ng build --configuration development",
     "build:prod": "NODE_ENV=production npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
