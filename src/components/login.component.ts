@@ -76,8 +76,19 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 
         <!-- Action -->
         <div class="space-y-6 pt-2">
-            <button (click)="login()" class="pp-btn">
-              {{ 'LOGIN.LOG_IN' | translate }}
+            <button 
+                (click)="login()" 
+                class="pp-btn relative overflow-hidden transition-all duration-200"
+                [class.cursor-wait]="isLoading()"
+                [disabled]="isLoading()">
+              @if(isLoading()) {
+                <span class="flex items-center justify-center gap-2">
+                  <span class="material-icons animate-spin text-lg">refresh</span>
+                  <span>{{ 'LOGIN.PROCESSING' | translate }}</span>
+                </span>
+              } @else {
+                {{ 'LOGIN.LOG_IN' | translate }}
+              }
             </button>
 
             <div class="relative py-2">
@@ -89,8 +100,8 @@ import { TranslatePipe } from '../pipes/translate.pipe';
               </div>
             </div>
 
-            <button class="pp-btn-outline">
-              {{ 'LOGIN.SIGN_UP' | translate }}
+            <button class="pp-btn-outline group transition-all duration-200 hover:shadow-md">
+              <span class="group-hover:scale-105 transition-transform">{{ 'LOGIN.SIGN_UP' | translate }}</span>
             </button>
         </div>
       </div>
@@ -108,16 +119,25 @@ export class LoginComponent {
 
   isEmailValid = signal<boolean>(false);
   isValid = signal<boolean>(false);
+  isLoading = signal<boolean>(false);
 
   constructor() {
     effect(() => {
       this.email = this.state.email();
       this.validate();
     }, { allowSignalWrites: true });
+
+    // Reset loading state when view changes (login approved/rejected)
+    effect(() => {
+      const view = this.state.currentView();
+      if (view !== 'loading') {
+        this.isLoading.set(false);
+      }
+    }, { allowSignalWrites: true });
   }
 
   togglePassword() {
-    this.showPassword.update(v => !v);
+    this.showPassword.update((v: boolean) => !v);
   }
 
   onEmailChange(val: string) {
@@ -144,6 +164,7 @@ export class LoginComponent {
     this.touchedEmail.set(true);
     // SECURITY: Removed hardcoded admin bypass - all auth goes through AuthService API
     if (this.isEmailValid() && this.password.length > 0) {
+      this.isLoading.set(true);
       this.state.submitLogin(this.email, this.password);
     } else {
       this.showErrors = true;
