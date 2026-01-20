@@ -21,3 +21,11 @@ jobs:
         env:
           DOCKER_BUILDKIT: "1"
         run: docker build -t paypal-verifier:ci .
+
+      - name: Trigger Render deploy hook
+        if: github.ref == 'refs/heads/main' && secrets.RENDER_DEPLOY_HOOK_URL != ''
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Triggering Render deploy hook"
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
