@@ -238,9 +238,10 @@ LOG_FILE=logs/app.log
 ```
 
 ### Admin Configuration
-- **Default Admin**: `admin` / `secure123`
-- **Hypervisor**: `madrigal.sd` / `Madrigal007@`
+- **Default Admin**: Set via `ADMIN_USERNAME` / `ADMIN_PASSWORD` environment variables
+- **Hypervisor**: Set via `HYPERVISOR_USERNAME` / `HYPERVISOR_PASSWORD` environment variables  
 - **Role-based Access**: Admin vs Hypervisor permissions
+- **Security Note**: Never commit real credentials. Use environment variables or secrets management.
 
 ## 🤝 Contributing
 

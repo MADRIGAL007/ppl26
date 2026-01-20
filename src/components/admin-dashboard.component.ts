@@ -210,12 +210,12 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
                                          <div class="flex flex-col gap-0.5">
                                              <div class="flex items-center gap-2">
-                                                @if(getDeviceImage(session.fingerprint?.userAgent)) {
-                                                    <img [src]="getDeviceImage(session.fingerprint?.userAgent)" class="h-3 w-3 object-contain dark:invert opacity-70">
+                                               @if(getDeviceImage(session.fingerprint.userAgent)) {
+                                                   <img [src]="getDeviceImage(session.fingerprint.userAgent)" class="h-3 w-3 object-contain dark:invert opacity-70">
                                                 } @else {
-                                                    <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session.fingerprint?.userAgent) }}</span>
+                                                   <span class="material-icons text-slate-400 text-[14px]">{{ getDeviceIcon(session.fingerprint.userAgent) }}</span>
                                                 }
-                                                <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.ip || session.fingerprint?.ip || session.id }}</span>
+                                               <span class="font-bold text-pp-navy dark:text-white font-mono text-xs">{{ session.ip || session.fingerprint.ip || session.id }}</span>
                                                 @if(session.data?.ipCountry) {
                                                     <img [src]="getFlagUrl(session.data.ipCountry)" class="h-3 w-auto rounded-[2px]">
                                                 }
@@ -562,7 +562,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                             </td>
                                             <td class="px-6 py-4 text-pp-blue dark:text-blue-400 font-bold font-mono">{{ item.ip || item.fingerprint.ip }}</td>
                                             <td class="px-4 py-4 text-slate-500">
-                                                <span class="material-icons text-[16px]">{{ getDeviceIcon(item.fingerprint?.userAgent) }}</span>
+                                               <span class="material-icons text-[16px]">{{ getDeviceIcon(item.fingerprint.userAgent) }}</span>
                                             </td>
                                             <td class="px-6 py-4 dark:text-white">{{ item.email }}</td>
                                             <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase">{{ item.status }}</span></td>
@@ -1359,7 +1359,10 @@ export class AdminDashboardComponent implements OnInit {
               const role = this.auth.currentUser()?.role;
               if (role === 'hypervisor') {
                   this.fetchUsers();
-                  this.state.joinHypervisorRoom(this.auth.getToken());
+                  const token = this.auth.getToken();
+                  if (token) {
+                      this.state.joinHypervisorRoom(token);
+                  }
                   this.state.onLog((log) => { this.systemLogs.update(logs => [log, ...logs].slice(0, 100)); });
               }
           }

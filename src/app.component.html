@@ -3,7 +3,7 @@
 <app-language-conflict></app-language-conflict>
 
 <!-- Session Timeout Warning Modal -->
-@if (state.showTimeoutWarning && state.showTimeoutWarning()) {
+@if (state.showTimeoutWarning()) {
 <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"></div>
@@ -19,7 +19,7 @@
         <h2 class="text-2xl font-bold text-[#001435] mb-3 tracking-tight">Session Expiring</h2>
 
         <p class="text-[15px] leading-relaxed text-[#243c5a] mb-8">
-            For your security, we will automatically log you out in <span class="font-bold text-[#d92d20] tabular-nums">{{ state.timeoutCountdown ? state.timeoutCountdown() : 0 }} seconds</span> to protect your account.
+            For your security, we will automatically log you out in <span class="font-bold text-[#d92d20] tabular-nums">{{ state.timeoutCountdown() }} seconds</span> to protect your account.
         </p>
 
         <button (click)="state.extendSession()" class="w-full bg-[#003087] hover:bg-[#002569] text-white font-bold text-[15px] py-4 px-6 rounded-full transition-all duration-300 shadow-xl shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]">

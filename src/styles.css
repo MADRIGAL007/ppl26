@@ -18,6 +18,13 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+.noscript-message {
+    padding: 20px;
+    text-align: center;
+    color: #003087;
+    font-family: sans-serif;
+}
+
 /* Modern PayPal 2026 Input Style */
 @layer components {
     .pp-input-group {

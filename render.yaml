@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: paypal-verifier
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm run build:prod
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      - key: PORT
+        value: 10000
+      - key: DATA_DIR
+        value: /tmp/data
+      - key: LOG_LEVEL
+        value: info
+      # Add your other environment variables here
+      # - key: DATABASE_URL
+      #   value: your-database-url
+      # - key: JWT_SECRET
+      #   value: your-jwt-secret

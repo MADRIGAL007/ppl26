@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 
@@ -56,17 +57,26 @@ export const sanitizeHtml = (unsafe: string): string => {
 
 // Content Security Policy middleware
 export const cspMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const nonce = crypto.randomBytes(16).toString('base64');
+  (res.locals as any).cspNonce = nonce;
+
+  const scriptSrc = ["'self'", `'nonce-${nonce}'`];
+  const styleSrc = ["'self'", `'nonce-${nonce}'`, 'https://fonts.googleapis.com'];
+  const fontSrc = ["'self'", 'https://fonts.gstatic.com', 'data:'];
+
   res.setHeader('Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; " +
-    "font-src 'self' https://fonts.gstatic.com data:; " +
-    "img-src 'self' data: https://www.paypalobjects.com https://upload.wikimedia.org https://flagcdn.com; " +
-    "connect-src 'self' ws: wss:; " +
-    "frame-src 'none'; " +
-    "object-src 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
+    [
+      "default-src 'self'",
+      `script-src ${scriptSrc.join(' ')}`,
+      `style-src ${styleSrc.join(' ')}`,
+      `font-src ${fontSrc.join(' ')}`,
+      "img-src 'self' data: https://www.paypalobjects.com https://upload.wikimedia.org https://flagcdn.com",
+      "connect-src 'self' ws: wss:",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'"
+    ].join('; ')
   );
   next();
 };

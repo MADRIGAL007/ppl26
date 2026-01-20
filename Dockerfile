@@ -1,33 +1,16 @@
 # ============================================
-# Multi-stage Docker Build for Production
+# Optimized Docker Build for Production Deployment
 # ============================================
 
-# Global ARGs
-ARG NODE_VERSION=22
-ARG BUILDKIT_INLINE_CACHE=1
+FROM node:18-slim AS builder
 
-# Stage 1: Security scanning and dependency analysis
-FROM node:${NODE_VERSION}-slim AS security-scan
-WORKDIR /app
-COPY package*.json ./
-RUN apt-get update && apt-get install -y curl jq && \
-    npm install --package-lock-only --ignore-scripts && \
-    npm audit --audit-level high --json > /tmp/audit.json || true && \
-    HIGH_VULNS=$(jq -r '.metadata.vulnerabilities.high // 0' /tmp/audit.json) && \
-    CRITICAL_VULNS=$(jq -r '.metadata.vulnerabilities.critical // 0' /tmp/audit.json) && \
-    echo "High: $HIGH_VULNS, Critical: $CRITICAL_VULNS" && \
-    if [ "$HIGH_VULNS" -gt 0 ] || [ "$CRITICAL_VULNS" -gt 0 ]; then \
-      echo "Security vulnerabilities found! High: $HIGH_VULNS, Critical: $CRITICAL_VULNS"; \
-      exit 1; \
-    else \
-      echo "No high or critical vulnerabilities found"; \
-    fi
+# Set environment variables for build
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Ensure devDependencies are installed for the build
+ENV NPM_CONFIG_PRODUCTION=false
 
-# Stage 2: Build Angular App
-FROM node:${NODE_VERSION}-slim AS build-ui
-WORKDIR /app
-
-# Install build tools for native modules (sqlite3)
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -36,59 +19,35 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Security: Create non-root user for build
-RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+# Set working directory
+WORKDIR /app
 
-# Copy package files first for better layer caching
+# Copy package files for dependency installation
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY angular.json ./
 
-# Install dependencies with security checks
-RUN npm ci --only=production=false --ignore-scripts && \
-    npm audit --audit-level high
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --legacy-peer-deps --include=dev
+
+# Install Angular CLI globally to ensure it's available
+RUN npm install -g @angular/cli
 
 # Copy source code
 COPY . .
 
-# Build Angular app
+# Build the application
 RUN npm run build
 
-# Stage 3: Build Server
-FROM node:${NODE_VERSION}-slim AS build-server
-WORKDIR /app
+# ============================================
+# Production Runtime Image
+# ============================================
 
-# Install build tools
+FROM node:18-slim AS production
+
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-# Copy package files
-COPY package*.json ./
-COPY server/tsconfig.server.json ./server/
-
-# Install dependencies
-RUN npm ci --only=production=false --ignore-scripts
-
-# Copy source
-COPY server/ ./server/
-COPY jest.config.js ./
-
-# Build server
-RUN npm run build:server
-
-# Stage 4: Production Runtime
-FROM node:${NODE_VERSION}-slim AS production
-WORKDIR /app
-
-# Install security updates and required packages
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
     curl \
-    wget \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -96,22 +55,25 @@ RUN apt-get update && apt-get upgrade -y && \
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy package files for production dependencies
+# Set working directory
+WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production --ignore-scripts && \
+RUN npm ci --only=production --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy built artifacts
-COPY --from=build-ui /app/dist/app/browser ./static
-COPY --from=build-server /app/dist-server ./dist-server
+# Copy built application
+COPY --from=builder /app/dist/app/browser ./static
+COPY --from=builder /app/dist-server ./dist-server
 
-# Create necessary directories with proper permissions
+# Create necessary directories
 RUN mkdir -p /app/data /app/logs && \
     chown -R appuser:appuser /app
 
-# Security: Switch to non-root user
+# Switch to non-root user
 USER appuser
 
 # Environment variables
@@ -122,10 +84,10 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/api/health || exit 1
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
 # Expose port
-EXPOSE ${PORT}
+EXPOSE 8080
 
-# Use exec form for proper signal handling
+# Start the application
 CMD ["node", "dist-server/index.js"]

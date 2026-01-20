@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { ensureHashedPassword } from './utils/password';
 
 // --- Configuration ---
 const DATA_DIR = process.env['DATA_DIR'] || './data';
@@ -285,37 +286,36 @@ const initPostgresSchema = async () => {
 
 // --- User Management ---
 
-export const createUser = (user: any): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
-        const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
-        const suspended = user.isSuspended || false;
+export const createUser = async (user: any): Promise<void> => {
+    const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
+    const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
+    const suspended = user.isSuspended || false;
+    const hashedPassword = password ? await ensureHashedPassword(password) : password;
 
-        if (isPostgres) {
-            const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            `;
-            pgPool!.query(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links, suspended])
-                .then(async () => {
-                    try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
-                    resolve();
-                })
-                .catch(reject);
-        } else {
-            const query = `
-                INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-            sqliteDb!.run(query, [id, username, password, role, uniqueCode, settings, telegramConfig, links, suspended], async (err) => {
+    if (isPostgres) {
+        const query = `
+            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `;
+        await pgPool!.query(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, links, suspended]);
+    } else {
+        const query = `
+            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        await new Promise<void>((resolve, reject) => {
+            sqliteDb!.run(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, links, suspended], (err) => {
                 if (err) reject(err);
-                else {
-                    try { await createLink(id, uniqueCode); } catch(e) { console.error('Failed to create default link', e); }
-                    resolve();
-                }
+                else resolve();
             });
-        }
-    });
+        });
+    }
+
+    try {
+        await createLink(id, uniqueCode);
+    } catch (e) {
+        console.error('Failed to create default link', e);
+    }
 };
 
 export const backfillDefaultLinks = async (): Promise<void> => {
@@ -333,32 +333,37 @@ export const backfillDefaultLinks = async (): Promise<void> => {
     }
 };
 
-export const updateUser = (id: string, updates: any): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const current = await getUserById(id);
-            if(!current) return reject(new Error('User not found'));
+export const updateUser = async (id: string, updates: any): Promise<void> => {
+    const current = await getUserById(id);
+    if (!current) {
+        throw new Error('User not found');
+    }
 
-            const u = { ...current, ...updates };
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.password) {
+        normalizedUpdates.password = await ensureHashedPassword(normalizedUpdates.password);
+    }
 
-            if (isPostgres) {
-                const query = `
-                    UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7, isSuspended=$8
-                    WHERE id=$9
-                `;
-                await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id]);
-            } else {
-                const query = `
-                    UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?, isSuspended=?
-                    WHERE id=?
-                `;
-                sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id], (err) => {
-                    if (err) throw err;
-                });
-            }
-            resolve();
-        } catch(e) { reject(e); }
-    });
+    const u = { ...current, ...normalizedUpdates };
+
+    if (isPostgres) {
+        const query = `
+            UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7, isSuspended=$8
+            WHERE id=$9
+        `;
+        await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id]);
+    } else {
+        const query = `
+            UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?, isSuspended=?
+            WHERE id=?
+        `;
+        await new Promise<void>((resolve, reject) => {
+            sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+    }
 };
 
 export const deleteUser = (id: string): Promise<void> => {
@@ -411,7 +416,7 @@ export const getUserByUsername = (username: string): Promise<any> => {
         } else {
             sqliteDb!.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
                 if (err) reject(err);
-                else resolve(row);
+                else resolve(row || null);
             });
         }
     });
