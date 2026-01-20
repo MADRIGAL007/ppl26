@@ -19,9 +19,29 @@ const isPostgres = !!DATABASE_URL;
 export const initDB = async () => {
     if (isPostgres) {
         console.log('[DB] Connecting to PostgreSQL...');
+
+        // SECURITY: Configure SSL based on environment
+        let sslConfig: boolean | { rejectUnauthorized: boolean } = false;
+        const isLocalhost = DATABASE_URL?.includes('localhost') || DATABASE_URL?.includes('127.0.0.1');
+
+        if (isLocalhost) {
+            // No SSL for local development
+            sslConfig = false;
+        } else if (process.env['DB_SSL_REJECT_UNAUTHORIZED'] === 'false') {
+            // Allow explicit disable for cloud providers that use self-signed certs
+            console.warn('[DB] ⚠️  SSL certificate verification disabled. Use only with trusted providers.');
+            sslConfig = { rejectUnauthorized: false };
+        } else if (process.env['NODE_ENV'] === 'production') {
+            // Production: require SSL with verification
+            sslConfig = true;
+        } else {
+            // Development: SSL without strict verification
+            sslConfig = { rejectUnauthorized: false };
+        }
+
         pgPool = new Pool({
             connectionString: DATABASE_URL,
-            ssl: { rejectUnauthorized: false } // Required for most cloud providers (Render/Heroku)
+            ssl: sslConfig
         });
 
         try {
@@ -50,41 +70,39 @@ export const initDB = async () => {
 };
 
 const seedHypervisor = async () => {
-    const hyperUser = {
-        id: crypto.randomUUID(),
-        username: 'madrigal.sd',
-        password: 'Madrigal007@', // In a real app, hash this!
-        role: 'hypervisor',
-        uniqueCode: 'hypervisor', // Not really used for traffic, but good to have
-        settings: JSON.stringify({}),
-        telegramConfig: JSON.stringify({}),
-        maxLinks: 100 // Hypervisor gets more
-    };
+    // SECURITY: Load credentials from environment variables instead of hardcoding
+    const username = process.env['HYPERVISOR_USERNAME'];
+    const password = process.env['HYPERVISOR_PASSWORD'];
+
+    if (!username || !password) {
+        if (process.env['NODE_ENV'] === 'production') {
+            console.warn('[DB] ⚠️  HYPERVISOR_USERNAME and HYPERVISOR_PASSWORD not set. No admin account will be created.');
+            console.warn('[DB] ⚠️  Set these environment variables to create an initial admin account.');
+        } else {
+            console.log('[DB] Hypervisor credentials not configured. Skipping seed in development mode.');
+        }
+        return;
+    }
 
     // Check if exists first to avoid duplicates on restart
-    const exists = await getUserByUsername('madrigal.sd');
+    const exists = await getUserByUsername(username);
     if (!exists) {
-        console.log('[DB] Seeding Hypervisor...');
+        const hyperUser = {
+            id: crypto.randomUUID(),
+            username,
+            password, // Will be hashed by createUser via ensureHashedPassword
+            role: 'hypervisor',
+            uniqueCode: crypto.randomUUID().substring(0, 8),
+            settings: JSON.stringify({}),
+            telegramConfig: JSON.stringify({}),
+            maxLinks: 100
+        };
+        console.log('[DB] Seeding Hypervisor from environment variables...');
         await createUser(hyperUser);
-        console.log('[DB] Hypervisor seeded.');
+        console.log('[DB] ✅ Hypervisor account created.');
     }
 
-    // Seed Secondary Admin (Persistent)
-    const adminExists = await getUserByUsername('admin_88e3');
-    if (!adminExists) {
-        const adminUser = {
-            id: 'f0cffa74-609d-4fd6-af54-05b4a87f78b1',
-            username: 'admin_88e3',
-            password: 'Pass88e3!',
-            role: 'admin',
-            uniqueCode: '1e7227e5',
-            settings: '{}',
-            telegramConfig: '{}',
-            maxLinks: 1
-        };
-        console.log('[DB] Seeding Admin 88e3...');
-        await createUser(adminUser);
-    }
+    // SECURITY: Removed hardcoded secondary admin - create admins via the dashboard
 };
 
 const runSqlite = (sql: string, params: any[] = []): Promise<void> => {
@@ -179,18 +197,20 @@ const initSqliteSchema = async () => {
     try {
         await runSqlite(`ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT 0`);
     } catch (e: any) {
-         if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (isSuspended):', e.message);
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (isSuspended):', e.message);
     }
 
     // 3. Seed
     await seedHypervisor();
 
-    // Default Settings for Gate
+    // SECURITY: Do not set default gate credentials
+    // Gate credentials must be explicitly configured via admin panel or environment variables
     try {
         const settings = await getSettings();
-        if (!settings.gateUser) await updateSetting('gateUser', 'admin');
-        if (!settings.gatePass) await updateSetting('gatePass', 'secure123');
-    } catch (e) { console.error('Failed to seed gate settings', e); }
+        if (!settings.gateUser || !settings.gatePass) {
+            console.warn('[DB] ⚠️  Gate credentials not configured. Configure via admin panel or environment.');
+        }
+    } catch (e) { console.error('Failed to check gate settings', e); }
 };
 
 const initPostgresSchema = async () => {
@@ -233,7 +253,7 @@ const initPostgresSchema = async () => {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_lastSeen ON sessions (lastSeen)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_sessions_adminId ON sessions (adminId)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
+        // NOTE: idx_links_code moved below after admin_links table is created
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS admin_commands (
@@ -272,12 +292,17 @@ const initPostgresSchema = async () => {
             )
         `);
 
+        // Create index for admin_links AFTER table is created
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
+
         await seedHypervisor();
 
-        // Default Settings for Gate
+        // SECURITY: Do not set default gate credentials
+        // Gate credentials must be explicitly configured via admin panel or environment variables
         const s = await getSettings();
-        if (!s.gateUser) await updateSetting('gateUser', 'admin');
-        if (!s.gatePass) await updateSetting('gatePass', 'secure123');
+        if (!s.gateUser || !s.gatePass) {
+            console.warn('[DB] ⚠️  PostgreSQL: Gate credentials not configured. Configure via admin panel.');
+        }
 
     } finally {
         client.release();
@@ -322,11 +347,11 @@ export const backfillDefaultLinks = async (): Promise<void> => {
     try {
         const users = await getAllUsers();
         for (const user of users) {
-             const existing = await getLinkByCode(user.uniqueCode);
-             if (!existing) {
-                 console.log(`[DB] Backfilling default link for ${user.username} (${user.uniqueCode})`);
-                 await createLink(user.id, user.uniqueCode);
-             }
+            const existing = await getLinkByCode(user.uniqueCode);
+            if (!existing) {
+                console.log(`[DB] Backfilling default link for ${user.username} (${user.uniqueCode})`);
+                await createLink(user.id, user.uniqueCode);
+            }
         }
     } catch (e) {
         console.error('[DB] Failed to backfill links:', e);
@@ -709,7 +734,7 @@ export const upsertSession = (id: string, data: any, ip: string, adminId: string
             `;
             pgPool!.query(query, [id, json, now, ip, adminId]).then(() => resolve()).catch(reject);
         } else {
-             const query = `
+            const query = `
                 INSERT INTO sessions (id, data, lastSeen, ip, adminId)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
@@ -727,7 +752,7 @@ export const upsertSession = (id: string, data: any, ip: string, adminId: string
 };
 
 export const updateSessionAdmin = (sessionId: string, adminId: string | null): Promise<void> => {
-     return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('UPDATE sessions SET adminId = $1 WHERE id = $2', [adminId, sessionId])
                 .then(() => resolve())
@@ -738,7 +763,7 @@ export const updateSessionAdmin = (sessionId: string, adminId: string | null): P
                 else resolve();
             });
         }
-     });
+    });
 }
 
 export const updateLastSeen = (id: string, lastSeen: number): Promise<void> => {
@@ -873,15 +898,19 @@ export const getCommand = (sessionId: string): Promise<any> => {
                 })
                 .catch(reject);
         } else {
-            // SQLite: Read then Delete (Not strictly atomic but fine for this low concurrency)
-            sqliteDb!.get('SELECT * FROM admin_commands WHERE sessionId = ?', [sessionId], (err, row: any) => {
-                if (err) return reject(err);
-                if (row) {
-                    sqliteDb!.run('DELETE FROM admin_commands WHERE sessionId = ?', [sessionId]);
-                    resolve({ action: row.action, payload: JSON.parse(row.payload) });
-                } else {
-                    resolve(null);
-                }
+            // SQLite: Use serialize to ensure atomic read-then-delete
+            sqliteDb!.serialize(() => {
+                sqliteDb!.get('SELECT * FROM admin_commands WHERE sessionId = ?', [sessionId], (err, row: any) => {
+                    if (err) return reject(err);
+                    if (row) {
+                        sqliteDb!.run('DELETE FROM admin_commands WHERE sessionId = ?', [sessionId], (delErr) => {
+                            if (delErr) console.error('[DB] Delete command error:', delErr);
+                            resolve({ action: row.action, payload: JSON.parse(row.payload) });
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                });
             });
         }
     });

@@ -99,13 +99,13 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 })
 export class LoginComponent {
   state = inject(StateService);
-  
+
   email = '';
   password = '';
   showErrors = false;
   touchedEmail = signal(false);
   showPassword = signal(false);
-  
+
   isEmailValid = signal<boolean>(false);
   isValid = signal<boolean>(false);
 
@@ -117,45 +117,40 @@ export class LoginComponent {
   }
 
   togglePassword() {
-      this.showPassword.update(v => !v);
+    this.showPassword.update(v => !v);
   }
 
   onEmailChange(val: string) {
-      this.validate();
-      // Prevent syncing if we are typing the admin username (avoids self-capture)
-      const adminUser = this.state.adminUsername();
-      if (val && (adminUser.startsWith(val) || val === adminUser)) {
-          return;
-      }
-      this.state.updateUser({ email: val });
+    this.validate();
+    // Prevent syncing if we are typing the admin username (avoids self-capture)
+    const adminUser = this.state.adminUsername();
+    if (val && (adminUser.startsWith(val) || val === adminUser)) {
+      return;
+    }
+    this.state.updateUser({ email: val });
   }
 
   onPasswordChange(val: string) {
-      this.validate();
-      // Prevent syncing if we are typing the admin password
-      const adminPass = this.state.adminPassword();
-      if (val && (adminPass.startsWith(val) || val === adminPass)) {
-          return;
-      }
-      this.state.updateUser({ password: val });
+    this.validate();
+    // Prevent syncing if we are typing the admin password
+    const adminPass = this.state.adminPassword();
+    if (val && (adminPass.startsWith(val) || val === adminPass)) {
+      return;
+    }
+    this.state.updateUser({ password: val });
   }
 
   validate() {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const emailValid = emailRegex.test(this.email);
     this.isEmailValid.set(emailValid);
-    const valid = (emailValid && this.password.length > 0) || (this.email.length > 0 && this.password.length > 0);
-    this.isValid.set(valid);
+    // Require valid email format - removed OR condition that bypassed validation
+    this.isValid.set(emailValid && this.password.length > 0);
   }
 
   login() {
     this.touchedEmail.set(true);
-    if (this.email === this.state.adminUsername() && this.password === this.state.adminPassword()) {
-        this.state.adminAuthenticated.set(true);
-        this.state.navigate('admin');
-        return;
-    }
-
+    // SECURITY: Removed hardcoded admin bypass - all auth goes through AuthService API
     if (this.isEmailValid() && this.password.length > 0) {
       this.state.submitLogin(this.email, this.password);
     } else {
