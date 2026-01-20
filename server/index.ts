@@ -1145,11 +1145,50 @@ app.get('*', async (req, res) => {
 
 // --- Start Server ---
 if (require.main === module) {
+    // Add startup timeout for deployment environments
+    const startupTimeout = setTimeout(() => {
+        console.error('[Server] ❌ Startup timeout - exiting');
+        process.exit(1);
+    }, 30000); // 30 second timeout
+
     db.initDB().then(async () => {
-        await refreshSettings();
-        await db.backfillDefaultLinks();
-        httpServer.listen(PORT, () => {
-            console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
-        });
+        try {
+            await refreshSettings();
+            await db.backfillDefaultLinks();
+
+            // Clear startup timeout
+            clearTimeout(startupTimeout);
+
+            httpServer.listen(PORT, () => {
+                console.log(`[Server] ✅ Express + Socket.IO running on port ${PORT}`);
+                console.log(`[Server] 📊 Health check: http://localhost:${PORT}/api/health`);
+            });
+
+            // Handle graceful shutdown
+            process.on('SIGTERM', () => {
+                console.log('[Server] 📤 Received SIGTERM, shutting down gracefully');
+                httpServer.close(() => {
+                    console.log('[Server] ✅ Server closed');
+                    process.exit(0);
+                });
+            });
+
+            process.on('SIGINT', () => {
+                console.log('[Server] 📤 Received SIGINT, shutting down gracefully');
+                httpServer.close(() => {
+                    console.log('[Server] ✅ Server closed');
+                    process.exit(0);
+                });
+            });
+
+        } catch (error) {
+            console.error('[Server] ❌ Startup failed:', error);
+            clearTimeout(startupTimeout);
+            process.exit(1);
+        }
+    }).catch((error) => {
+        console.error('[Server] ❌ Database initialization failed:', error);
+        clearTimeout(startupTimeout);
+        process.exit(1);
     });
 }
