@@ -14,8 +14,9 @@ export const createRateLimit = (windowMs: number = 15 * 60 * 1000, max: number =
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-      // Skip rate limiting for health checks and admin routes
-      return req.path === '/api/health' || req.path.startsWith('/admin');
+      // SECURITY: Only skip rate limiting for health checks
+      // Admin routes should be rate-limited to prevent brute-force attacks
+      return req.path === '/api/health';
     }
   });
 };

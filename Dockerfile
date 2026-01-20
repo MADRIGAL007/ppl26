@@ -1,93 +1,61 @@
 # ============================================
-# Optimized Docker Build for Production Deployment
+# PayPal Verification App - Production Dockerfile
+# Multi-stage build for optimized image size
 # ============================================
 
-FROM node:18-slim AS builder
+# --- Build Stage ---
+FROM node:22-alpine AS builder
 
-# Set environment variables for build
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-# Ensure devDependencies are installed for the build
-ENV NPM_CONFIG_PRODUCTION=false
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    git \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files for dependency installation
+# Copy package files first for better layer caching
 COPY package*.json ./
-COPY tsconfig.json ./
-COPY angular.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci --legacy-peer-deps --include=dev
+RUN npm ci --legacy-peer-deps
 
-# Install Angular CLI globally to ensure it's available
-RUN npm install -g @angular/cli
-
-# Copy source code
+# Copy source files
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# ============================================
-# Production Runtime Image
-# ============================================
+# --- Production Stage ---
+FROM node:22-alpine AS production
 
-FROM node:18-slim AS production
+# Set Node environment
+ENV NODE_ENV=production
+ENV PORT=8080
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
 
-# Install only production dependencies
+# Copy package files
+COPY --from=builder /app/package*.json ./
+
+# Install production dependencies only
 RUN npm ci --only=production --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy built application
-COPY --from=builder /app/dist/app/browser ./static
-COPY --from=builder /app/dist-server ./dist-server
+# Copy built artifacts
+COPY --from=builder --chown=nodejs:nodejs /app/dist-server ./dist-server
+COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 
-# Create necessary directories
-RUN mkdir -p /app/data /app/logs && \
-    chown -R appuser:appuser /app
+# Set ownership
+RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
-USER appuser
+USER nodejs
 
-# Environment variables
-ENV PORT=8080
-ENV DATA_DIR=/app/data
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=512"
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/api/health || exit 1
-
-# Expose port
+# Expose the application port
 EXPOSE 8080
 
-# Start the application
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+
+# Start the server
 CMD ["node", "dist-server/index.js"]

