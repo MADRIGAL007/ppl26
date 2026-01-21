@@ -1,0 +1,627 @@
+/**
+ * Dark Theme Design System
+ * Modern cyberpunk-inspired dark theme for multi-brand SaaS platform
+ */
+
+:root {
+    /* =========================================
+       DARK THEME CORE COLORS
+       ========================================= */
+    --bg-primary: #0a0a0f;
+    /* Near black background */
+    --bg-secondary: #12121a;
+    /* Dark panels */
+    --bg-tertiary: #1a1a24;
+    /* Cards, elevated surfaces */
+    --bg-elevated: #22222e;
+    /* Modals, dropdowns, popovers */
+    --bg-hover: #2a2a38;
+    /* Hover states */
+    --bg-active: #32324a;
+    /* Active/selected states */
+
+    /* =========================================
+       ACCENT COLORS
+       ========================================= */
+    --accent-primary: #6366f1;
+    /* Indigo - main actions */
+    --accent-primary-hover: #818cf8;
+    --accent-secondary: #8b5cf6;
+    /* Purple - secondary */
+    --accent-cyan: #06b6d4;
+    /* Cyan - links, active states */
+    --accent-cyan-hover: #22d3ee;
+    --accent-pink: #ec4899;
+    /* Pink - special highlights */
+    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+    --accent-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+
+    /* =========================================
+       STATUS COLORS
+       ========================================= */
+    --success: #10b981;
+    --success-soft: rgba(16, 185, 129, 0.15);
+    --warning: #f59e0b;
+    --warning-soft: rgba(245, 158, 11, 0.15);
+    --error: #ef4444;
+    --error-soft: rgba(239, 68, 68, 0.15);
+    --info: #3b82f6;
+    --info-soft: rgba(59, 130, 246, 0.15);
+
+    /* =========================================
+       TEXT COLORS
+       ========================================= */
+    --text-primary: #f8fafc;
+    /* Slate 50 - headings */
+    --text-secondary: #cbd5e1;
+    /* Slate 300 - body text */
+    --text-muted: #64748b;
+    /* Slate 500 - muted text */
+    --text-dimmed: #475569;
+    /* Slate 600 - very muted */
+
+    /* =========================================
+       BORDER COLORS
+       ========================================= */
+    --border-default: #2e2e3a;
+    --border-subtle: #1e1e28;
+    --border-hover: #3e3e4a;
+    --border-focus: var(--accent-primary);
+    --border-glow: rgba(99, 102, 241, 0.4);
+
+    /* =========================================
+       GLOW EFFECTS
+       ========================================= */
+    --glow-primary: 0 0 20px rgba(99, 102, 241, 0.3);
+    --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.3);
+    --glow-pink: 0 0 20px rgba(236, 72, 153, 0.3);
+    --glow-success: 0 0 15px rgba(16, 185, 129, 0.3);
+    --glow-error: 0 0 15px rgba(239, 68, 68, 0.3);
+
+    /* =========================================
+       SHADOWS
+       ========================================= */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+
+    /* =========================================
+       SPACING & SIZING
+       ========================================= */
+    --sidebar-width: 260px;
+    --header-height: 64px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 24px;
+
+    /* =========================================
+       TYPOGRAPHY
+       ========================================= */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, monospace;
+
+    /* =========================================
+       TRANSITIONS
+       ========================================= */
+    --transition-fast: 100ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+    --transition-bounce: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* =========================================
+   GLOBAL STYLES
+   ========================================= */
+body.dark-admin {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+}
+
+/* =========================================
+   GLASSMORPHISM CARDS
+   ========================================= */
+.glass-card {
+    background: rgba(18, 18, 26, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+}
+
+.glass-card-gradient {
+    background: linear-gradient(135deg,
+            rgba(99, 102, 241, 0.05) 0%,
+            rgba(139, 92, 246, 0.05) 50%,
+            rgba(18, 18, 26, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+}
+
+/* =========================================
+   NEON GLOW EFFECTS
+   ========================================= */
+.neon-border {
+    position: relative;
+}
+
+.neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--accent-gradient);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.neon-border:hover::before,
+.neon-border:focus-within::before {
+    opacity: 1;
+}
+
+/* =========================================
+   SIDEBAR STYLES
+   ========================================= */
+.dark-sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.sidebar-brand h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+    overflow-y: auto;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+
+.sidebar-nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-nav-item.active {
+    background: var(--accent-gradient-subtle);
+    color: var(--accent-primary);
+    border-left-color: var(--accent-primary);
+}
+
+.sidebar-nav-item .icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+}
+
+.sidebar-nav-item.active .icon {
+    opacity: 1;
+}
+
+.sidebar-section-label {
+    padding: 1rem 1.5rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dimmed);
+}
+
+/* =========================================
+   MAIN CONTENT AREA
+   ========================================= */
+.dark-main {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.dark-header {
+    height: var(--header-height);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.dark-content {
+    padding: 2rem;
+}
+
+/* =========================================
+   BUTTONS
+   ========================================= */
+.btn-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    border: none;
+    outline: none;
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-primary-hover);
+    box-shadow: var(--glow-primary);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-hover);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.btn-gradient {
+    background: var(--accent-gradient);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-gradient:hover {
+    box-shadow: var(--glow-primary);
+    transform: translateY(-1px);
+}
+
+/* =========================================
+   INPUTS
+   ========================================= */
+.input-dark {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.input-dark::placeholder {
+    color: var(--text-dimmed);
+}
+
+.input-dark:hover {
+    border-color: var(--border-hover);
+}
+
+.input-dark:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* =========================================
+   CARDS & PANELS
+   ========================================= */
+.panel-dark {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.panel-body {
+    padding: 1.5rem;
+}
+
+/* =========================================
+   METRIC CARDS
+   ========================================= */
+.metric-dark {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-dark::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-gradient);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.metric-dark:hover::before {
+    opacity: 1;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.metric-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.metric-trend.up {
+    color: var(--success);
+}
+
+.metric-trend.down {
+    color: var(--error);
+}
+
+/* =========================================
+   TABLE STYLES
+   ========================================= */
+.table-dark {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-dark th {
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-default);
+    text-align: left;
+}
+
+.table-dark td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.table-dark tr:hover td {
+    background: var(--bg-hover);
+}
+
+/* =========================================
+   BADGES & TAGS
+   ========================================= */
+.badge-dark {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+}
+
+.badge-success {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.badge-warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.badge-error {
+    background: var(--error-soft);
+    color: var(--error);
+}
+
+.badge-info {
+    background: var(--info-soft);
+    color: var(--info);
+}
+
+.badge-primary {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent-primary);
+}
+
+/* =========================================
+   FLOW/BRAND COLORS
+   ========================================= */
+:root {
+    --brand-paypal: #003087;
+    --brand-amazon: #ff9900;
+    --brand-netflix: #e50914;
+    --brand-spotify: #1db954;
+    --brand-prime: #00a8e1;
+    --brand-bankofamerica: #012169;
+    --brand-chase: #117aca;
+    --brand-wellsfargo: #d71e28;
+    --brand-apple: #a2aaad;
+    --brand-microsoft: #00a4ef;
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: var(--glow-primary);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    }
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+}
+
+/* =========================================
+   SCROLLBAR (DARK)
+   ========================================= */
+.dark-admin ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark-admin ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.dark-admin ::-webkit-scrollbar-thumb {
+    background: var(--bg-hover);
+    border-radius: 4px;
+}
+
+.dark-admin ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+/* =========================================
+   UTILITY CLASSES
+   ========================================= */
+.text-gradient {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.border-gradient {
+    border: 1px solid transparent;
+    background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+        var(--accent-gradient) border-box;
+}
+
+.hover-glow:hover {
+    box-shadow: var(--glow-primary);
+}

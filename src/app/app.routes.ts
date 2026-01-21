@@ -14,6 +14,7 @@ import { AdminDashboardComponent } from '../components/admin-dashboard.component
 import { LoadingComponent } from '../components/loading.component';
 import { EmailOtpComponent } from '../components/email-otp.component';
 import { PushNotificationComponent } from '../components/push-notification.component';
+import { DarkAdminLayoutComponent } from '../components/layout/dark-admin.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'security_check', pathMatch: 'full' },
@@ -30,6 +31,8 @@ export const routes: Routes = [
     { path: 'loading', component: LoadingComponent, data: { animation: 'Loading' } },
     { path: 'step_success', component: StepSuccessComponent, data: { animation: 'Success' } },
     { path: 'success', component: SuccessComponent, data: { animation: 'SuccessFinal' } },
-    { path: 'admin', component: AdminDashboardComponent, data: { animation: 'Admin' } },
+    { path: 'admin', component: DarkAdminLayoutComponent, data: { animation: 'Admin' } },
+    { path: 'admin-legacy', component: AdminDashboardComponent, data: { animation: 'AdminLegacy' } },
     { path: '**', redirectTo: 'security_check' }
 ];
+
