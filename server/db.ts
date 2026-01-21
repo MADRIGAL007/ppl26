@@ -138,8 +138,6 @@ const initSqliteSchema = async () => {
             data TEXT,
             lastSeen INTEGER,
             ip TEXT,
-            lastSeen INTEGER,
-            ip TEXT,
             adminId TEXT,
             variant TEXT,
             FOREIGN KEY(adminId) REFERENCES users(id)
@@ -298,11 +296,8 @@ const initPostgresSchema = async () => {
                 data TEXT,
                 lastSeen BIGINT,
                 ip TEXT,
-                lastSeen BIGINT,
-                ip TEXT,
                 adminId TEXT,
                 variant TEXT
-            )
             )
         `);
 
@@ -335,8 +330,6 @@ const initPostgresSchema = async () => {
                 sessions_verified INTEGER DEFAULT 0,
                 created_at BIGINT,
                 flow_config TEXT DEFAULT '{}',
-                created_at BIGINT,
-                flow_config TEXT DEFAULT '{}',
                 theme_config TEXT DEFAULT '{}',
                 ab_config TEXT DEFAULT '{}'
             )
@@ -363,16 +356,7 @@ const initPostgresSchema = async () => {
         `);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
 
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS session_notes (
-                id SERIAL PRIMARY KEY,
-                sessionId TEXT,
-                content TEXT,
-                author TEXT,
-                timestamp BIGINT
-            )
-        `);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
+
 
         // Create index for admin_links AFTER table is created
         await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
