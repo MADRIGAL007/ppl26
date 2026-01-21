@@ -58,8 +58,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
             <label for="otp" 
                 class="absolute left-1/2 -translate-x-1/2 w-auto px-2 transition-all duration-200 pointer-events-none"
                 [class]="labelClasses()"
-                [style.color]="inputTextColor()"
-                [style.background]="inputBg()">
+                [style.color]="inputTextColor()">
                {{ 'EMAIL_OTP.INPUT_LABEL' | translate }}
             </label>
         </div>
@@ -141,13 +140,36 @@ export class EmailOtpComponent implements AfterViewInit, OnDestroy {
     }
 
     inputClasses() {
+        // Shared input logic - propagated from Login/Phone/Personal components
         const style = this.theme()?.input.style || 'modern';
-        return `peer focus:ring-2 focus:ring-opacity-50 focus:border-transparent ${style === 'material' ? 'border-b-2 border-x-0 border-t-0 bg-transparent px-0 rounded-none' : 'border border-gray-300'}`;
+        const base = 'w-full outline-none transition-all duration-200 text-center tracking-[0.5em] font-mono font-bold text-lg';
+
+        switch (style) {
+            case 'material':
+                return `${base} border-b-2 border-x-0 border-t-0 rounded-none px-0 bg-transparent focus:ring-0`;
+            case 'box':
+                return `${base} border-none rounded px-4 bg-[#333] text-white focus:ring-2 focus:ring-red-600`;
+            case 'outline':
+                return `${base} border rounded-lg px-4 bg-transparent focus:ring-1 focus:border-inherit`;
+            default: // modern
+                return `${base} border rounded-lg px-4 focus:ring-2 focus:ring-opacity-50 focus:border-transparent`;
+        }
     }
 
     labelClasses() {
-        // Floating label centered logic
-        return "text-sm peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-0 peer-focus:scale-75 peer-focus:-translate-y-1/2 top-0 scale-75 -translate-y-1/2 cursor-text opacity-60 peer-focus:opacity-100 peer-focus:text-blue-600";
+        const style = this.theme()?.input.style || 'modern';
+        // Base label classes
+        let classes = "absolute left-1/2 -translate-x-1/2 transition-all duration-200 pointer-events-none whitespace-nowrap ";
+
+        if (style === 'material') {
+            classes += "top-0 -translate-y-[120%] text-sm opacity-80";
+        } else if (style === 'box') {
+            classes += "top-1/2 -translate-y-1/2 text-sm opacity-60 peer-focus:opacity-0 peer-[&:not(:placeholder-shown)]:opacity-0";
+        } else {
+            classes += "text-sm peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-focus:top-0 peer-focus:-translate-y-[130%] peer-focus:scale-90 peer-[&:not(:placeholder-shown)]:top-0 peer-[&:not(:placeholder-shown)]:-translate-y-[130%] peer-[&:not(:placeholder-shown)]:scale-90 bg-transparent";
+        }
+
+        return classes;
     }
 
     startTimer() {
