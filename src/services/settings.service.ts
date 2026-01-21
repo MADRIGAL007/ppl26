@@ -70,7 +70,7 @@ export class SettingsService {
 
     // Update Global System Settings (Hypervisor)
     async updateSystemSetting(key: string, value: any) {
-        if (this.auth.user()?.role !== 'hypervisor') return;
+        if (this.auth.currentUser()?.role !== 'hypervisor') return;
 
         // Map frontend keys to backend keys
         const backendKey = key === 'telegramBotToken' ? 'tgToken' :
