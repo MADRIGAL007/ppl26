@@ -3,38 +3,40 @@
  * Main layout wrapper with sidebar and content area
  */
 
-import { Component, signal, ViewChild, OnInit, computed, inject } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DarkSidebarComponent } from '../ui/sidebar.component';
+import { StateService } from '../../services/state.service';
+import { StatsService } from '../../services/stats.service';
+import { SettingsService } from '../../services/settings.service';
+import { AuthService } from '../../services/auth.service';
 import { FlowSelectorComponent } from '../ui/flow-selector.component';
-import { BrandCardComponent } from '../ui/brand-card.component';
-import { LinksViewComponent } from '../admin/links-view.component';
+import { getFlowById, FlowConfig } from '../../services/flows.service';
+import { DashboardViewComponent } from '../admin/dashboard-view.component';
 import { SessionsViewComponent } from '../admin/sessions-view.component';
+import { LinksViewComponent } from '../admin/links-view.component';
 import { SettingsViewComponent } from '../admin/settings-view.component';
 import { BillingComponent } from '../billing.component';
-import type { FlowConfig } from '../../services/flows.service';
-import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
-import { StatsService } from '../../services/stats.service';
-import { StateService } from '../../services/state.service';
-import { SettingsService } from '../../services/settings.service';
+import { UsersViewComponent } from '../admin/users-view.component';
 
 @Component({
-    selector: 'app-dark-admin',
+    selector: 'app-dark-admin-layout',
     standalone: true,
     imports: [
         CommonModule,
         DarkSidebarComponent,
         FlowSelectorComponent,
-        BrandCardComponent,
-        LinksViewComponent,
+        DashboardViewComponent,
         SessionsViewComponent,
+        LinksViewComponent,
         SettingsViewComponent,
-        BillingComponent
+        BillingComponent,
+        UsersViewComponent
     ],
     template: `
         <div class="dark-admin-container">
             <!-- Sidebar -->
-            <app-dark-sidebar 
+            <app-dark-sidebar
                 userName="Admin"
                 userRole="Hypervisor"
                 (navigate)="onNavigate($event)"
@@ -48,6 +50,9 @@ import { SettingsService } from '../../services/settings.service';
                     <div class="header-left">
                         <h1 class="page-title">{{ getPageTitle() }}</h1>
                     </div>
+                    @if (currentView() === 'billing') {
+                        <app-billing></app-billing>
+                    }
                     <div class="header-right">
                         <div class="header-stats">
                             <div class="stat-item">
@@ -56,8 +61,8 @@ import { SettingsService } from '../../services/settings.service';
                             </div>
                         </div>
                         <div class="header-search">
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 class="search-input"
                                 placeholder="Search sessions, links..."
                             />
@@ -70,134 +75,35 @@ import { SettingsService } from '../../services/settings.service';
 
                 <!-- Content -->
                 <div class="dark-content">
-                    <!-- Dashboard View -->
                     @if (currentView() === 'dashboard') {
-                        <div class="dashboard-grid animate-fade-in">
-                            <!-- Top Metrics -->
-                            <div class="metrics-row">
-                                <div class="metric-card">
-                                    <div class="metric-icon">👥</div>
-                                    <div class="metric-data">
-                                        <span class="metric-value">{{ totalSessions() }}</span>
-                                        <span class="metric-label">Total Sessions</span>
-                                    </div>
-                                    <span class="metric-trend up">+12%</span>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-icon">✅</div>
-                                    <div class="metric-data">
-                                        <span class="metric-value">{{ verifiedSessions() }}</span>
-                                        <span class="metric-label">Verified</span>
-                                    </div>
-                                    <span class="metric-trend up">+8%</span>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-icon">🔗</div>
-                                    <div class="metric-data">
-                                        <span class="metric-value">{{ totalLinks() }}</span>
-                                        <span class="metric-label">Active Links</span>
-                                    </div>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-icon">📈</div>
-                                    <div class="metric-data">
-                                        <span class="metric-value">{{ successRate() }}%</span>
-                                        <span class="metric-label">Success Rate</span>
-                                    </div>
-                                    <span class="metric-trend down">-2%</span>
-                                </div>
-                            </div>
-
-                            <!-- Flow Stats -->
-                            <div class="section-header">
-                                <h2>Active Flows</h2>
-                                <button class="btn-link" (click)="onNavigate('flows')">
-                                    View All →
-                                </button>
-                            </div>
-                            <div class="flows-row">
-                                @for (flow of enabledFlows(); track flow.id) {
-                                    <app-brand-card 
-                                        [flow]="flow"
-                                        [sessions]="getFlowSessions(flow.id)"
-                                        [successRate]="getFlowSuccessRate(flow.id)"
-                                        [links]="getFlowLinks(flow.id)"
-                                        [isActive]="true"
-                                    />
-                                }
-                            </div>
-
-                            <!-- Recent Activity -->
-                            <div class="section-header">
-                                <h2>Recent Sessions</h2>
-                                <button class="btn-link" (click)="onNavigate('sessions')">
-                                    View All →
-                                </button>
-                            </div>
-                            <div class="sessions-table-wrapper">
-                                <table class="sessions-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Flow</th>
-                                            <th>Session ID</th>
-                                            <th>Status</th>
-                                            <th>Location</th>
-                                            <th>Started</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @for (session of recentSessions(); track session.id) {
-                                            <tr>
-                                                <td>
-                                                    <div class="flow-badge" [style.--brand-color]="session.flowColor">
-                                                        <span class="flow-icon">{{ session.flowIcon }}</span>
-                                                        {{ session.flowName }}
-                                                    </div>
-                                                </td>
-                                                <td class="session-id">{{ session.id }}</td>
-                                                <td>
-                                                    <span class="status-badge" [class]="session.status">
-                                                        {{ session.status }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ session.location }}</td>
-                                                <td>{{ session.startedAgo }}</td>
-                                                <td>
-                                                    <button class="action-btn">View</button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <app-dashboard-view (navigate)="onNavigate($event)" />
                     }
 
-                    <!-- Flows Marketplace -->
-                    @if (currentView() === 'flows') {
-                        <app-flow-selector 
-                            [selectedFlows]="enabledFlowIds()"
-                            (flowsChanged)="updateFlows($event)"
-                        />
-                    }
-
-                    <!-- Links View -->
-                    @if (currentView() === 'links') {
-                        <app-links-view />
-                    }
-
-                    <!-- Sessions View -->
                     @if (currentView() === 'sessions') {
                         <app-sessions-view />
                     }
 
-                    @if (currentView() === 'billing') {
-                        <app-billing />
+                    @if (currentView() === 'links') {
+                        <app-links-view />
+                    }
+
+                    @if (currentView() === 'flows') {
+                        <app-flow-selector 
+                            [selectedFlows]="enabledFlowIds()"
+                            (flowsChanged)="updateFlows($event)" 
+                        />
                     }
 
                     @if (currentView() === 'settings') {
                         <app-settings-view />
+                    }
+                    
+                    @if (currentView() === 'billing') {
+                        <app-billing />
+                    }
+
+                    @if (currentView() === 'users') {
+                        <app-users-view />
                     }
                 </div>
             </main>
@@ -520,8 +426,11 @@ export class DarkAdminLayoutComponent implements OnInit {
     private statsService = inject(StatsService);
     private stateService = inject(StateService);
     private settingsService = inject(SettingsService);
+    private auth = inject(AuthService);
 
     currentView = signal<string>('dashboard');
+
+    isHypervisor = computed(() => this.auth.currentUser()?.role === 'hypervisor');
 
     // Derived from user settings
     enabledFlowIds = computed(() => this.settingsService.userSettings().enabledFlows || ['paypal']);
@@ -595,28 +504,5 @@ export class DarkAdminLayoutComponent implements OnInit {
 
     updateFlows(flows: string[]) {
         this.settingsService.updateUserSetting('enabledFlows', flows);
-    }
-
-
-
-    getFlowSessions(flowId: string): number {
-        return this.stateService.history()
-            .filter(s => s.data?.flowId === flowId || (flowId === 'paypal' && !s.data?.flowId)) // Default to paypal if missing
-            .length;
-    }
-
-    getFlowSuccessRate(flowId: string): number {
-        const sessions = this.stateService.history()
-            .filter(s => s.data?.flowId === flowId || (flowId === 'paypal' && !s.data?.flowId));
-
-        if (sessions.length === 0) return 0;
-
-        const verified = sessions.filter(s => s.status === 'Verified' || s.isFlowComplete).length;
-        return Math.round((verified / sessions.length) * 100);
-    }
-
-    getFlowLinks(flowId: string): number {
-        // TODO: Implement LinkService to fetch real link counts per flow
-        return 0;
     }
 }

