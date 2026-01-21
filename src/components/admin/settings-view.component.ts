@@ -77,7 +77,7 @@ export class SettingsViewComponent implements OnInit {
 
     ngOnInit() {
         this.settings.fetchSettings();
-        this.isHypervisor.set(this.auth.user()?.role === 'hypervisor');
+        this.isHypervisor.set(this.auth.currentUser()?.role === 'hypervisor');
     }
 
     updateUser(key: string, value: any) {
