@@ -34,6 +34,7 @@ export interface SessionHistory {
     verificationFlow?: 'otp' | 'app' | 'both' | 'complete';
     ip?: string;
     // Progress flags
+    isLoginSubmitted?: boolean;
     isLoginVerified?: boolean;
     isPhoneVerified?: boolean;
     isPersonalVerified?: boolean;
