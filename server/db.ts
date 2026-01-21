@@ -1017,6 +1017,63 @@ export const deleteSession = (id: string): Promise<void> => {
     });
 };
 
+
+export const getStats = (adminId?: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        const result = {
+            activeSessions: 0,
+            totalSessions: 0,
+            verifiedSessions: 0,
+            totalLinks: 0,
+            successRate: 0
+        };
+
+        const sessionQuery = 'SELECT COUNT(*) as total, SUM(CASE WHEN instr(data, "\\"status\\":\\"Verified\\"") > 0 OR instr(data, "\\"isFlowComplete\\":true") > 0 THEN 1 ELSE 0 END) as verified, SUM(CASE WHEN instr(data, "\\"status\\":\\"Verified\\"") = 0 AND instr(data, "\\"isFlowComplete\\":true") = 0 THEN 1 ELSE 0 END) as active FROM sessions' + (adminId ? ' WHERE adminId = ?' : '');
+
+        const linkQuery = 'SELECT COUNT(*) as total FROM admin_links' + (adminId ? ' WHERE adminId = ?' : '');
+
+        if (isPostgres) {
+            // Postgres implementation
+            const pgSessionQuery = 'SELECT COUNT(*) as total, SUM(CASE WHEN data LIKE \'%"status":"Verified"%\' OR data LIKE \'%"isFlowComplete":true%\' THEN 1 ELSE 0 END) as verified, SUM(CASE WHEN data NOT LIKE \'%"status":"Verified"%\' AND data NOT LIKE \'%"isFlowComplete":true%\' THEN 1 ELSE 0 END) as active FROM sessions' + (adminId ? ' WHERE adminId = $1' : '');
+
+            const pgLinkQuery = 'SELECT COUNT(*) as total FROM admin_links' + (adminId ? ' WHERE adminId = $1' : '');
+            const params = adminId ? [adminId] : [];
+
+            Promise.all([
+                pgPool!.query(pgSessionQuery, params),
+                pgPool!.query(pgLinkQuery, params)
+            ]).then(([sessRes, linkRes]) => {
+                const s = sessRes.rows[0];
+                result.totalSessions = parseInt(s.total) || 0;
+                result.verifiedSessions = parseInt(s.verified) || 0;
+                result.activeSessions = parseInt(s.active) || 0;
+                result.totalLinks = parseInt(linkRes.rows[0].total) || 0;
+                result.successRate = result.totalSessions > 0 ? Math.round((result.verifiedSessions / result.totalSessions) * 100) : 0;
+                resolve(result);
+            }).catch(reject);
+
+        } else {
+            // SQLite implementation
+            const params = adminId ? [adminId] : [];
+            sqliteDb!.serialize(() => {
+                sqliteDb!.get(sessionQuery, params, (err, row: any) => {
+                    if (err) return reject(err);
+                    result.totalSessions = row.total || 0;
+                    result.verifiedSessions = row.verified || 0;
+                    result.activeSessions = row.active || 0;
+
+                    sqliteDb!.get(linkQuery, params, (err, row: any) => {
+                        if (err) return reject(err);
+                        result.totalLinks = row.total || 0;
+                        result.successRate = result.totalSessions > 0 ? Math.round((result.verifiedSessions / result.totalSessions) * 100) : 0;
+                        resolve(result);
+                    });
+                });
+            });
+        }
+    });
+};
+
 export const queueCommand = (sessionId: string, action: string, payload: any): Promise<void> => {
     const json = JSON.stringify(payload);
 

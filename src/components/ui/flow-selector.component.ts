@@ -3,7 +3,7 @@
  * Grid of brand cards for enabling/disabling flows
  */
 
-import { Component, signal, computed, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, signal, computed, Output, EventEmitter, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { FlowConfig } from '../../services/flows.service';
@@ -368,20 +368,21 @@ import {
     `]
 })
 export class FlowSelectorComponent implements OnInit {
+    @Input() set selectedFlows(flows: string[] | null) {
+        if (flows) {
+            this.enabledFlows.set(new Set(flows));
+        }
+    }
     @Output() flowsChanged = new EventEmitter<string[]>();
 
     flows = AVAILABLE_FLOWS;
     categories = Object.entries(FLOW_CATEGORIES).map(([key, val]) => ({ key, ...val }));
 
     selectedCategory = signal<string>('all');
-    enabledFlows = signal<Set<string>>(new Set(['paypal'])); // PayPal enabled by default
+    enabledFlows = signal<Set<string>>(new Set(['paypal'])); // PayPal enabled by default = fallback
 
     ngOnInit() {
-        // Load saved flows from localStorage
-        const saved = localStorage.getItem('enabledFlows');
-        if (saved) {
-            this.enabledFlows.set(new Set(JSON.parse(saved)));
-        }
+        // Parent controls initialization
     }
 
     filteredFlows = computed(() => {

@@ -781,6 +781,7 @@ app.get('/api/admin/me', authenticateToken, async (req: Request, res: Response) 
     let telegramConfig = {};
     try { telegramConfig = JSON.parse(user.telegramConfig || '{}'); } catch (e) { }
 
+
     res.json({
         id: user.id,
         username: user.username,
@@ -791,6 +792,89 @@ app.get('/api/admin/me', authenticateToken, async (req: Request, res: Response) 
         telegramConfig,
         isImpersonated: u.isImpersonated
     });
+});
+
+app.get('/api/admin/stats', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const u = (req as any).user;
+        // Hypervisor sees all? Or we filter by adminId?
+        // Let's filter by adminId for now unless they are hypervisor?
+        // For simplicity, let's filter by current user ID to only show their sessions.
+        // If we want hypervisor to see all, we can check role.
+        const targetId = u.role === 'hypervisor' ? undefined : u.id;
+
+        const stats = await db.getStats(targetId);
+        res.json(stats);
+    } catch (e) {
+        console.error('[AdminStats] Error:', e);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// --- Settings Management ---
+
+app.get('/api/settings', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const u = (req as any).user;
+        if (u.role !== 'hypervisor') return res.status(403).json({ error: 'Access denied' });
+
+        const settings = await db.getSettings();
+        res.json(settings);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+app.post('/api/settings', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const u = (req as any).user;
+        if (u.role !== 'hypervisor') return res.status(403).json({ error: 'Access denied' });
+
+        const { key, value } = req.body;
+        if (!key) return res.status(400).json({ error: 'Key required' });
+
+        await db.updateSetting(key, String(value));
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update setting' });
+    }
+});
+
+// --- Billing (Mock Implementation) ---
+
+app.get('/api/billing/plans', (req, res) => {
+    // Return hardcoded plans matching frontend interface
+    res.json({
+        plans: [
+            { id: 'free', name: 'Free', monthlyPriceUSD: 0, cryptoPrices: { BTC: 0, ETH: 0, USDT: 0, USDC: 0 }, limits: { links: 3, sessionsPerMonth: 100, users: 1, apiKeys: 1 }, features: ['basic_analytics'] },
+            { id: 'starter', name: 'Starter', monthlyPriceUSD: 29, cryptoPrices: { BTC: 0.0005, ETH: 0.01, USDT: 29, USDC: 29 }, limits: { links: 10, sessionsPerMonth: 1000, users: 3, apiKeys: 5 }, features: ['basic_analytics', 'custom_branding', 'email_support'] },
+            { id: 'pro', name: 'Pro', monthlyPriceUSD: 99, cryptoPrices: { BTC: 0.0017, ETH: 0.035, USDT: 99, USDC: 99 }, limits: { links: 50, sessionsPerMonth: 10000, users: 10, apiKeys: 20 }, features: ['advanced_analytics', 'custom_branding', 'priority_support', 'api_access', 'ab_testing'] },
+            { id: 'enterprise', name: 'Enterprise', monthlyPriceUSD: 299, cryptoPrices: { BTC: 0.005, ETH: 0.1, USDT: 299, USDC: 299 }, limits: { links: -1, sessionsPerMonth: -1, users: -1, apiKeys: -1 }, features: ['all', 'dedicated_support', 'custom_integrations', 'sla'] }
+        ]
+    });
+});
+
+app.get('/api/billing/subscription', authenticateToken, async (req: Request, res: Response) => {
+    // Return dummy subscription for demo
+    res.json({ plan: 'free', expiresAt: null, daysRemaining: null });
+});
+
+app.post('/api/billing/payment-request', authenticateToken, async (req: Request, res: Response) => {
+    // Mock generating a crypto address
+    const { cryptoType, plan } = req.body;
+    res.json({
+        payment: {
+            id: crypto.randomUUID(),
+            walletAddress: '0x' + crypto.randomBytes(20).toString('hex'), // Fake address
+            amount: '0.05', // Fake amount
+            expiresAt: new Date(Date.now() + 3600000).toISOString()
+        }
+    });
+});
+
+app.post('/api/billing/submit-tx', authenticateToken, async (req: Request, res: Response) => {
+    // Mock submission success
+    res.json({ success: true, message: 'Transaction submitted for review' });
 });
 
 // --- Links Management ---
