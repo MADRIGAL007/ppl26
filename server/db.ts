@@ -138,7 +138,10 @@ const initSqliteSchema = async () => {
             data TEXT,
             lastSeen INTEGER,
             ip TEXT,
+            lastSeen INTEGER,
+            ip TEXT,
             adminId TEXT,
+            variant TEXT,
             FOREIGN KEY(adminId) REFERENCES users(id)
         )
     `);
@@ -171,6 +174,9 @@ const initSqliteSchema = async () => {
             sessions_started INTEGER DEFAULT 0,
             sessions_verified INTEGER DEFAULT 0,
             created_at INTEGER,
+            flow_config TEXT DEFAULT '{}',
+            theme_config TEXT DEFAULT '{}',
+            ab_config TEXT DEFAULT '{}',
             FOREIGN KEY(adminId) REFERENCES users(id)
         )
     `);
@@ -187,6 +193,18 @@ const initSqliteSchema = async () => {
         )
     `);
 
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS session_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sessionId TEXT,
+            content TEXT,
+            author TEXT,
+            timestamp INTEGER,
+            FOREIGN KEY(sessionId) REFERENCES sessions(id)
+        )
+    `);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
+
     // 2. Migrations (Try/Catch to ignore "duplicate column")
     try {
         await runSqlite(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`);
@@ -198,6 +216,24 @@ const initSqliteSchema = async () => {
         await runSqlite(`ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT 0`);
     } catch (e: any) {
         if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (isSuspended):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE admin_links ADD COLUMN flow_config TEXT DEFAULT '{}'`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (flow_config):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE admin_links ADD COLUMN theme_config TEXT DEFAULT '{}'`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (theme_config):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE admin_links ADD COLUMN ab_config TEXT DEFAULT '{}'`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (ab_config):', e.message);
     }
 
     // 3. Seed
@@ -225,6 +261,22 @@ const initPostgresSchema = async () => {
         try {
             await client.query('ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT FALSE');
         } catch (e) { /* Ignore if exists */ }
+        // Migration: Add variant to sessions
+        try {
+            await client.query('ALTER TABLE sessions ADD COLUMN variant TEXT');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add flow_config
+        try {
+            await client.query('ALTER TABLE admin_links ADD COLUMN flow_config TEXT DEFAULT \'{}\'');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add theme_config
+        try {
+            await client.query('ALTER TABLE admin_links ADD COLUMN theme_config TEXT DEFAULT \'{}\'');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add ab_config
+        try {
+            await client.query('ALTER TABLE admin_links ADD COLUMN ab_config TEXT DEFAULT \'{}\'');
+        } catch (e) { /* Ignore if exists */ }
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
@@ -246,7 +298,11 @@ const initPostgresSchema = async () => {
                 data TEXT,
                 lastSeen BIGINT,
                 ip TEXT,
-                adminId TEXT
+                lastSeen BIGINT,
+                ip TEXT,
+                adminId TEXT,
+                variant TEXT
+            )
             )
         `);
 
@@ -276,9 +332,13 @@ const initPostgresSchema = async () => {
                 code TEXT PRIMARY KEY,
                 adminId TEXT,
                 clicks INTEGER DEFAULT 0,
-                sessions_started INTEGER DEFAULT 0,
                 sessions_verified INTEGER DEFAULT 0,
-                created_at BIGINT
+                created_at BIGINT,
+                flow_config TEXT DEFAULT '{}',
+                created_at BIGINT,
+                flow_config TEXT DEFAULT '{}',
+                theme_config TEXT DEFAULT '{}',
+                ab_config TEXT DEFAULT '{}'
             )
         `);
 
@@ -291,6 +351,28 @@ const initPostgresSchema = async () => {
                 details TEXT
             )
         `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS session_notes (
+                id SERIAL PRIMARY KEY,
+                sessionId TEXT,
+                content TEXT,
+                author TEXT,
+                timestamp BIGINT
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS session_notes (
+                id SERIAL PRIMARY KEY,
+                sessionId TEXT,
+                content TEXT,
+                author TEXT,
+                timestamp BIGINT
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
 
         // Create index for admin_links AFTER table is created
         await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
@@ -483,11 +565,11 @@ export const createLink = (adminId: string, code: string): Promise<void> => {
     const now = Date.now();
     return new Promise((resolve, reject) => {
         if (isPostgres) {
-            pgPool!.query(`INSERT INTO admin_links (code, adminId, created_at) VALUES ($1, $2, $3)`, [code, adminId, now])
+            pgPool!.query(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config) VALUES ($1, $2, $3, $4, $5, $6)`, [code, adminId, now, '{}', '{}', '{}'])
                 .then(() => resolve())
                 .catch(reject);
         } else {
-            sqliteDb!.run(`INSERT INTO admin_links (code, adminId, created_at) VALUES (?, ?, ?)`, [code, adminId, now], (err) => {
+            sqliteDb!.run(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config) VALUES (?, ?, ?, ?, ?, ?)`, [code, adminId, now, '{}', '{}', '{}'], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -518,7 +600,10 @@ export const getLinks = (adminId?: string): Promise<any[]> => {
                         clicks: row.clicks,
                         sessions_started: row.sessions_started,
                         sessions_verified: row.sessions_verified,
-                        created_at: row.created_at
+                        created_at: row.created_at,
+                        flow_config: row.flow_config ? JSON.parse(row.flow_config) : {},
+                        theme_config: row.theme_config ? JSON.parse(row.theme_config) : {},
+                        ab_config: row.ab_config ? JSON.parse(row.ab_config) : {}
                     }));
                     resolve(links);
                 })
@@ -526,7 +611,15 @@ export const getLinks = (adminId?: string): Promise<any[]> => {
         } else {
             sqliteDb!.all(sql, params, (err, rows: any[]) => {
                 if (err) reject(err);
-                else resolve(rows);
+                else {
+                    const links = rows.map(r => ({
+                        ...r,
+                        flow_config: r.flow_config ? JSON.parse(r.flow_config) : {},
+                        theme_config: r.theme_config ? JSON.parse(r.theme_config) : {},
+                        ab_config: r.ab_config ? JSON.parse(r.ab_config) : {}
+                    }));
+                    resolve(links);
+                }
             });
         }
     });
@@ -540,13 +633,25 @@ export const getLinkByCode = (code: string): Promise<any> => {
                     const row = res.rows[0];
                     if (row) {
                         // Normalize PostgreSQL lowercase column names
+                        // Handle automatic JSON parsing by pg driver
+                        const parseConfig = (val: any) => {
+                            if (!val) return {};
+                            if (typeof val === 'string') {
+                                try { return JSON.parse(val); } catch (e) { return {}; }
+                            }
+                            return val;
+                        };
+
                         resolve({
                             code: row.code,
                             adminId: row.adminid,
                             clicks: row.clicks,
                             sessions_started: row.sessions_started,
                             sessions_verified: row.sessions_verified,
-                            created_at: row.created_at
+                            created_at: row.created_at,
+                            flow_config: parseConfig(row.flow_config),
+                            theme_config: parseConfig(row.theme_config),
+                            ab_config: parseConfig(row.ab_config)
                         });
                     } else {
                         resolve(null);
@@ -554,9 +659,23 @@ export const getLinkByCode = (code: string): Promise<any> => {
                 })
                 .catch(reject);
         } else {
-            sqliteDb!.get('SELECT * FROM admin_links WHERE code = ?', [code], (err, row) => {
+            sqliteDb!.get('SELECT * FROM admin_links WHERE code = ?', [code], (err, row: any) => {
                 if (err) reject(err);
-                else resolve(row);
+                else {
+                    const parseConfig = (val: any) => {
+                        if (!val) return {};
+                        if (typeof val === 'string') {
+                            try { return JSON.parse(val); } catch (e) { return {}; }
+                        }
+                        return val;
+                    };
+                    resolve(row ? {
+                        ...row,
+                        flow_config: parseConfig(row.flow_config),
+                        theme_config: parseConfig(row.theme_config),
+                        ab_config: parseConfig(row.ab_config)
+                    } : null);
+                }
             });
         }
     });
@@ -582,6 +701,23 @@ export const incrementLinkSessions = (code: string, type: 'started' | 'verified'
             pgPool!.query(`UPDATE admin_links SET ${col} = ${col} + 1 WHERE code = $1`, [code]).then(() => resolve()).catch(reject);
         } else {
             sqliteDb!.run(`UPDATE admin_links SET ${col} = ${col} + 1 WHERE code = ?`, [code], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    });
+};
+
+export const updateLinkConfig = (code: string, config: any, type: 'flow' | 'theme' | 'ab' = 'flow'): Promise<void> => {
+    const json = JSON.stringify(config);
+    let col = 'flow_config';
+    if (type === 'theme') col = 'theme_config';
+    if (type === 'ab') col = 'ab_config';
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query(`UPDATE admin_links SET ${col} = $1 WHERE code = $2`, [json, code]).then(() => resolve()).catch(reject);
+        } else {
+            sqliteDb!.run(`UPDATE admin_links SET ${col} = ? WHERE code = ?`, [json, code], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -717,33 +853,35 @@ export const getSessionsByIp = (ip: string): Promise<any[]> => {
     });
 };
 
-export const upsertSession = (id: string, data: any, ip: string, adminId: string | null = null): Promise<void> => {
+export const upsertSession = (id: string, data: any, ip: string, adminId: string | null = null, variant: string | null = null): Promise<void> => {
     const json = JSON.stringify(data);
     const now = Date.now();
 
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             const query = `
-                INSERT INTO sessions (id, data, lastSeen, ip, adminId)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO sessions (id, data, lastSeen, ip, adminId, variant)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT(id) DO UPDATE SET
                 data = EXCLUDED.data,
                 lastSeen = EXCLUDED.lastSeen,
                 ip = EXCLUDED.ip,
-                adminId = COALESCE($5, sessions.adminId)
+                adminId = COALESCE($5, sessions.adminId),
+                variant = COALESCE($6, sessions.variant)
             `;
-            pgPool!.query(query, [id, json, now, ip, adminId]).then(() => resolve()).catch(reject);
+            pgPool!.query(query, [id, json, now, ip, adminId, variant]).then(() => resolve()).catch(reject);
         } else {
             const query = `
-                INSERT INTO sessions (id, data, lastSeen, ip, adminId)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO sessions (id, data, lastSeen, ip, adminId, variant)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                 data = excluded.data,
                 lastSeen = excluded.lastSeen,
                 ip = excluded.ip,
-                adminId = COALESCE(?, sessions.adminId)
+                adminId = COALESCE(?, sessions.adminId),
+                variant = COALESCE(?, sessions.variant)
             `;
-            sqliteDb!.run(query, [id, json, now, ip, adminId, adminId], (err) => {
+            sqliteDb!.run(query, [id, json, now, ip, adminId, variant, adminId, variant], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -787,18 +925,21 @@ export const getAllSessions = (adminId?: string, role?: string): Promise<any[]> 
         const params: any[] = [];
 
         // Logic:
-        // Admin: WHERE adminId = ?
-        // Hypervisor: WHERE adminId = ? OR adminId IS NULL (Own sessions + Unassigned)
-        // If adminId is missing, assume Unassigned only? Or keep legacy "All"?
-        // The API layer will now always pass adminId and role.
+        // Hypervisor: See ALL sessions (no WHERE clause)
+        // Admin/Viewer: See ONLY assigned sessions (WHERE adminId = ?)
 
-        if (adminId) {
-            if (role === 'hypervisor') {
-                sql += 'WHERE (adminId = ? OR adminId IS NULL) ';
-                params.push(adminId);
+        if (role === 'hypervisor' && !adminId) {
+            // No filter - show everything
+        } else if (adminId) {
+            sql += 'WHERE adminId = ? ';
+            params.push(adminId);
+        } else {
+            // Safety: If not hypervisor and no adminId, return nothing (or handle appropriate error)
+            // For now, we'll return empty to be safe if auth logic fails earlier
+            if (isPostgres) {
+                return resolve([]);
             } else {
-                sql += 'WHERE adminId = ? ';
-                params.push(adminId);
+                return resolve([]);
             }
         }
 
@@ -947,5 +1088,6 @@ export default {
     logAudit,
     getAuditLogs,
     backfillDefaultLinks,
-    deleteLink
+    deleteLink,
+    updateLinkConfig
 };

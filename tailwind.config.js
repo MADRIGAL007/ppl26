@@ -16,10 +16,10 @@ module.exports = {
         sans: ['Manrope', 'sans-serif'],
       },
       colors: {
-        'pp-navy': '#001C64',
-        'pp-blue': '#0070BA',
-        'pp-blue-hover': '#005EA6',
-        'pp-bg': '#F5F7FA',
+        'pp-navy': '#001C64', // Keep fixed or variabilize if needed
+        'pp-blue': 'var(--pp-blue)',
+        'pp-blue-hover': 'var(--pp-blue-hover)',
+        'pp-bg': 'var(--pp-bg)',
         'pp-success': '#00CF92',
         brand: {
           50: '#F5F7FA',
@@ -49,6 +49,7 @@ module.exports = {
         'fade-in': 'fadeIn 0.4s ease-out forwards',
         'slide-up': 'slideUp 0.5s ease-out forwards',
         'slide-in-right': 'slideInRight 0.4s ease-out forwards',
+        'skeleton': 'shimmer 2s infinite linear',
       },
       keyframes: {
         fadeIn: {
@@ -56,12 +57,16 @@ module.exports = {
           '100%': { opacity: '1' },
         },
         slideUp: {
-            '0%': { opacity: '0', transform: 'translateY(20px)' },
-            '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideInRight: {
-            '0%': { opacity: '0', transform: 'translateX(20px)' },
-            '100%': { opacity: '1', transform: 'translateX(0)' },
+          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-1000px 0' },
+          '100%': { backgroundPosition: '1000px 0' }
         }
       }
     },

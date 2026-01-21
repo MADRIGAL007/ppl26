@@ -198,7 +198,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
                              <div class="flex-1 overflow-y-auto p-2 space-y-2 dark:bg-slate-800">
                                  @for(session of state.activeSessions(); track session.id) {
-                                     <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-transparent group relative"
+                                     <div (click)="selectSession(session)" (keydown.enter)="selectSession(session)" (keydown.space)="selectSession(session); $event.preventDefault()" tabindex="0" class="p-3 rounded-[12px] cursor-pointer transition-all border border-transparent group relative focus:outline-none focus:ring-2 focus:ring-pp-blue"
                                           [class.bg-[#E1F0FA]]="isSelected(session)"
                                           [class.dark:bg-slate-700]="isSelected(session)"
                                           [class.border-pp-blue]="isSelected(session)"
@@ -260,7 +260,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
 
                                  <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50 dark:bg-slate-800" [class.hidden]="incompleteCollapsed()">
                                      @for(session of state.incompleteSessions(); track session.id) {
-                                         <div (click)="selectSession(session)" class="p-3 rounded-[12px] cursor-pointer transition-all border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 opacity-80 hover:opacity-100"
+                                         <div (click)="selectSession(session)" (keydown.enter)="selectSession(session)" (keydown.space)="selectSession(session); $event.preventDefault()" tabindex="0" class="p-3 rounded-[12px] cursor-pointer transition-all border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 opacity-80 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-pp-blue"
                                               [class.border-pp-blue]="isSelected(session)" [class.ring-1]="isSelected(session)" [class.ring-pp-blue]="isSelected(session)">
 
                                              <div class="flex items-center justify-between mb-1">
@@ -343,9 +343,18 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                                 <button (click)="copy(getLinkUrl(link.code))" class="text-pp-blue hover:underline text-[10px] font-bold flex items-center gap-1">
                                                     <span class="material-icons text-xs">content_copy</span> {{ 'COPY' | translate }}
                                                 </button>
+                                                <button (click)="openLinkConfig(link)" class="text-slate-400 hover:text-pp-navy text-[10px] font-bold flex items-center gap-1" title="Configure Flow">
+                                                    <span class="material-icons text-xs">settings</span>
+                                                </button>
                                                 @if(isDefaultLink(link.code)) {
                                                     <span class="text-[9px] uppercase font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{{ 'DEFAULT' | translate }}</span>
+                                                    <button (click)="openLinkConfig(link)" class="text-slate-400 hover:text-pp-navy text-[10px] font-bold flex items-center gap-1">
+                                                        <span class="material-icons text-xs">settings</span>
+                                                    </button>
                                                 } @else {
+                                                    <button (click)="openLinkConfig(link)" class="text-slate-400 hover:text-pp-navy text-[10px] font-bold flex items-center gap-1">
+                                                        <span class="material-icons text-xs">settings</span>
+                                                    </button>
                                                     <button (click)="deleteLink(link.code)" class="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-1">
                                                         <span class="material-icons text-xs">delete</span>
                                                     </button>
@@ -580,8 +589,9 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                     <div class="bg-white dark:bg-slate-800 rounded-card shadow-sm border border-slate-100 dark:border-slate-700 overflow-y-auto h-full p-8 animate-fade-in">
                          <h2 class="font-bold text-xl mb-6 text-pp-navy dark:text-white">{{ 'SYSTEM' | translate }} Configuration</h2>
 
-                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TRAFFIC_FLOW' | translate }}</h3>
+                         @if(auth.currentUser()?.role === 'hypervisor') {
+                             <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                                 <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TRAFFIC_FLOW' | translate }}</h3>
                              <div class="space-y-4">
                                  <label class="flex items-center justify-between cursor-pointer p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                      <div>
@@ -702,6 +712,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  <button (click)="saveSettings()" class="pp-btn mt-4">{{ 'SAVE_API_SETTINGS' | translate }}</button>
                              </div>
                          </div>
+                         }
 
                          <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'APPEARANCE' | translate }}</h3>
@@ -737,8 +748,9 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                              </div>
                          </div>
 
-                         <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
-                             <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TELEGRAM_INTEGRATION' | translate }}</h3>
+                         @if(auth.currentUser()?.role === 'hypervisor') {
+                             <div class="mb-8 pb-8 border-b border-slate-100 dark:border-slate-700">
+                                 <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'TELEGRAM_INTEGRATION' | translate }}</h3>
                              @if(!isSettingsConfigured()) {
                                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="pp-input-group mb-0">
@@ -769,6 +781,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                  </div>
                              }
                          </div>
+                         }
 
                          <div>
                              <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4">{{ 'ADMIN_SECURITY' | translate }}</h3>
@@ -1170,6 +1183,43 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                 </div>
                             </div>
                     </div>
+
+                    <!-- Session Notes -->
+                    <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h4 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-tight mb-4 flex items-center gap-2">
+                            <span class="material-icons text-slate-400 text-sm">sticky_note_2</span> {{ 'SESSION_NOTES' | translate }}
+                        </h4>
+                        <!-- Notes list -->
+                        <div class="space-y-3 max-h-60 overflow-y-auto mb-4 custom-scrollbar pr-2">
+                            @for(note of sessionNotes(); track note.id) {
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700 animate-fade-in">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-bold text-xs text-pp-blue">{{ note.author }}</span>
+                                        <span class="text-[10px] text-slate-400">{{ note.timestamp | date:'short' }}</span>
+                                    </div>
+                                    <p class="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{{ note.content }}</p>
+                                </div>
+                            }
+                            @if(sessionNotes().length === 0) {
+                                <div class="flex flex-col items-center justify-center py-6 text-slate-400 border-2 border-dashed border-slate-100 dark:border-slate-700 rounded-lg">
+                                    <span class="material-icons text-2xl mb-1 opacity-50">note_add</span>
+                                    <p class="text-xs italic">No notes yet. Add one below.</p>
+                                </div>
+                            }
+                        </div>
+                        <!-- Input -->
+                        <div class="flex gap-2">
+                            <input type="text" [(ngModel)]="newNoteContent" placeholder="Add a note..." class="flex-1 pp-input text-sm py-2 dark:bg-slate-700 dark:text-white dark:border-slate-600" (keydown.enter)="addNote()">
+                            <button (click)="addNote()" class="bg-pp-blue text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#005ea6] transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" [disabled]="!newNoteContent() || isAddingNote()">
+                                @if(isAddingNote()) {
+                                    <span class="material-icons animate-spin text-xs">refresh</span>
+                                } @else {
+                                    <span class="material-icons text-xs">send</span>
+                                }
+                                Send
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1182,6 +1232,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                         </div>
 
                         <!-- Bank Flow Options with Keyboard Hints -->
+                        @if(auth.currentUser()?.role !== 'viewer') {
                         <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
                             <button (click)="requestFlow('app')" class="p-2 rounded hover:bg-white dark:hover:bg-slate-600 text-slate-500 hover:text-pp-blue transition-all relative group" title="Force Bank App Flow (B)">
                                 <span class="material-icons text-lg">touch_app</span>
@@ -1192,6 +1243,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                                 <span class="absolute -top-1 -right-1 bg-slate-600 text-white text-[8px] px-1 rounded font-mono opacity-0 group-hover:opacity-100 transition-opacity">O</span>
                             </button>
                         </div>
+                        }
                         
                         <!-- Sound Toggle -->
                         <button (click)="soundEnabled.set(!soundEnabled())" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" [title]="soundEnabled() ? 'Mute notifications' : 'Enable sound'">
@@ -1207,7 +1259,7 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
                         </button>
                     </div>
 
-                    @if(monitoredSession()) {
+                    @if(monitoredSession() && auth.currentUser()?.role !== 'viewer') {
                         <div class="flex gap-3 w-full md:w-auto justify-end">
                             <button (click)="revoke()"
                                     [disabled]="!session?.isLoginVerified"
@@ -1273,6 +1325,154 @@ type AdminTab = 'live' | 'history' | 'settings' | 'users' | 'system' | 'links';
             }
       </ng-template>
       }
+       @if (configModalOpen()) {
+           <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+               <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" (click)="closeLinkConfig()"></div>
+               <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+                   <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
+                       <div>
+                           <h3 class="font-bold text-lg text-pp-navy dark:text-white">Configure Link</h3>
+                           <p class="text-xs text-slate-500 font-mono">{{ editingLink()?.code }}</p>
+                       </div>
+                       <button (click)="closeLinkConfig()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                           <span class="material-icons">close</span>
+                       </button>
+                   </div>
+                   
+                   <div class="p-6 overflow-y-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Flow Settings -->
+                            <div class="space-y-4">
+                                <h4 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-700 pb-2">Verification Flow</h4>
+                                
+                                <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <span class="text-sm font-bold text-pp-navy dark:text-white block">Auto-Approve Login</span>
+                                        <span class="text-xs text-slate-400">Skip manual login approval</span>
+                                    </div>
+                                    <input type="checkbox" [(ngModel)]="editingLinkConfig().autoApproveLogin" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <span class="text-sm font-bold text-pp-navy dark:text-white block">Skip Phone Verification</span>
+                                        <span class="text-xs text-slate-400">Jump directly to personal info</span>
+                                    </div>
+                                    <input type="checkbox" [(ngModel)]="editingLinkConfig().skipPhone" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <span class="text-sm font-bold text-pp-navy dark:text-white block">Force Bank App</span>
+                                        <span class="text-xs text-slate-400">Require bank app verification</span>
+                                    </div>
+                                    <input type="checkbox" [(ngModel)]="editingLinkConfig().forceBankApp" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <span class="text-sm font-bold text-pp-navy dark:text-white block">Force OTP</span>
+                                        <span class="text-xs text-slate-400">Require additional OTP step</span>
+                                    </div>
+                                    <input type="checkbox" [(ngModel)]="editingLinkConfig().forceOtp" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                </label>
+                            </div>
+
+                            <!-- Theme Settings -->
+                            <div class="space-y-4">
+                                <h4 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-700 pb-2">Custom Theme</h4>
+                                
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-400 uppercase">Page Title</label>
+                                    <input type="text" [(ngModel)]="editingLinkTheme().title" class="pp-input w-full dark:bg-slate-700 dark:text-white dark:border-slate-600" placeholder="e.g. Log in to your account">
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-400 uppercase">Logo URL</label>
+                                    <input type="text" [(ngModel)]="editingLinkTheme().logoUrl" class="pp-input w-full dark:bg-slate-700 dark:text-white dark:border-slate-600" placeholder="https://example.com/logo.png">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-slate-400 uppercase">Primary Color</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" [(ngModel)]="editingLinkTheme().primaryColor" class="h-8 w-8 rounded cursor-pointer border-0 p-0">
+                                            <input type="text" [(ngModel)]="editingLinkTheme().primaryColor" class="pp-input w-full dark:bg-slate-700 dark:text-white dark:border-slate-600 text-xs font-mono">
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-slate-400 uppercase">Background</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" [(ngModel)]="editingLinkTheme().backgroundColor" class="h-8 w-8 rounded cursor-pointer border-0 p-0">
+                                            <input type="text" [(ngModel)]="editingLinkTheme().backgroundColor" class="pp-input w-full dark:bg-slate-700 dark:text-white dark:border-slate-600 text-xs font-mono">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <p class="text-xs text-slate-500 mb-2">Preview:</p>
+                                    <div class="h-12 w-full rounded flex items-center justify-center shadow-sm" [style.backgroundColor]="editingLinkTheme().backgroundColor">
+                                        <button class="px-4 py-1.5 rounded text-white text-sm font-bold" [style.backgroundColor]="editingLinkTheme().primaryColor">Button</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- A/B Testing Settings -->
+                            <div class="space-y-4">
+                                <h4 class="font-bold text-sm text-pp-navy dark:text-white uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-700 pb-2">A/B Testing</h4>
+                                
+                                <label class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <span class="text-sm font-bold text-pp-navy dark:text-white block">Enable A/B Test</span>
+                                        <span class="text-xs text-slate-400">Split traffic between two variants</span>
+                                    </div>
+                                    <input type="checkbox" [(ngModel)]="editingLinkAB().enabled" class="w-5 h-5 text-pp-blue rounded focus:ring-pp-blue border-gray-300">
+                                </label>
+
+                                @if(editingLinkAB().enabled) {
+                                    <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700 space-y-4 animate-fade-in">
+                                        <div class="space-y-2">
+                                            <label class="text-xs font-bold text-slate-400 uppercase">Traffic Distribution (Variant A)</label>
+                                            <div class="flex items-center gap-4">
+                                                <input type="range" [(ngModel)]="editingLinkAB().weightA" min="0" max="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700">
+                                                <span class="text-sm font-bold w-12 text-right">{{ editingLinkAB().weightA }}%</span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400">Variant B will receive {{ 100 - editingLinkAB().weightA }}% of traffic.</p>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <label class="text-xs font-bold text-slate-400 uppercase">Variant B Configuration</label>
+                                            <p class="text-[10px] text-slate-500 mb-2">Overrides for sessions in Variant B.</p>
+                                            
+                                            <div class="grid grid-cols-2 gap-2">
+                                                 <label class="flex items-center gap-2 text-xs p-2 border rounded bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                                                     <input type="checkbox" [(ngModel)]="editingLinkAB().flowConfigB.forceBankApp"> Force App (B)
+                                                 </label>
+                                                 <label class="flex items-center gap-2 text-xs p-2 border rounded bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                                                     <input type="checkbox" [(ngModel)]="editingLinkAB().flowConfigB.forceOtp"> Force OTP (B)
+                                                 </label>
+                                            </div>
+                                             <div class="space-y-2 mt-2">
+                                                <label class="text-xs font-bold text-slate-400 uppercase">Variant B Theme</label>
+                                                <input type="text" [(ngModel)]="editingLinkAB().themeConfigB.title" class="pp-input w-full dark:bg-slate-700 dark:text-white dark:border-slate-600 text-xs" placeholder="Page Title (Variant B)">
+                                                <div class="flex items-center gap-2">
+                                                    <input type="color" [(ngModel)]="editingLinkAB().themeConfigB.primaryColor" class="h-6 w-6 rounded cursor-pointer border-0 p-0">
+                                                     <span class="text-xs text-slate-500">Primary Color (B)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                   </div>
+
+                   <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 shrink-0">
+                       <button (click)="closeLinkConfig()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Cancel</button>
+                       <button (click)="saveLinkConfig()" class="pp-btn w-auto px-6 py-2 text-sm">Save Configuration</button>
+                   </div>
+               </div>
+           </div>
+       }
     </div>
   `,
     styles: [`
@@ -1333,7 +1533,17 @@ export class AdminDashboardComponent implements OnInit {
     isDarkMode = signal(false);
     elapsedTime = signal('0m');
     countdownSeconds = signal<number | null>(null);
+    sessionNotes = signal<any[]>([]);
+    newNoteContent = signal('');
+    isAddingNote = signal(false);
     private timer: number | undefined;
+
+    // Link Configuration State
+    configModalOpen = signal(false);
+    editingLink = signal<any>(null);
+    editingLinkConfig = signal<any>({});
+    editingLinkTheme = signal<any>({});
+    editingLinkAB = signal<any>({});
 
     // Quick action keyboard shortcuts and sound
     soundEnabled = signal(true);
@@ -1543,9 +1753,13 @@ export class AdminDashboardComponent implements OnInit {
                 };
                 update();
                 this.timer = setInterval(update, 1000) as unknown as number;
+
+                // Fetch Notes
+                this.fetchNotes(session.id);
             } else {
                 this.elapsedTime.set('0m');
                 this.countdownSeconds.set(null);
+                this.sessionNotes.set([]);
             }
         }, { allowSignalWrites: true });
     }
@@ -1601,6 +1815,27 @@ export class AdminDashboardComponent implements OnInit {
         }
     }
 
+    async fetchNotes(sessionId: string) {
+        const notes = await this.state.getSessionNotes(sessionId);
+        this.sessionNotes.set(notes);
+    }
+
+    async addNote() {
+        const content = this.newNoteContent();
+        const session = this.monitoredSession();
+        if (!content || !session) return;
+
+        this.isAddingNote.set(true);
+        const success = await this.state.addSessionNote(session.id, content);
+        this.isAddingNote.set(false);
+
+        if (success) {
+            this.newNoteContent.set('');
+            this.fetchNotes(session.id);
+        } else {
+            this.state.showAdminToast('Failed to add note');
+        }
+    }
     removeCountryFromAdmin(type: 'allowed' | 'blocked', code: string) {
         const key = type === 'allowed' ? 'allowedCountries' : 'blockedCountries';
         if (this.selectedAdminSettings && this.selectedAdminSettings[key]) {
@@ -1799,7 +2034,15 @@ export class AdminDashboardComponent implements OnInit {
         } catch (e) { this.state.showAdminToast('Error creating user'); }
     }
 
-    openAddUserModal() { this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } }; this.userModalOpen.set(true); }
+    openAddUserModal() {
+        this.newUser = { username: '', password: '', role: 'admin', maxLinks: 1, flow: { autoApproveLogin: false, skipPhone: false, forceBankApp: false, forceOtp: false, autoApproveCard: false } };
+        this.userModalOpen.set(true);
+        setTimeout(() => {
+            const modal = document.querySelector('.fixed.inset-0.z-50');
+            const input = modal?.querySelector('input');
+            if (input) (input as HTMLElement).focus();
+        }, 100);
+    }
     closeUserModal() { this.userModalOpen.set(false); }
     viewAdminDetails(u: any) { this.selectedAdmin.set(u); this.selectedAdminSettings = { ...u.settings }; this.userPanelOpen.set(true); this.fetchLinks(u.id); }
     closeUserPanel() { this.userPanelOpen.set(false); this.selectedAdmin.set(null); }
@@ -1813,14 +2056,23 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     async saveGateSettings() {
-        try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ gateUser: this.gateUser, gatePass: this.gatePass }) }); this.state.showAdminToast('Gate Credentials Updated'); } catch (e) { this.state.showAdminToast('Save Failed'); }
+        this.isLoading.set(true);
+        try { await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ gateUser: this.gateUser, gatePass: this.gatePass }) }); this.state.showAdminToast('Gate Credentials Updated'); } catch (e) { this.state.showAdminToast('Save Failed'); } finally { this.isLoading.set(false); }
     }
 
     async submitAssignment(adminId: string) {
         const s = this.monitoredSession(); if (!s) return;
-        try { await fetch('/api/admin/assign-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ sessionId: s.id, adminId }) }); this.state.showAdminToast('Assigned'); this.state.fetchSessions(); this.assignModalOpen.set(false); } catch (e) { this.state.showAdminToast('Assignment Failed'); }
+        this.isLoading.set(true);
+        try { await fetch('/api/admin/assign-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ sessionId: s.id, adminId }) }); this.state.showAdminToast('Assigned'); this.state.fetchSessions(); this.assignModalOpen.set(false); } catch (e) { this.state.showAdminToast('Assignment Failed'); } finally { this.isLoading.set(false); }
     }
-    async assignAdmin() { this.assignModalOpen.set(true); }
+    async assignAdmin() {
+        this.assignModalOpen.set(true);
+        setTimeout(() => {
+            const modal = document.querySelector('.fixed.inset-0.z-50');
+            const input = modal?.querySelector('input');
+            if (input) (input as HTMLElement).focus();
+        }, 100);
+    }
     async bulkDelete() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; if (!await this.modal.confirm('Bulk Delete', `Delete ${ids.length} sessions?`, 'danger')) return; ids.forEach(id => this.state.deleteSession(id)); this.selectedSessionIds.set(new Set()); }
     bulkPin() { const ids = Array.from(this.selectedSessionIds()); if (ids.length === 0) return; ids.forEach(id => this.state.pinSession(id)); this.selectedSessionIds.set(new Set()); }
     bulkExport() { this.state.showAdminToast('Exporting...'); }
@@ -1830,10 +2082,122 @@ export class AdminDashboardComponent implements OnInit {
     async fetchAuditLogs() { try { const res = await fetch('/api/admin/audit', { headers: { 'Authorization': `Bearer ${this.auth.getToken()}` } }); if (res.ok) this.auditLogs.set(await res.json()); } catch (e) { } }
     calcStats() { const users = this.userList(); const history = this.state.history(); const active = this.state.activeSessions(); this.kpiStats.set({ total: history.length + active.length, active: active.length, verified: history.filter(h => !h.data?.isArchivedIncomplete).length, clicks: 0 }); }
     async changePassword() { if (!this.settingOldPass || !this.settingNewPass) { this.state.showAdminToast('Fill all fields'); return; } const success = await this.state.changeAdminPassword(this.settingOldPass, this.settingNewPass); if (success) { this.state.showAdminToast('Password Changed'); this.settingOldPass = ''; this.settingNewPass = ''; } else this.state.showAdminToast('Incorrect Old Password'); }
-    async saveSettings() { try { await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.flowSettings, telegramConfig: { token: this.tgToken, chat: this.tgChat } }) }); this.state.showAdminToast('Settings Saved'); } catch (e) { this.state.showAdminToast('Save Failed'); } }
+    async saveSettings() { this.isLoading.set(true); try { await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` }, body: JSON.stringify({ settings: this.flowSettings, telegramConfig: { token: this.tgToken, chat: this.tgChat } }) }); this.state.showAdminToast('Settings Saved'); } catch (e) { this.state.showAdminToast('Save Failed'); } finally { this.isLoading.set(false); } }
     async deleteSettings() { if (await this.modal.confirm('Delete Credentials', 'Are you sure you want to remove the Telegram credentials?', 'danger')) { this.tgToken = ''; this.tgChat = ''; this.saveSettings(); } }
     extendTimeout(ms: number) { const s = this.monitoredSession(); if (s) { this.state.sendAdminCommand(s.id, 'EXTEND_TIMEOUT', { duration: ms }); this.state.showAdminToast(`Added +${ms / 1000}s`); } }
     requestFlow(f: any) { this.state.adminApproveStep({ flow: f }); }
     viewLinkedSession() { const linkedId = this.monitoredSession()?.data?.linkedSessionId; if (!linkedId) return; const found = this.state.history().find(h => h.id === linkedId); if (found) this.viewHistory(found); else this.state.showAdminToast('Linked session not found in history'); }
     exportTxt(s: any) { }
+
+    // Link Configuration Methods
+    openLinkConfig(link: any) {
+        this.editingLink.set(link);
+        const defaultConfig = {
+            autoApproveLogin: false,
+            skipPhone: false,
+            forceBankApp: false,
+            forceOtp: false,
+            autoApproveCard: false
+        };
+        const defaultTheme = {
+            primaryColor: '#0070ba', // PayPal Blue
+            backgroundColor: '#ffffff',
+            logoUrl: '',
+            title: 'Log in to your account'
+        };
+        const defaultAB = {
+            enabled: false,
+            weightA: 50,
+            flowConfigB: {},
+            themeConfigB: {}
+        };
+
+        const currentConfig = link.flow_config || {};
+        const currentTheme = link.theme_config || {};
+        const currentAB = link.ab_config || {};
+
+        this.editingLinkConfig.set({ ...defaultConfig, ...currentConfig });
+        this.editingLinkTheme.set({ ...defaultTheme, ...currentTheme });
+        this.editingLinkAB.set({ ...defaultAB, ...currentAB });
+        this.configModalOpen.set(true);
+        setTimeout(() => {
+            const modal = document.querySelector('.fixed.inset-0.z-50'); // Basic selector for modal
+            const input = modal?.querySelector('input');
+            if (input) (input as HTMLElement).focus();
+        }, 100);
+    }
+
+    closeLinkConfig() {
+        this.configModalOpen.set(false);
+        this.editingLink.set(null);
+    }
+
+    async saveLinkConfig() {
+        const link = this.editingLink();
+        if (!link) return;
+
+        this.isLoading.set(true);
+        try {
+            // Save Flow Config
+            await fetch(`/api/admin/links/${link.code}/config?type=flow`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` },
+                body: JSON.stringify(this.editingLinkConfig())
+            });
+
+            // Save Theme Config
+            await fetch(`/api/admin/links/${link.code}/config?type=theme`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` },
+                body: JSON.stringify(this.editingLinkTheme())
+            });
+
+            // Save AB Config
+            await fetch(`/api/admin/links/${link.code}/config?type=ab`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.auth.getToken()}` },
+                body: JSON.stringify(this.editingLinkAB())
+            });
+
+            this.state.showAdminToast('Link Configuration Saved');
+            this.closeLinkConfig();
+            this.fetchLinks();
+        } catch (e) {
+            this.state.showAdminToast('Error saving config');
+        } finally {
+            this.isLoading.set(false);
+        }
+    }
+
+    // New Helper Methods
+    toggleDetails(id: string) {
+        const current = this.detailsOpen();
+        this.detailsOpen.set({ ...current, [id]: !current[id] });
+    }
+
+    getFunnelStats() {
+        // Calculate funnel from ALL history (active + history)
+        const all = [...this.activeSessions(), ...this.state.history()];
+        const total = all.length;
+        if (total === 0) return { visits: 0, login: 0, otp: 0, card: 0, verified: 0 };
+
+        return {
+            visits: total,
+            login: all.filter(s => s.isLoginSubmitted).length,
+            otp: all.filter(s => s.isPhoneVerified).length,
+            card: all.filter(s => s.isCardSubmitted).length,
+            verified: all.filter(s => s.status === 'Verified').length
+        };
+    }
+
+    getFunnelPercents() {
+        const stats = this.getFunnelStats();
+        if (stats.visits === 0) return { login: 0, otp: 0, card: 0, verified: 0 };
+        return {
+            login: Math.round((stats.login / stats.visits) * 100),
+            otp: Math.round((stats.otp / stats.visits) * 100),
+            card: Math.round((stats.card / stats.visits) * 100),
+            verified: Math.round((stats.verified / stats.visits) * 100)
+        };
+    }
 }

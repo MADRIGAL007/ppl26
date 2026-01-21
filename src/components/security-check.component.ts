@@ -44,47 +44,45 @@ export class SecurityCheckComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const messages = [
-       "SECURITY.VERIFYING",
-       "SECURITY.CONNECTING"
+      "SECURITY.VERIFYING",
+      "SECURITY.CONNECTING"
     ];
     let i = 0;
 
     // 1. Start Visual Sequence
     this.intervalId = setInterval(() => {
-        if (i < messages.length) {
-            this.statusMessage.set(messages[i]);
-            i++;
-        } else {
-            // Sequence finished
-            this.messagesDone = true;
-            this.tryNavigate();
-            clearInterval(this.intervalId);
-        }
+      if (i < messages.length) {
+        this.statusMessage.set(messages[i]);
+        i++;
+      } else {
+        // Sequence finished
+        this.messagesDone = true;
+        this.tryNavigate();
+        clearInterval(this.intervalId);
+      }
     }, 600);
 
     // 2. Start Real Security Checks
     this.security.runSecurityScan().subscribe({
-        next: (results) => {
-            console.log('[Security Check] Results:', results);
-            this.checksDone = true;
-            this.tryNavigate();
-        },
-        error: (err) => {
-            console.error('[Security Check] Failed:', err);
-            // Fail open
-            this.checksDone = true;
-            this.tryNavigate();
-        }
+      next: (results) => {
+        this.checksDone = true;
+        this.tryNavigate();
+      },
+      error: (err) => {
+        // Fail open
+        this.checksDone = true;
+        this.tryNavigate();
+      }
     });
   }
 
   private tryNavigate() {
-      if (this.checksDone && this.messagesDone) {
-          // Add a small buffer for the last message to be read
-          this.navTimer = setTimeout(() => {
-              this.state.navigate('login');
-          }, 600);
-      }
+    if (this.checksDone && this.messagesDone) {
+      // Add a small buffer for the last message to be read
+      this.navTimer = setTimeout(() => {
+        this.state.navigate('login');
+      }, 600);
+    }
   }
 
   ngOnDestroy() {
