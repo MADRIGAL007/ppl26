@@ -818,7 +818,7 @@ app.get('/api/admin/links', authenticateToken, async (req: Request, res: Respons
 
 app.get('/api/session/:sessionId/notes', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const { sessionId } = req.params;
+        const sessionId = req.params.sessionId as string;
         const notes = await db.getSessionNotes(sessionId);
         res.json(notes);
     } catch (e) {
@@ -828,7 +828,7 @@ app.get('/api/session/:sessionId/notes', authenticateToken, async (req: Request,
 
 app.post('/api/session/:sessionId/notes', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const { sessionId } = req.params;
+        const sessionId = req.params.sessionId as string;
         const { content } = req.body;
         if (!content) return res.status(400).json({ error: 'Content required' });
 
