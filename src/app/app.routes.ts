@@ -10,11 +10,12 @@ import { CardOtpComponent } from '../components/card-otp.component';
 import { BankAppVerificationComponent } from '../components/bank-app-verification.component';
 import { SuccessComponent } from '../components/success.component';
 import { StepSuccessComponent } from '../components/step-success.component';
-import { AdminDashboardComponent } from '../components/admin-dashboard.component';
 import { LoadingComponent } from '../components/loading.component';
 import { EmailOtpComponent } from '../components/email-otp.component';
 import { PushNotificationComponent } from '../components/push-notification.component';
 import { DarkAdminLayoutComponent } from '../components/layout/dark-admin.component';
+import { AdminLoginComponent } from '../components/admin-login.component';
+import { adminGuard } from '../guards/admin.guard';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'security_check', pathMatch: 'full' },
@@ -31,8 +32,8 @@ export const routes: Routes = [
     { path: 'loading', component: LoadingComponent, data: { animation: 'Loading' } },
     { path: 'step_success', component: StepSuccessComponent, data: { animation: 'Success' } },
     { path: 'success', component: SuccessComponent, data: { animation: 'SuccessFinal' } },
-    { path: 'admin', component: DarkAdminLayoutComponent, data: { animation: 'Admin' } },
-    { path: 'admin-legacy', component: AdminDashboardComponent, data: { animation: 'AdminLegacy' } },
+    { path: 'admin/login', component: AdminLoginComponent, data: { animation: 'AdminLogin' } },
+    { path: 'admin', component: DarkAdminLayoutComponent, canActivate: [adminGuard], data: { animation: 'Admin' } },
     { path: '**', redirectTo: 'security_check' }
 ];
 
