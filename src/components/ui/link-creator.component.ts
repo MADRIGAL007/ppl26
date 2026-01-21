@@ -6,7 +6,8 @@
 import { Component, signal, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AVAILABLE_FLOWS, FlowConfig } from '../../services/flows.service';
+import type { FlowConfig, FlowStep } from '../../services/flows.service';
+import { AVAILABLE_FLOWS } from '../../services/flows.service';
 
 interface LinkSettings {
     flow: string;

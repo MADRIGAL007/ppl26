@@ -6,10 +6,10 @@
 import { Component, signal, computed, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import type { FlowConfig } from '../../services/flows.service';
 import {
     AVAILABLE_FLOWS,
     FLOW_CATEGORIES,
-    FlowConfig,
     getFlowsByCategory,
     calculateTotalPrice
 } from '../../services/flows.service';

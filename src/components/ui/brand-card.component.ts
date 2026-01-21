@@ -5,7 +5,7 @@
 
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FlowConfig } from '../../services/flows.service';
+import type { FlowConfig } from '../../services/flows.service';
 
 @Component({
     selector: 'app-brand-card',
