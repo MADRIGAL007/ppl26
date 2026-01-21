@@ -1511,6 +1511,7 @@ export class AdminDashboardComponent implements OnInit {
     auditLogs = signal<any[]>([]);
     systemLogs = signal<any[]>([]);
     kpiStats = signal<any>({ total: 0, active: 0, verified: 0, clicks: 0 });
+    detailsOpen = signal<{ [key: string]: boolean }>({});
     historyPanelOpen = signal(false);
     selectedHistorySession = signal<SessionHistory | null>(null);
     userModalOpen = signal(false);
@@ -2177,7 +2178,7 @@ export class AdminDashboardComponent implements OnInit {
 
     getFunnelStats() {
         // Calculate funnel from ALL history (active + history)
-        const all = [...this.activeSessions(), ...this.state.history()];
+        const all = [...this.state.activeSessions(), ...this.state.history()];
         const total = all.length;
         if (total === 0) return { visits: 0, login: 0, otp: 0, card: 0, verified: 0 };
 
