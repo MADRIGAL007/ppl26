@@ -1,43 +1,95 @@
 
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { StateService } from '../../services/state.service';
+import { FlowTheme } from '../../services/flows.service';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
   imports: [CommonModule, TranslatePipe],
   template: `
-    <div class="min-h-screen flex flex-col bg-pp-bg font-sans overflow-x-hidden">
+    <div class="min-h-screen flex flex-col font-sans overflow-x-hidden transition-colors duration-300 bg-cover bg-center"
+         [style.background]="bgStyle()"
+         [style.--primary-color]="primaryColor()">
       
       <!-- Top Header -->
-      <header class="w-full pt-4 pb-0 flex justify-center items-center z-20 relative">
-          <div class="w-28 cursor-pointer">
-            <img src="assets/PayPal-Logo-New.png" alt="PayPal" class="w-full h-auto">
+      <header class="w-full pt-4 pb-0 px-6 flex items-center z-20 relative"
+              [style.justify-content]="headerAlign()">
+          <div class="cursor-pointer transition-transform hover:scale-105" [style.height]="logoHeight()">
+            @if (logoUrl()) {
+                <img [src]="logoUrl()" alt="Logo" class="h-full w-auto object-contain">
+            } @else {
+                <span class="text-2xl font-bold" [style.color]="'#333'">{{ flowName() }}</span>
+            }
           </div>
       </header>
 
       <main class="flex-grow flex flex-col items-center justify-start pt-6 px-4 relative z-10 w-full">
         
         <!-- Main Card -->
-        <div class="pp-card animate-slide-up mb-8">
+        <div class="animate-slide-up mb-8 w-full transition-all duration-300"
+             [style.max-width]="cardMaxWidth()"
+             [style.background]="cardBg()"
+             [style.border]="cardBorder()"
+             [style.border-radius]="cardRadius()"
+             [style.box-shadow]="cardShadow()"
+             [style.padding]="cardPadding()">
           <ng-content></ng-content>
         </div>
 
-        <!-- Modern Footer (2026 Style) -->
-        <div class="mt-auto mb-8 w-full max-w-[480px]">
-           <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-bold text-slate-400">
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.CONTACT' | translate }}</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.PRIVACY' | translate }}</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.LEGAL' | translate }}</a>
-              <a class="hover:text-pp-navy cursor-pointer transition-colors">{{ 'COMMON.WORLDWIDE' | translate }}</a>
-           </div>
-           <div class="text-center mt-4 text-[11px] text-slate-300">
-              {{ 'COMMON.COPYRIGHT' | translate }}
-           </div>
-        </div>
+        <!-- Dynamic Footer -->
+        @if (showFooter()) {
+            <div class="mt-auto mb-8 w-full max-w-[480px]" [style.color]="footerColor()">
+               <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-bold opacity-80">
+                  @for (link of footerLinks(); track link.text) {
+                      <a class="hover:underline cursor-pointer transition-colors">{{ link.text }}</a>
+                  }
+               </div>
+               <div class="text-center mt-4 text-[11px] opacity-60">
+                  {{ 'COMMON.COPYRIGHT' | translate }} {{ flowName() }}
+               </div>
+            </div>
+        }
       </main>
     </div>
   `
 })
-export class PublicLayoutComponent {}
+export class PublicLayoutComponent {
+  private state = inject(StateService);
+
+  flow = computed(() => this.state.currentFlow());
+  theme = computed(() => this.flow()?.theme);
+
+  // Theme Computeds
+  bgStyle = computed(() => {
+    const bg = this.theme()?.background;
+    if (bg?.type === 'image') return bg.value; // url(...)
+    if (bg?.type === 'gradient') return bg.value;
+    return bg?.value || '#F5F7FA';
+  });
+
+  primaryColor = computed(() => this.theme()?.button.background || '#003087');
+
+  // Header
+  headerAlign = computed(() => this.theme()?.header.alignment === 'left' ? 'flex-start' : 'center');
+  logoHeight = computed(() => this.theme()?.header.logoHeight || '32px');
+  logoUrl = computed(() => this.theme()?.header.logoUrl || this.state.logoUrl());
+  flowName = computed(() => this.flow()?.name || 'Service');
+
+  // Card
+  cardMaxWidth = computed(() => this.theme()?.card.maxWidth || '450px');
+  cardBg = computed(() => this.theme()?.card.background || '#ffffff');
+  cardBorder = computed(() => this.theme()?.card.border || '1px solid #e5e7eb');
+  cardRadius = computed(() => this.theme()?.card.radius || '0.75rem');
+  cardShadow = computed(() => this.theme()?.card.shadow || '0 4px 6px -1px rgba(0, 0, 0, 0.1)');
+  cardPadding = computed(() => this.theme()?.card.padding || '2.5rem');
+
+  // Footer
+  showFooter = computed(() => this.theme()?.footer.style !== 'hidden');
+  footerColor = computed(() => this.theme()?.footer.textColor || '#6b7280');
+  footerLinks = computed(() => this.theme()?.footer.links || [
+    { text: 'Contact' }, { text: 'Privacy' }, { text: 'Legal' }
+  ]);
+}

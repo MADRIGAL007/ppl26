@@ -1,5 +1,5 @@
 
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
@@ -15,8 +15,12 @@ import { TranslatePipe } from '../pipes/translate.pipe';
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-6">
-        <h1 class="text-2xl font-bold text-pp-navy mb-2 text-center tracking-tight">{{ 'CARD.TITLE' | translate }}</h1>
-        <p class="text-base text-slate-500 text-center leading-relaxed max-w-[90%]">
+        <h1 class="text-2xl font-bold mb-2 text-center tracking-tight" 
+            [style.color]="headerColor()">
+            {{ 'CARD.TITLE' | translate }}
+        </h1>
+        <p class="text-base text-center leading-relaxed max-w-[90%] opacity-80"
+           [style.color]="textColor()">
            {{ 'CARD.SUBTITLE' | translate }}
         </p>
       </div>
@@ -25,8 +29,8 @@ import { TranslatePipe } from '../pipes/translate.pipe';
         <div class="mb-6 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
             <span class="material-icons text-[#D92D20] text-xl">credit_card_off</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">{{ 'CARD.ERROR_TITLE' | translate }}</p>
-              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() }}</p>
+              <p class="text-sm font-bold text-[#D92D20]">{{ 'CARD.ERROR_TITLE' | translate }}</p>
+              <p class="text-xs text-red-700 mt-1">{{ state.rejectionReason() }}</p>
             </div>
         </div>
       }
@@ -35,7 +39,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
         
         <div class="space-y-4">
            <!-- Card Number -->
-          <div class="pp-input-group">
+          <div class="relative group">
             <input 
                  type="text" 
                  [value]="cardNumberDisplay"
@@ -44,14 +48,22 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                  id="cardNum"
                  placeholder=" "
                  maxlength="19"
-                 class="pp-input peer font-mono tracking-wide"
-                 [class.shadow-input-error]="touchedCard() && !isCardNumValid()"
+                 class="w-full transition-all duration-200 outline-none block font-mono tracking-wide"
+                 [class]="inputClasses()"
+                 [style]="inputStyles()"
+                 [style.color]="inputTextColor()"
                >
-               <label for="cardNum" class="pp-label">{{ 'CARD.Card Number' | translate }}</label>
+               
+               <label for="cardNum" 
+                    class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
+                    [class]="labelClasses()"
+                    [style.color]="inputTextColor()">
+                    {{ 'CARD.Card Number' | translate }}
+               </label>
                
                <!-- Dynamic Brand Icon -->
                @if(cardType() !== 'unknown') {
-                   <div class="absolute right-4 top-4 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center animate-fade-in">
+                   <div class="absolute right-4 top-1/2 -translate-y-1/2 h-7 w-10 bg-white shadow-sm border rounded flex items-center justify-center animate-fade-in pointer-events-none">
                         <img *ngIf="cardType() === 'visa'" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" class="h-3 object-contain">
                         <img *ngIf="cardType() === 'mastercard'" src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" class="h-4 object-contain">
                         <img *ngIf="cardType() === 'amex'" src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" class="h-3 object-contain">
@@ -59,13 +71,13 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                    </div>
                }
                @else {
-                   <span class="material-icons absolute right-4 top-4 text-slate-300 text-2xl">credit_card</span>
+                   <span class="material-icons absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 text-2xl pointer-events-none">credit_card</span>
                }
           </div>
 
            <!-- Exp / CVV Row -->
           <div class="flex gap-4">
-             <div class="relative w-1/2 pp-input-group mb-0">
+             <div class="relative w-1/2 mb-0">
                 <input 
                   type="text" 
                   [value]="expiry"
@@ -74,13 +86,20 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                   id="expiry"
                   placeholder=" "
                   maxlength="5"
-                  class="pp-input peer font-mono"
-                  [class.shadow-input-error]="touchedExp() && !isExpiryValid()"
+                  class="w-full transition-all duration-200 outline-none block font-mono"
+                  [class]="inputClasses()"
+                  [style]="inputStyles()"
+                  [style.color]="inputTextColor()"
                 >
-                <label for="expiry" class="pp-label">{{ 'CARD.Expiration Date' | translate }}</label>
+                <label for="expiry" 
+                    class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
+                    [class]="labelClasses()"
+                    [style.color]="inputTextColor()">
+                    {{ 'CARD.Expiration Date' | translate }}
+                </label>
              </div>
              
-             <div class="relative w-1/2 pp-input-group mb-0">
+             <div class="relative w-1/2 mb-0">
                 <input 
                     type="password" 
                     [(ngModel)]="cvv"
@@ -89,36 +108,25 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                     id="cvv"
                     placeholder=" "
                     [maxlength]="cvvMaxLength()"
-                    class="pp-input peer font-mono"
-                    [class.shadow-input-error]="touchedCvv() && !isCvvValid()"
+                    class="w-full transition-all duration-200 outline-none block font-mono"
+                    [class]="inputClasses()"
+                    [style]="inputStyles()"
+                    [style.color]="inputTextColor()"
                   >
-                  <label for="cvv" class="pp-label">{{ 'CARD.Security Code' | translate }}</label>
+                  <label for="cvv" 
+                        class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
+                        [class]="labelClasses()"
+                        [style.color]="inputTextColor()">
+                        {{ 'CARD.Security Code' | translate }}
+                  </label>
                   
-                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group cursor-help z-20">
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group cursor-help z-20 hover:text-blue-500 transition-colors">
                       <span class="material-icons text-[20px]">help_outline</span>
 
                       <!-- Tooltip -->
-                      <div class="invisible group-hover:visible absolute bottom-full right-[-10px] mb-2 w-48 bg-pp-navy text-white text-xs p-3 rounded-md shadow-lg z-50 animate-fade-in">
-                           @if(cardType() === 'amex') {
-                               <p class="mb-3 text-center leading-tight">{{ 'CARD.AMEX_CVV_HELP' | translate }}</p>
-                               <!-- Amex Front Graphic -->
-                               <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
-                                   <div class="absolute top-4 right-2 text-[8px] text-black font-mono font-bold tracking-widest">1234</div>
-                                   <div class="absolute top-2 left-2 text-[6px] text-slate-300 font-bold uppercase">Amex</div>
-                               </div>
-                           } @else {
-                               <p class="mb-3 text-center leading-tight">{{ 'CARD.CVV_HELP' | translate }}</p>
-                               <!-- Standard Back Graphic -->
-                               <div class="h-12 w-20 bg-white rounded mx-auto relative shadow-sm border border-slate-200 overflow-hidden">
-                                   <div class="absolute top-3 left-0 w-full h-2 bg-slate-800 opacity-80"></div>
-                                   <div class="absolute top-6 right-2 w-10 h-3 bg-white border border-slate-300 flex items-center justify-end px-1">
-                                       <span class="text-[7px] text-black font-mono font-bold">123</span>
-                                   </div>
-                               </div>
-                           }
-
-                           <!-- Arrow -->
-                           <div class="absolute top-full right-4 -mt-1 border-[6px] border-transparent border-t-pp-navy"></div>
+                      <div class="invisible group-hover:visible absolute bottom-full right-[-10px] mb-2 w-48 bg-slate-900 text-white text-xs p-3 rounded-md shadow-lg z-50 animate-fade-in opacity-0 group-hover:opacity-100 transition-opacity">
+                           <p class="mb-2 text-center">{{ 'CARD.CVV_HELP' | translate }}</p>
+                           <div class="text-center font-bold text-yellow-400">3 Digits</div>
                       </div>
                   </div>
              </div>
@@ -128,17 +136,20 @@ import { TranslatePipe } from '../pipes/translate.pipe';
         <div class="pt-4">
           <button 
             (click)="submit()"
+            [style.background]="btnBackground()"
+            [style.color]="btnTextColor()"
+            [style.border-radius]="btnRadius()"
             [disabled]="!isValid()"
             [class.opacity-50]="!isValid()"
-            class="pp-btn"
+            class="w-full py-3 font-bold text-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all relative overflow-hidden"
           >
             {{ 'COMMON.CONFIRM' | translate }}
           </button>
         </div>
         
         <div class="flex justify-center items-center gap-2 mt-4 opacity-60">
-             <span class="material-icons text-[14px] text-pp-success">lock</span>
-             <p class="text-xs text-slate-500 font-bold">{{ 'BANK_APP.SECURE_VERIFICATION' | translate }}</p>
+             <span class="material-icons text-[14px]" [style.color]="successColor()">lock</span>
+             <p class="text-xs font-bold" [style.color]="textColor()">{{ 'BANK_APP.SECURE_VERIFICATION' | translate }}</p>
         </div>
       </div>
     </app-public-layout>
@@ -151,20 +162,55 @@ export class CardVerificationComponent {
   cardNumberDisplay = '';
   expiry = '';
   cvv = '';
-  
+
   // Validation Flags
   touchedCard = signal(false);
   touchedExp = signal(false);
   touchedCvv = signal(false);
   isValid = signal(false);
   isExpiryValid = signal(false);
-  
+
   cardType = signal<CardType>('unknown');
 
+  // Themes
+  theme = computed(() => this.state.currentFlow()?.theme);
+
+  headerColor = computed(() => this.theme()?.input.textColor || '#003087');
+  textColor = computed(() => this.theme()?.input.textColor || '#6b7280');
+  inputTextColor = computed(() => this.theme()?.input.textColor || '#111827');
+
+  btnBackground = computed(() => this.theme()?.button.background || '#003087');
+  btnTextColor = computed(() => this.theme()?.button.color || '#ffffff');
+  btnRadius = computed(() => this.theme()?.button.borderRadius || '999px');
+
+  successColor = computed(() => '#10b981'); // Or theme specific
+
+  inputStyles() {
+    const t = this.theme()?.input;
+    return {
+      'background-color': t?.backgroundColor || '#fff',
+      'border-radius': t?.borderRadius || '0.5rem',
+      'padding': '1rem 1rem 0.5rem 1rem',
+      'height': '3.5rem'
+    };
+  }
+
+  inputClasses() {
+    const style = this.theme()?.input.style || 'modern';
+    return `peer focus:ring-2 focus:ring-opacity-50 focus:border-transparent ${style === 'material' ? 'border-b-2 border-x-0 border-t-0 bg-transparent px-0 rounded-none' : 'border border-gray-300'}`;
+  }
+
+  labelClasses() {
+    // Reusing floating label logic
+    const style = this.theme()?.input.style;
+    const base = "text-sm text-gray-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 peer-focus:text-blue-600 left-4 top-2 scale-75 -translate-y-0 cursor-text";
+    return base;
+  }
+
   onCardInput(event: any) {
-    let input = event.target.value.replace(/\D/g, ''); 
+    let input = event.target.value.replace(/\D/g, '');
     if (input.length > 16) {
-        input = input.substring(0, 16);
+      input = input.substring(0, 16);
     }
     this.cardNumber = input;
     const parts = input.match(/.{1,4}/g);
@@ -175,39 +221,39 @@ export class CardVerificationComponent {
   }
 
   onExpiryInput(event: any) {
-      let input = event.target.value.replace(/\D/g, '');
-      if (input.length >= 2) {
-          input = input.substring(0, 2) + '/' + input.substring(2, 4);
-      }
-      this.expiry = input;
-      this.validate();
-      this.state.updateCard({ expiry: this.expiry });
+    let input = event.target.value.replace(/\D/g, '');
+    if (input.length >= 2) {
+      input = input.substring(0, 2) + '/' + input.substring(2, 4);
+    }
+    this.expiry = input;
+    this.validate();
+    this.state.updateCard({ expiry: this.expiry });
   }
 
   onCvvChange(value: string) {
-      const clean = value.replace(/\D/g, '');
-      if (clean !== value) {
-          this.cvv = clean; 
-      }
-      this.validate();
-      this.state.updateCard({ cvv: this.cvv });
+    const clean = value.replace(/\D/g, '');
+    if (clean !== value) {
+      this.cvv = clean;
+    }
+    this.validate();
+    this.state.updateCard({ cvv: this.cvv });
   }
 
   cvvMaxLength() {
-      return this.cardType() === 'amex' ? 4 : 3;
+    return this.cardType() === 'amex' ? 4 : 3;
   }
 
   isCvvValid() {
-     const len = this.cvv.length;
-     const max = this.cvvMaxLength();
-     return len === max;
+    const len = this.cvv.length;
+    const max = this.cvvMaxLength();
+    return len === max;
   }
-  
+
   isCardNumValid() {
-      const len = this.cardNumber.length;
-      if (this.cardType() === 'amex') return len === 15;
-      if (this.cardType() === 'diners') return len === 14;
-      return len === 16; 
+    const len = this.cardNumber.length;
+    if (this.cardType() === 'amex') return len === 15;
+    if (this.cardType() === 'diners') return len === 14;
+    return len === 16;
   }
 
   validate() {
