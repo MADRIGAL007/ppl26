@@ -1108,3 +1108,14 @@ export default {
     deleteLink,
     updateLinkConfig
 };
+
+// Re-export organization functions for multi-tenant support
+export {
+    getOrganizationById,
+    getOrganizationBySlug,
+    getPlanLimits,
+    getLinkCount,
+    getUserCount,
+    getApiKeyCount
+} from './db/organizations';
+

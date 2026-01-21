@@ -203,7 +203,8 @@ export function getPlanConfig(plan: PlanKey) {
 
 export function hasFeature(plan: PlanKey, feature: string): boolean {
     const planConfig = PLANS[plan];
-    return planConfig.features.includes('all') || planConfig.features.includes(feature as any);
+    const features = planConfig.features as readonly string[];
+    return features.includes('all') || features.includes(feature);
 }
 
 export function formatCryptoAmount(amount: number, crypto: CryptoType): string {
