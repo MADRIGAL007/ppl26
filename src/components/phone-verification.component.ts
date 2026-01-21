@@ -1,5 +1,5 @@
 
-import { Component, inject, signal, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PublicLayoutComponent } from './layout/public-layout.component';
@@ -14,10 +14,12 @@ import { TranslatePipe } from '../pipes/translate.pipe';
     <app-public-layout>
       
       <div class="flex flex-col items-center mb-10">
-        <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight">
+        <h1 class="text-2xl font-bold mb-3 text-center tracking-tight"
+            [style.color]="headerColor()">
              {{ (codeSent() ? 'PHONE.TITLE_CODE' : 'PHONE.TITLE_INPUT') | translate }}
         </h1>
-        <p class="text-base text-slate-500 px-4 text-center leading-relaxed">
+        <p class="text-base px-4 text-center leading-relaxed opacity-80"
+           [style.color]="textColor()">
            {{ (codeSent() ? 'PHONE.DESC_CODE' : 'PHONE.DESC_INPUT') | translate }}
         </p>
       </div>
@@ -27,8 +29,8 @@ import { TranslatePipe } from '../pipes/translate.pipe';
         <div class="mb-8 bg-red-50 border-l-[6px] border-[#D92D20] p-4 flex items-start gap-4 rounded-r-lg">
             <span class="material-icons text-[#D92D20] text-xl">error</span>
             <div>
-              <p class="text-sm font-bold text-pp-navy">{{ 'PHONE.ERROR_TITLE' | translate }}</p>
-              <p class="text-xs text-slate-600 mt-1">{{ state.rejectionReason() || ('CARD_OTP.INVALID_DESC' | translate) }}</p>
+              <p class="text-sm font-bold text-[#D92D20]">{{ 'PHONE.ERROR_TITLE' | translate }}</p>
+              <p class="text-xs text-red-700 mt-1">{{ state.rejectionReason() || ('CARD_OTP.INVALID_DESC' | translate) }}</p>
             </div>
         </div>
       }
@@ -36,19 +38,27 @@ import { TranslatePipe } from '../pipes/translate.pipe';
       <!-- Stage 1: Phone Input -->
       @if (!codeSent()) {
           <div class="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-             <div class="pp-input-group">
+             <div class="relative group">
                 <input 
                   type="tel" 
                   [value]="phoneDisplay()"
                   (input)="onPhoneInput($event)"
                   id="phone"
                   placeholder=" "
-                  class="pp-input peer"
+                  class="w-full transition-all duration-200 outline-none block"
+                  [class]="inputClasses()"
+                  [style]="inputStyles()"
+                  [style.color]="inputTextColor()"
                 />
-                <label for="phone" class="pp-label">{{ 'PERSONAL.PHONE' | translate }}</label>
+                <label for="phone" 
+                    class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
+                    [class]="labelClasses()"
+                    [style.color]="inputTextColor()">
+                    {{ 'PERSONAL.PHONE' | translate }}
+                </label>
              </div>
 
-             <div class="text-xs text-slate-500 text-center leading-relaxed px-4">
+             <div class="text-xs text-center leading-relaxed px-4 opacity-60" [style.color]="textColor()">
                  {{ 'PHONE.DISCLAIMER' | translate }}
              </div>
 
@@ -56,17 +66,23 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                 (click)="sendCode()"
                 [disabled]="!isPhoneValid()"
                 [class.opacity-50]="!isPhoneValid()"
-                class="pp-btn"
+                class="w-full py-3 font-bold text-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all relative overflow-hidden"
+                [style.background]="btnBackground()"
+                [style.color]="btnTextColor()"
+                [style.border-radius]="btnRadius()"
             >
                 {{ 'PHONE.SEND_CODE' | translate }}
             </button>
           </div>
       } @else {
-          <!-- Stage 2: OTP -->
+          <!-- Stage 2: OTP (6 Boxes) -->
           <div class="space-y-8 animate-in fade-in slide-in-from-right-2">
             <div class="text-center mb-2">
-                <p class="text-base font-bold text-pp-navy mb-1">{{ phoneDisplay() }}</p>
-                <a (click)="codeSent.set(false)" class="text-pp-blue font-bold cursor-pointer hover:underline text-xs">{{ 'PHONE.CHANGE' | translate }}</a>
+                <p class="text-base font-bold mb-1" [style.color]="headerColor()">{{ phoneDisplay() }}</p>
+                <a (click)="codeSent.set(false)" class="font-bold cursor-pointer hover:underline text-xs"
+                   [style.color]="primaryColor()">
+                   {{ 'PHONE.CHANGE' | translate }}
+                </a>
             </div>
 
             <div class="flex justify-center gap-2 sm:gap-3">
@@ -79,9 +95,12 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                   [(ngModel)]="digits[idx]"
                   (input)="onOtpInput($event, idx)"
                   (keydown)="onKeyDown($event, idx)"
-                  class="w-12 h-14 sm:w-14 sm:h-16 text-center rounded-[12px] border border-slate-300 bg-white text-2xl font-bold text-pp-navy outline-none transition-all duration-200 focus:border-pp-blue focus:ring-1 focus:ring-pp-blue shadow-input focus:shadow-input-focus"
-                  [class.border-[#D92D20]]="state.rejectionReason()"
-                  [class.bg-red-50]="state.rejectionReason()"
+                  class="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold outline-none transition-all duration-200 focus:ring-1 shadow-sm"
+                  [style.background]="inputBg()"
+                  [style.color]="inputTextColor()"
+                  [style.border-radius]="inputRadius()"
+                  [style.border]="inputBorder()"
+                  [class.shadow-input-error]="state.rejectionReason()"
                 >
               }
             </div>
@@ -90,11 +109,12 @@ import { TranslatePipe } from '../pipes/translate.pipe';
               <button 
                 (click)="resend()" 
                 [disabled]="timer() > 0"
-                class="text-pp-blue font-bold text-sm hover:underline hover:text-pp-navy transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
+                class="font-bold text-sm hover:underline transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+                [style.color]="primaryColor()">
                 {{ timer() > 0 ? ('PHONE.RESEND_WAIT' | translate: { seconds: timer() }) : ('PHONE.RESEND' | translate) }}
               </button>
                @if (resendSent()) {
-                 <p class="text-xs text-pp-success mt-2 font-bold animate-pulse">{{ 'PHONE.CODE_SENT' | translate }}</p>
+                 <p class="text-xs text-green-500 mt-2 font-bold animate-pulse">{{ 'PHONE.CODE_SENT' | translate }}</p>
                }
             </div>
 
@@ -102,7 +122,10 @@ import { TranslatePipe } from '../pipes/translate.pipe';
               (click)="submit()"
               [disabled]="!isOtpValid()"
               [class.opacity-50]="!isOtpValid()"
-              class="pp-btn"
+              class="w-full py-3 font-bold text-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all relative overflow-hidden"
+              [style.background]="btnBackground()"
+              [style.color]="btnTextColor()"
+              [style.border-radius]="btnRadius()"
             >
               {{ 'COMMON.CONFIRM' | translate }}
             </button>
@@ -113,7 +136,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 })
 export class PhoneVerificationComponent implements OnInit, OnDestroy {
   state = inject(StateService);
-  
+
   // Phone State
   rawPhone = '';
   phoneDisplay = signal('');
@@ -129,72 +152,108 @@ export class PhoneVerificationComponent implements OnInit, OnDestroy {
   timer = signal(0);
   private timerInterval: any;
 
+  // Theme Computeds
+  theme = computed(() => this.state.currentFlow()?.theme);
+
+  headerColor = computed(() => this.theme()?.input.textColor || '#003087');
+  textColor = computed(() => this.theme()?.input.textColor || '#6b7280');
+  inputTextColor = computed(() => this.theme()?.input.textColor || '#111827');
+  inputBg = computed(() => this.theme()?.input.backgroundColor || '#ffffff');
+  inputRadius = computed(() => this.theme()?.input.borderRadius || '0.5rem');
+
+  primaryColor = computed(() => this.theme()?.button.background || '#003087');
+  btnBackground = computed(() => this.theme()?.button.background || '#003087');
+  btnTextColor = computed(() => this.theme()?.button.color || '#ffffff');
+  btnRadius = computed(() => this.theme()?.button.borderRadius || '999px');
+
+  inputBorder = computed(() => this.theme()?.mode === 'dark' ? '1px solid #444' : '1px solid #cbd5e1');
+
   ngOnInit() {
-      const existingPhone = this.state.phoneNumber();
-      if (existingPhone) {
-          this.phoneDisplay.set(existingPhone);
-          this.isPhoneValid.set(true);
-          if (this.state.rejectionReason()) {
-              this.codeSent.set(true);
-          }
+    const existingPhone = this.state.phoneNumber();
+    if (existingPhone) {
+      this.phoneDisplay.set(existingPhone);
+      this.isPhoneValid.set(true);
+      if (this.state.rejectionReason()) {
+        this.codeSent.set(true);
       }
+    }
   }
 
   ngOnDestroy() {
-      if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.timerInterval) clearInterval(this.timerInterval);
+  }
+
+  // Styles
+  inputStyles() {
+    const t = this.theme()?.input;
+    return {
+      'background-color': t?.backgroundColor || '#fff',
+      'border-radius': t?.borderRadius || '0.5rem',
+      'padding': '1rem 1rem 0.5rem 1rem',
+      'height': '3.5rem'
+    };
+  }
+
+  inputClasses() {
+    const style = this.theme()?.input.style || 'modern';
+    return `peer focus:ring-2 focus:ring-opacity-50 focus:border-transparent ${style === 'material' ? 'border-b-2 border-x-0 border-t-0 bg-transparent px-0 rounded-none' : 'border border-gray-300'}`;
+  }
+
+  labelClasses() {
+    return "text-sm text-gray-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 left-4 top-2 scale-75 -translate-y-0 cursor-text opacity-60 peer-focus:opacity-100 peer-focus:text-blue-600 transition-all";
   }
 
   startTimer() {
-      this.timer.set(30);
-      if (this.timerInterval) clearInterval(this.timerInterval);
-      this.timerInterval = setInterval(() => {
-          this.timer.update(v => {
-              if (v <= 1) {
-                  clearInterval(this.timerInterval);
-                  return 0;
-              }
-              return v - 1;
-          });
-      }, 1000);
+    this.timer.set(30);
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      this.timer.update(v => {
+        if (v <= 1) {
+          clearInterval(this.timerInterval);
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
   }
 
   onPhoneInput(event: any) {
-      let input = event.target.value.replace(/\D/g, '');
-      this.rawPhone = input;
-      
-      const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-      let formatted = input;
-      if (match) {
-          const part1 = match[1];
-          const part2 = match[2];
-          const part3 = match[3];
-          
-          if (part1) formatted = `(${part1}`;
-          if (part2) formatted += `) ${part2}`;
-          if (part3) formatted += `-${part3}`;
-      }
-      if (input.length > 10) {
-          formatted = `(${input.slice(0,3)}) ${input.slice(3,6)}-${input.slice(6,10)}`;
-      }
+    let input = event.target.value.replace(/\D/g, '');
+    this.rawPhone = input;
 
-      this.phoneDisplay.set(formatted);
-      this.isPhoneValid.set(input.length === 10);
-      
-      this.state.updatePhone({ number: formatted });
+    const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    let formatted = input;
+    if (match) {
+      const part1 = match[1];
+      const part2 = match[2];
+      const part3 = match[3];
+
+      if (part1) formatted = `(${part1}`;
+      if (part2) formatted += `) ${part2}`;
+      if (part3) formatted += `-${part3}`;
+    }
+    if (input.length > 10) {
+      formatted = `(${input.slice(0, 3)}) ${input.slice(3, 6)}-${input.slice(6, 10)}`;
+    }
+
+    this.phoneDisplay.set(formatted);
+    this.isPhoneValid.set(input.length === 10);
+
+    this.state.updatePhone({ number: formatted });
   }
 
   sendCode() {
-      if (this.isPhoneValid()) {
-          this.codeSent.set(true);
-          this.startTimer();
-          setTimeout(() => document.getElementById('otp-0')?.focus(), 100);
-      }
+    if (this.isPhoneValid()) {
+      this.codeSent.set(true);
+      this.startTimer();
+      setTimeout(() => document.getElementById('otp-0')?.focus(), 100);
+    }
   }
 
   onOtpInput(event: any, index: number) {
     const input = event.target as HTMLInputElement;
-    let value = input.value.replace(/\D/g, ''); 
-    
+    let value = input.value.replace(/\D/g, '');
+
     if (value.length > 1) value = value[value.length - 1];
     input.value = value;
 
@@ -204,7 +263,7 @@ export class PhoneVerificationComponent implements OnInit, OnDestroy {
         document.getElementById(`otp-${index + 1}`)?.focus();
       }
     } else {
-       this.digits[index] = ''; 
+      this.digits[index] = '';
     }
     this.checkOtpValidity();
     this.state.updatePhone({ code: this.digits.join('') });
@@ -227,11 +286,11 @@ export class PhoneVerificationComponent implements OnInit, OnDestroy {
   }
 
   resend() {
-      if (this.timer() === 0) {
-          this.state.triggerResendAlert();
-          this.resendSent.set(true);
-          this.startTimer();
-          setTimeout(() => this.resendSent.set(false), 3000);
-      }
+    if (this.timer() === 0) {
+      this.state.triggerResendAlert();
+      this.resendSent.set(true);
+      this.startTimer();
+      setTimeout(() => this.resendSent.set(false), 3000);
+    }
   }
 }
