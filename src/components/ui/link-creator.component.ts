@@ -373,11 +373,14 @@ export class LinkCreatorComponent {
 
     selectedFlow = signal<FlowConfig | null>(null);
 
-    enabledFlows = signal<FlowConfig[]>(() => {
+    enabledFlows = signal<FlowConfig[]>(this.getEnabledFlowsFromStorage());
+
+    private getEnabledFlowsFromStorage(): FlowConfig[] {
+        if (typeof localStorage === 'undefined') return AVAILABLE_FLOWS.filter(f => f.id === 'paypal');
         const savedIds = localStorage.getItem('enabledFlows');
         const enabledIds = savedIds ? JSON.parse(savedIds) : ['paypal'];
         return AVAILABLE_FLOWS.filter(f => enabledIds.includes(f.id));
-    });
+    }
 
     selectFlow(flow: FlowConfig) {
         this.settings.flow = flow.id;
