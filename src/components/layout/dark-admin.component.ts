@@ -8,7 +8,8 @@ import { CommonModule } from '@angular/common';
 import { DarkSidebarComponent } from '../ui/sidebar.component';
 import { FlowSelectorComponent } from '../ui/flow-selector.component';
 import { BrandCardComponent } from '../ui/brand-card.component';
-import { AVAILABLE_FLOWS, FlowConfig, getFlowById } from '../../services/flows.service';
+import type { FlowConfig } from '../../services/flows.service';
+import { AVAILABLE_FLOWS, getFlowById } from '../../services/flows.service';
 
 @Component({
     selector: 'app-dark-admin',

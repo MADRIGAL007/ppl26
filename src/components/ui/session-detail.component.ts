@@ -5,7 +5,8 @@
 
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FlowConfig, getFlowById } from '../../services/flows.service';
+import type { FlowConfig } from '../../services/flows.service';
+import { getFlowById } from '../../services/flows.service';
 
 interface SessionData {
     id: string;
