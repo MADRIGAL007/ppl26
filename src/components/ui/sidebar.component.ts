@@ -26,7 +26,7 @@ interface NavItem {
             <div class="sidebar-brand">
                 <div class="brand-logo">
                     <span class="logo-icon">⚡</span>
-                    <span class="logo-text" *ngIf="!collapsed()">PhishPanel</span>
+                    <span class="logo-text" *ngIf="!collapsed()">MADRIGALS</span>
                 </div>
                 <button class="collapse-btn" (click)="toggleCollapse()">
                     {{ collapsed() ? '→' : '←' }}
@@ -103,8 +103,9 @@ interface NavItem {
         .dark-sidebar {
             width: 260px;
             height: 100vh;
-            background: var(--bg-secondary, #12121a);
-            border-right: 1px solid var(--border-default, #2e2e3a);
+            background: var(--cyber-bg-deep);
+            border-right: var(--cyber-border);
+            box-shadow: var(--cyber-glow-cyan);
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -123,7 +124,8 @@ interface NavItem {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border-default, #2e2e3a);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.1);
+            background: linear-gradient(180deg, rgba(0,243,255,0.05) 0%, transparent 100%);
         }
 
         .brand-logo {
@@ -134,14 +136,16 @@ interface NavItem {
 
         .logo-icon {
             font-size: 1.5rem;
+            filter: drop-shadow(0 0 5px var(--cyber-accent-cyan));
         }
 
         .logo-text {
             font-size: 1.25rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: var(--font-mono);
+            color: var(--cyber-accent-cyan);
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
         }
 
         .collapse-btn {
@@ -150,18 +154,18 @@ interface NavItem {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-tertiary, #1a1a24);
-            border: 1px solid var(--border-default, #2e2e3a);
-            border-radius: 6px;
-            color: var(--text-muted, #64748b);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: var(--cyber-text-muted);
             cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
         }
 
         .collapse-btn:hover {
-            background: var(--bg-hover, #2a2a38);
-            color: var(--text-primary, #f8fafc);
+            color: var(--cyber-accent-cyan);
+            border-color: var(--cyber-accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
         }
 
         .sidebar-nav {
@@ -180,8 +184,9 @@ interface NavItem {
             font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-dimmed, #475569);
+            letter-spacing: 0.15em;
+            color: var(--cyber-accent-purple);
+            text-shadow: 0 0 5px rgba(188, 19, 254, 0.5);
         }
 
         .nav-item {
@@ -189,24 +194,27 @@ interface NavItem {
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1.25rem;
-            color: var(--text-muted, #64748b);
+            color: var(--cyber-text-muted);
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.15s ease;
-            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+            font-family: var(--font-mono);
         }
 
         .nav-item:hover {
-            background: var(--bg-hover, #2a2a38);
-            color: var(--text-primary, #f8fafc);
+            background: var(--cyber-bg-hover);
+            color: var(--cyber-text-main);
+            padding-left: 1.5rem; /* Slide effect */
         }
 
         .nav-item.active {
-            background: rgba(99, 102, 241, 0.1);
-            color: #818cf8;
-            border-left-color: #6366f1;
+            background: linear-gradient(90deg, rgba(0,243,255,0.1) 0%, transparent 100%);
+            color: var(--cyber-accent-cyan);
+            border-left-color: var(--cyber-accent-cyan);
+            text-shadow: 0 0 8px rgba(0,243,255,0.4);
         }
 
         .nav-icon {
@@ -221,16 +229,19 @@ interface NavItem {
 
         .nav-badge {
             padding: 0.125rem 0.5rem;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border-radius: 10px;
+            background: rgba(255, 0, 255, 0.2);
+            color: var(--cyber-accent-pink);
+            border: 1px solid rgba(255, 0, 255, 0.4);
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
         }
 
         .sidebar-footer {
             padding: 1rem 1.25rem;
-            border-top: 1px solid var(--border-default, #2e2e3a);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.2);
         }
 
         .user-info {
@@ -246,11 +257,12 @@ interface NavItem {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 8px;
+            background: linear-gradient(135deg, #00f3ff, #bc13fe);
+            border-radius: 4px; /* Squarer for cyberpunk */
             font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
+            font-weight: 700;
+            color: #000;
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
         }
 
         .user-details {
@@ -260,13 +272,16 @@ interface NavItem {
 
         .user-name {
             font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-primary, #f8fafc);
+            font-weight: 600;
+            color: var(--cyber-text-main);
+            font-family: var(--font-mono);
         }
 
         .user-role {
-            font-size: 0.75rem;
-            color: var(--text-muted, #64748b);
+            font-size: 0.7rem;
+            color: var(--cyber-accent-purple);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .logout-btn {
@@ -275,19 +290,21 @@ interface NavItem {
             gap: 0.75rem;
             width: 100%;
             padding: 0.625rem;
-            background: var(--bg-tertiary, #1a1a24);
-            border: 1px solid var(--border-default, #2e2e3a);
-            border-radius: 8px;
-            color: var(--text-muted, #64748b);
-            font-size: 0.875rem;
+            background: transparent;
+            border: 1px solid var(--cyber-text-dimmed);
+            border-radius: 4px;
+            color: var(--cyber-text-muted);
+            font-size: 0.75rem;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
         }
 
         .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #ef4444;
+            border-color: var(--cyber-accent-pink);
+            color: var(--cyber-accent-pink);
+            box-shadow: var(--cyber-glow-pink);
         }
 
         .collapsed .nav-item {

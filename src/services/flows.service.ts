@@ -6,6 +6,7 @@
 
 export interface FlowTheme {
     mode: 'light' | 'dark';
+    brandColor?: string;
     background: {
         type: 'color' | 'image' | 'gradient';
         value: string;
@@ -20,7 +21,7 @@ export interface FlowTheme {
         padding: string;
     };
     input: {
-        style: 'modern' | 'material' | 'outline' | 'flat';
+        style: 'modern' | 'material' | 'outline' | 'flat' | 'box';
         activeColor: string;
         borderRadius: string;
         backgroundColor: string;
@@ -209,7 +210,7 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             },
             footer: {
                 style: 'links',
-                links: [{ text: 'Help Center' }, { text: 'Terms of Use' }, { text: 'Privacy' }],
+                links: [{ text: 'Questions? Call 1-844-505-2993' }, { text: 'Help Center' }, { text: 'Terms of Use' }, { text: 'Privacy' }, { text: 'Cookie Preferences' }, { text: 'Corporate Information' }],
                 textColor: '#737373'
             }
         },
@@ -272,7 +273,7 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             },
             footer: {
                 style: 'simple',
-                links: [{ text: 'Privacy' }, { text: 'Security' }],
+                links: [{ text: 'Privacy' }, { text: 'Security' }, { text: 'Terms of Use' }],
                 textColor: '#ffffff'
             }
         },
@@ -335,8 +336,8 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             },
             footer: {
                 style: 'simple',
-                links: [{ text: 'Create Apple ID' }, { text: 'Forgot ID or Password?' }],
-                textColor: '#1d1d1f'
+                links: [{ text: 'Create Apple ID' }, { text: 'System Status' }, { text: 'Privacy Policy' }, { text: 'Terms & Conditions' }, { text: 'Copyright © 2024 Apple Inc. All rights reserved.' }],
+                textColor: '#86868b'
             }
         },
         steps: [

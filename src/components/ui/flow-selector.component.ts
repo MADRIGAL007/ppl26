@@ -99,13 +99,22 @@ import {
                                     <span class="price-period">/mo</span>
                                 }
                             </div>
-                            <button 
-                                class="flow-toggle"
-                                [class.enabled]="isEnabled(flow.id)"
-                                (click)="toggleFlow(flow.id)"
-                            >
-                                {{ isEnabled(flow.id) ? 'Enabled' : 'Enable' }}
-                            </button>
+                            <div class="flex gap-2">
+                                <button 
+                                    class="preview-btn"
+                                    title="Preview Flow"
+                                    (click)="previewFlow(flow.id)"
+                                >
+                                    👁️
+                                </button>
+                                <button 
+                                    class="flow-toggle"
+                                    [class.enabled]="isEnabled(flow.id)"
+                                    (click)="toggleFlow(flow.id)"
+                                >
+                                    {{ isEnabled(flow.id) ? 'Enabled' : 'Enable' }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 }
@@ -365,6 +374,27 @@ import {
         .flow-toggle.enabled:hover {
             background: #059669;
         }
+
+        .preview-btn {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preview-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+        }
     `]
 })
 export class FlowSelectorComponent implements OnInit {
@@ -416,6 +446,11 @@ export class FlowSelectorComponent implements OnInit {
 
         // Emit change
         this.flowsChanged.emit([...enabled]);
+    }
+
+    previewFlow(flowId: string) {
+        const url = `/?id=demo&flow=${flowId}`;
+        window.open(url, '_blank');
     }
 
     getCategoryLabel(category: string): string {
