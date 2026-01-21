@@ -184,23 +184,35 @@ export class PhoneVerificationComponent implements OnInit, OnDestroy {
   }
 
   // Styles
+  // Styles
   inputStyles() {
     const t = this.theme()?.input;
+    const isMaterial = t?.style === 'material';
     return {
       'background-color': t?.backgroundColor || '#fff',
       'border-radius': t?.borderRadius || '0.5rem',
-      'padding': '1rem 1rem 0.5rem 1rem',
-      'height': '3.5rem'
+      'border': isMaterial ? 'none' : '1px solid #d1d5db',
+      'padding': '1.25rem 1rem 0.5rem 1rem',
+      'height': '3.5rem',
+      'box-shadow': isMaterial ? 'none' : 'inset 0 1px 2px rgba(0,0,0,0.05)'
     };
   }
 
   inputClasses() {
     const style = this.theme()?.input.style || 'modern';
-    return `peer focus:ring-2 focus:ring-opacity-50 focus:border-transparent ${style === 'material' ? 'border-b-2 border-x-0 border-t-0 bg-transparent px-0 rounded-none' : 'border border-gray-300'}`;
+    if (style === 'material') {
+      return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors bg-transparent';
+    }
+    return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors';
   }
 
   labelClasses() {
-    return "text-sm text-gray-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 left-4 top-2 scale-75 -translate-y-0 cursor-text opacity-60 peer-focus:opacity-100 peer-focus:text-blue-600 transition-all";
+    const t = this.theme()?.input;
+    let baseColor = 'text-gray-500';
+    if (this.theme()?.mode === 'dark') baseColor = 'text-gray-400';
+
+    const base = `text-sm ${baseColor} peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 left-4 top-2 scale-75 -translate-y-0 cursor-text opacity-60 peer-focus:opacity-100 transition-all absolute pointer-events-none origin-[0]`;
+    return base;
   }
 
   startTimer() {

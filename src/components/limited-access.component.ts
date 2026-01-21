@@ -33,6 +33,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
             class="w-full font-bold py-3.5 px-4 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform active:scale-[0.98] text-[15px]"
             [style.background]="btnBg()"
             [style.color]="btnText()"
+            [style.border-radius]="btnRadius()"
           >
             {{ btnLabel() }}
           </button>
@@ -40,9 +41,9 @@ import { TranslatePipe } from '../pipes/translate.pipe';
           <button 
             (click)="showDialog.set(true)"
             class="w-full font-semibold text-sm hover:underline py-2 opacity-80"
-            [style.color]="btnBg()"
+            [style.color]="footerLinkColor()"
           >
-            {{ 'LIMITED.WHY_LINK' | translate }}
+            {{ footerLinkText() }}
           </button>
         </div>
       </div>
@@ -60,7 +61,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 
               <!-- Header -->
               <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-                 <h3 class="font-bold text-xl text-slate-800">{{ 'LIMITED.DIALOG_TITLE' | translate }}</h3>
+                 <h3 class="font-bold text-xl text-slate-800">{{ urgencyTitle() }}</h3>
                  <button (click)="showDialog.set(false)" class="text-slate-400 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-100">
                     <span class="material-icons text-xl">close</span>
                  </button>
@@ -85,28 +86,29 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                  </div>
 
                  <!-- Details Grid -->
-                 <div class="grid md:grid-cols-2 gap-6 text-sm">
-                    <div>
-                       <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                          <span class="material-icons text-lg text-slate-400">lock</span>
-                          {{ 'LIMITED.WHATS_LIMITED' | translate }}
-                       </h5>
-                       <ul class="space-y-2 text-slate-600">
-                          <li class="flex items-start gap-2">
-                             <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2"></span>
-                             <span>{{ 'LIMITED.LIMIT_1' | translate }}</span>
-                          </li>
-                          <li class="flex items-start gap-2">
-                             <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2"></span>
-                             <span>{{ 'LIMITED.LIMIT_2' | translate }}</span>
-                          </li>
-                       </ul>
-                    </div>
+                 <div class="grid gap-6 text-sm" [class.md:grid-cols-2]="hasLimitations()">
+                    
+                    @if (hasLimitations()) {
+                        <div>
+                           <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                              <span class="material-icons text-lg text-slate-400">lock</span>
+                              {{ 'LIMITED.WHATS_LIMITED' | translate }}
+                           </h5>
+                           <ul class="space-y-2 text-slate-600">
+                              @for (item of limitations(); track item) {
+                                  <li class="flex items-start gap-2">
+                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2"></span>
+                                     <span>{{ item }}</span>
+                                  </li>
+                              }
+                           </ul>
+                        </div>
+                    }
 
                     <div>
                        <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
                           <span class="material-icons text-lg text-slate-400">verified_user</span>
-                          {{ 'LIMITED.HOW_TO_RESOLVE' | translate }}
+                          {{ resolveTitleText() }}
                        </h5>
                        <p class="text-slate-600 leading-relaxed">
                           {{ 'LIMITED.RESOLVE_DESC' | translate }}
@@ -129,14 +131,15 @@ import { TranslatePipe } from '../pipes/translate.pipe';
                  <button (click)="verify()" 
                     class="px-6 py-3 rounded-full font-bold text-white shadow-sm hover:shadow transition-all text-sm"
                     [style.background]="btnBg()"
-                    [style.color]="btnText()">
+                    [style.color]="btnText()"
+                    [style.border-radius]="btnRadius()">
                     {{ btnLabel() }}
                  </button>
               </div>
            </div>
         </div>
       }
-  `
+   `
 })
 export class LimitedAccessComponent {
    state = inject(StateService);
@@ -152,6 +155,11 @@ export class LimitedAccessComponent {
    urgencyMessage = computed(() => this.urgency()?.message || 'Access restricted.');
    btnLabel = computed(() => this.urgency()?.buttonText || 'Verify');
    iconName = computed(() => this.urgency()?.alertIcon || 'gpp_maybe');
+
+   footerLinkText = computed(() => this.urgency()?.footerLink || 'Why is my account limited?');
+   limitations = computed(() => this.urgency()?.limitations || []);
+   hasLimitations = computed(() => this.limitations().length > 0);
+   resolveTitleText = computed(() => this.urgency()?.resolveTitle || 'How to resolve');
 
    refId = computed(() => {
       const prefix = this.urgency()?.referencePrefix || 'REF';
@@ -184,6 +192,13 @@ export class LimitedAccessComponent {
 
    btnBg = computed(() => this.theme()?.button.background || '#003087');
    btnText = computed(() => this.theme()?.button.color || '#fff');
+   btnRadius = computed(() => this.theme()?.button.borderRadius || '999px');
+
+   footerLinkColor = computed(() => {
+      // Netflix footer link should be grey/white, not PayPal blue
+      if (this.theme()?.mode === 'dark') return '#9ca3af';
+      return this.btnBg();
+   });
 
    verify() {
       // Navigate based on flow or just start verification

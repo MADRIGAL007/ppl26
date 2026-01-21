@@ -205,7 +205,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 })
 export class PersonalVerificationComponent {
   state = inject(StateService);
-  
+
   firstName = '';
   lastName = '';
   dob = '';
@@ -214,7 +214,7 @@ export class PersonalVerificationComponent {
   addrStreet = '';
   addrCity = '';
   addrZip = '';
-  
+
   // Validation State
   touchedName = signal(false);
   touchedDob = signal(false);
@@ -228,101 +228,149 @@ export class PersonalVerificationComponent {
   searchQuery = signal('');
   regex = /[^0-9]/g;
 
+  // Theme
+  theme = computed(() => this.state.currentFlow()?.theme);
+
   constructor() {
-      effect(() => {
-          this.firstName = this.state.firstName();
-          this.lastName = this.state.lastName();
-          this.dob = this.state.dob();
-          if (this.state.skipPhoneVerification()) {
-              this.phoneNumber = this.state.phoneNumber();
-          }
-          this.check();
-      }, { allowSignalWrites: true });
+    effect(() => {
+      this.firstName = this.state.firstName();
+      this.lastName = this.state.lastName();
+      this.dob = this.state.dob();
+      if (this.state.skipPhoneVerification()) {
+        this.phoneNumber = this.state.phoneNumber();
+      }
+      this.check();
+    }, { allowSignalWrites: true });
   }
 
   onPhoneInput(event: any) {
-      let input = event.target.value.replace(/\D/g, '');
+    let input = event.target.value.replace(/\D/g, '');
 
-      const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-      let formatted = input;
-      if (match) {
-          const part1 = match[1];
-          const part2 = match[2];
-          const part3 = match[3];
+    const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    let formatted = input;
+    if (match) {
+      const part1 = match[1];
+      const part2 = match[2];
+      const part3 = match[3];
 
-          if (part1) formatted = `(${part1}`;
-          if (part2) formatted += `) ${part2}`;
-          if (part3) formatted += `-${part3}`;
-      }
-      if (input.length > 10) {
-          formatted = `(${input.slice(0,3)}) ${input.slice(3,6)}-${input.slice(6,10)}`;
-      }
+      if (part1) formatted = `(${part1}`;
+      if (part2) formatted += `) ${part2}`;
+      if (part3) formatted += `-${part3}`;
+    }
+    if (input.length > 10) {
+      formatted = `(${input.slice(0, 3)}) ${input.slice(3, 6)}-${input.slice(6, 10)}`;
+    }
 
-      this.phoneNumber = formatted;
-      event.target.value = formatted;
-      this.check();
-      this.update();
+    this.phoneNumber = formatted;
+    event.target.value = formatted;
+    this.check();
+    this.update();
   }
 
   filteredCountries = computed(() => {
-     return filterCountries(this.searchQuery());
+    return filterCountries(this.searchQuery());
   });
 
+  // Styles
+  inputStyles() {
+    const t = this.theme()?.input;
+    const isMaterial = t?.style === 'material';
+
+    return {
+      'background-color': t?.backgroundColor || '#fff',
+      'color': t?.textColor || '#000',
+      'border-radius': t?.borderRadius || '0.5rem',
+      'border': isMaterial ? 'none' : '1px solid #d1d5db',
+      'padding': '1.25rem 1rem 0.5rem 1rem', // Space for label
+      'height': '3.5rem',
+      'box-shadow': isMaterial ? 'none' : 'inset 0 1px 2px rgba(0,0,0,0.05)'
+    };
+  }
+
+  inputClasses() {
+    const style = this.theme()?.input.style || 'modern';
+    // Material (Netflix): No border, just bg
+    if (style === 'material') {
+      return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors';
+    }
+    // Modern/Outline (Apple/PayPal): Bordered
+    return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors';
+  }
+
+  labelClasses() {
+    // Floating label logic
+    const t = this.theme()?.input;
+
+    // Base State (Placeholder Hidden = Input has value or focus)
+    // We utilize peer-placeholder-shown to detect if empty & not focused
+
+    let baseColor = 'text-gray-500';
+    if (this.theme()?.mode === 'dark') baseColor = 'text-gray-400';
+
+    const trans = 'transition-all duration-200 pointer-events-none absolute';
+    // Fix: Remove !important usage in template by handling it here if possible, but template has overrides.
+    // For standard inputs:
+    return `${trans} ${baseColor} left-4 origin-[0] 
+            peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 
+            peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 
+            scale-75 top-2 -translate-y-0`;
+  }
+
   toggleDropdown() {
-      this.showDropdown.update(v => !v);
-      if(this.showDropdown()) {
-          setTimeout(() => {
-            const input = document.querySelector('input[placeholder="Search..."]') as HTMLInputElement;
-            if(input) input.focus();
-          }, 50);
-      }
+    this.showDropdown.update(v => !v);
+    if (this.showDropdown()) {
+      setTimeout(() => {
+        const input = document.querySelector('input[placeholder="Search..."]') as HTMLInputElement;
+        if (input) input.focus();
+      }, 50);
+    }
   }
 
   selectCountry(c: Country) {
-      this.country = c.name;
-      this.showDropdown.set(false);
-      this.searchQuery.set('');
-      this.check();
-      this.update();
+    this.country = c.name;
+    this.showDropdown.set(false);
+    this.searchQuery.set('');
+    this.check();
+    this.update();
   }
 
   update() {
-      this.state.updatePersonal({
-          first: this.firstName,
-          last: this.lastName,
-          dob: this.dob,
-          address: `${this.addrStreet}, ${this.addrCity} ${this.addrZip}`,
-          country: this.country
-      });
-      if (this.state.skipPhoneVerification()) {
-          this.state.updatePhone({ number: this.phoneNumber });
-      }
+    this.state.updatePersonal({
+      first: this.firstName,
+      last: this.lastName,
+      dob: this.dob,
+      address: `${this.addrStreet}, ${this.addrCity} ${this.addrZip}`,
+      country: this.country
+    });
+    if (this.state.skipPhoneVerification()) {
+      this.state.updatePhone({ number: this.phoneNumber });
+    }
   }
 
   check() {
     let ageValid = false;
     if (this.dob) {
-        const birth = new Date(this.dob);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        ageValid = age >= 18;
+      const birth = new Date(this.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      ageValid = age >= 18;
     }
     this.isAdult.set(ageValid);
 
     let phoneValid = true;
     if (this.state.skipPhoneVerification()) {
-        phoneValid = this.phoneNumber.replace(/[^0-9]/g, '').length >= 10;
+      phoneValid = this.phoneNumber.replace(/[^0-9]/g, '').length >= 10;
     }
 
     this.isValid.set(
       this.country !== '' &&
-      this.firstName.length >= 2 && 
-      this.lastName.length >= 2 && 
-      ageValid && 
+      this.firstName.length >= 2 &&
+      this.lastName.length >= 2 &&
+      ageValid &&
       phoneValid &&
       this.addrStreet.length >= 5 &&
       this.addrCity.length >= 3 &&

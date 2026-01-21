@@ -177,29 +177,50 @@ export class LoginComponent {
   // Styles
   inputStyles() {
     const t = this.theme()?.input;
+    const isMaterial = t?.style === 'material';
+
     return {
       'background-color': t?.backgroundColor || '#fff',
       'color': t?.textColor || '#000',
       'border-radius': t?.borderRadius || '0.5rem',
-      'border': '1px solid #d1d5db',
-      'padding': '1rem 1rem 0.5rem 1rem', // Space for floating label
-      'height': '3.5rem'
+      'border': isMaterial ? 'none' : '1px solid #d1d5db',
+      'padding': '1.25rem 1rem 0.5rem 1rem', // Space for label
+      'height': '3.5rem',
+      'box-shadow': isMaterial ? 'none' : 'inset 0 1px 2px rgba(0,0,0,0.05)'
     };
   }
 
   inputClasses() {
     const style = this.theme()?.input.style || 'modern';
-    // Peer class allows sibling selector for label
-    return `peer focus:ring-2 focus:ring-opacity-50 focus:border-transparent ${style === 'material' ? 'border-b-2 border-x-0 border-t-0 bg-transparent px-0 rounded-none' : 'border'}`;
+    // Material (Netflix): No border, just bg
+    if (style === 'material') {
+      return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors';
+    }
+    // Modern/Outline (Apple/PayPal): Bordered
+    return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors';
   }
 
   labelClasses() {
     // Floating label logic
-    const style = this.theme()?.input.style;
-    const base = "text-sm text-gray-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 peer-focus:text-blue-600 left-4 top-2 scale-75 -translate-y-0";
+    const t = this.theme()?.input;
+    const style = t?.style;
 
-    // If placeholder shown (empty), centering logic handled by peer-placeholder-shown
-    return base;
+    // Base State (Placeholder Hidden = Input has value or focus)
+    // We utilize peer-placeholder-shown to detect if empty & not focused
+
+    let baseColor = 'text-gray-500';
+    if (this.theme()?.mode === 'dark') baseColor = 'text-gray-400';
+
+    const trans = 'transition-all duration-200 pointer-events-none absolute';
+
+    // Position: Inside (Floating)
+    // Default (Top-Small): top-2 left-4 scale-75
+    // Placeholder (Middle-Normal): peer-placeholder-shown:top-1/2 peer-placeholder-shown:scale-100
+
+    return `${trans} ${baseColor} left-4 origin-[0] 
+            peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 
+            peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 
+            scale-75 top-2 -translate-y-0`;
   }
 
   togglePassword() {

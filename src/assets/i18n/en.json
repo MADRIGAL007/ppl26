@@ -98,7 +98,8 @@
     "FORGOT": "Forgot password?",
     "LOG_IN": "Log In",
     "OR": "or",
-    "SIGN_UP": "Sign Up"
+    "SIGN_UP": "Sign Up",
+    "WELCOME": "Welcome"
   },
   "PHONE": {
     "TITLE_CODE": "Enter your code",
@@ -201,7 +202,7 @@
     "PRIVACY": "Privacy",
     "LEGAL": "Legal",
     "WORLDWIDE": "Worldwide",
-    "COPYRIGHT": "Copyright © 1999-2024 PayPal. All rights reserved."
+    "COPYRIGHT": "Copyright © 1999-2024. All rights reserved."
   },
   "LOADING": {
     "CHECKING": "Checking your info...",
