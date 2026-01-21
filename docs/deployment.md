@@ -144,6 +144,7 @@ services:
       - "8080:8080"
     environment:
       - DATABASE_URL=postgresql://user:pass@db:5432/paypal_verifier
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - db
     volumes:
@@ -157,9 +158,24 @@ services:
       POSTGRES_PASSWORD: pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
 ```
 
 ### Production Setup

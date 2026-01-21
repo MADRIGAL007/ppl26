@@ -27,7 +27,12 @@ A state-of-the-art, high-fidelity Angular application simulating PayPal's securi
 - **Telegram Integration**: Automated notifications for verification events
 - **Link Tracking**: Personalized tracking links with analytics
 - **Impersonation**: Hypervisor can impersonate admin accounts
+- **Link Tracking**: Personalized tracking links with analytics
+- **Impersonation**: Hypervisor can impersonate admin accounts
 - **Database Flexibility**: SQLite (dev) + PostgreSQL (prod) support
+- **A/B Testing**: Native traffic splitting and variant optimization
+- **Custom Theming**: Per-link branding customization
+- **Admin Guide**: Comprehensive [Admin Documentation](docs/admin_guide.md)
 
 ## 🏗️ Architecture
 
@@ -234,7 +239,13 @@ REDIS_URL=redis://localhost:6379
 
 # Logging
 LOG_LEVEL=info
+LOG_LEVEL=info
 LOG_FILE=logs/app.log
+
+# Gatekeeper (Admin Access)
+HYPERVISOR_USERNAME=admin
+HYPERVISOR_PASSWORD=secure-password
+DB_SSL_REJECT_UNAUTHORIZED=true
 ```
 
 ### Admin Configuration

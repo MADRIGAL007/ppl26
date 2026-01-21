@@ -7,8 +7,56 @@
 
 :root {
     --pp-blue: #0070BA;
+    --pp-blue-hover: #005EA6;
     --pp-navy: #001C64;
     --pp-bg: #F5F7FA;
+    --pp-text: #001C64;
+    --pp-card-bg: #FFFFFF;
+    --pp-border: #CBD5E1;
+}
+
+:root.dark {
+    --pp-blue: #3b82f6;
+    /* Lighter blue for dark mode */
+    --pp-blue-hover: #60a5fa;
+    --pp-navy: #1e293b;
+    /* Slate 800 */
+    --pp-bg: #0f172a;
+    /* Slate 900 */
+    --pp-text: #f1f5f9;
+    /* Slate 100 */
+    --pp-card-bg: #1e293b;
+    --pp-border: #334155;
+}
+
+/* Funnel Chart */
+.funnel-step {
+    @apply relative flex items-center justify-between p-3 mb-1 bg-slate-50 dark:bg-slate-700 rounded transition-all;
+}
+
+.funnel-bar {
+    @apply absolute left-0 top-0 bottom-0 bg-blue-100 dark:bg-blue-900/30 rounded z-0;
+}
+
+.funnel-content {
+    @apply relative z-10 flex w-full justify-between items-center;
+}
+
+/* Live Preview */
+.preview-box {
+    @apply border-4 border-slate-800 rounded-[2rem] overflow-hidden bg-white relative mx-auto shadow-xl;
+    width: 280px;
+    height: 580px;
+    transform: scale(0.85);
+    transform-origin: top center;
+}
+
+.preview-screen {
+    @apply w-full h-full bg-slate-50 flex flex-col;
+}
+
+.preview-header {
+    @apply h-14 bg-[#003087] flex items-center justify-center text-white font-bold;
 }
 
 body {
@@ -87,4 +135,16 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #94A3B8;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
 }

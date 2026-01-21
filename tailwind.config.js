@@ -16,10 +16,10 @@ module.exports = {
         sans: ['Manrope', 'sans-serif'],
       },
       colors: {
-        'pp-navy': '#001C64',
-        'pp-blue': '#0070BA',
-        'pp-blue-hover': '#005EA6',
-        'pp-bg': '#F5F7FA',
+        'pp-navy': '#001C64', // Keep fixed or variabilize if needed
+        'pp-blue': 'var(--pp-blue)',
+        'pp-blue-hover': 'var(--pp-blue-hover)',
+        'pp-bg': 'var(--pp-bg)',
         'pp-success': '#00CF92',
         brand: {
           50: '#F5F7FA',
