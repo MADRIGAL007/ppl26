@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { DataTableV2Component } from '../ui/data-table.component';
 
 @Component({
-    selector: 'app-admin-users-v2',
-    standalone: true,
-    imports: [CommonModule, DataTableV2Component],
-    template: `
+   selector: 'app-admin-users-v2',
+   standalone: true,
+   imports: [CommonModule, DataTableV2Component],
+   template: `
     <div class="space-y-6">
        <!-- Header -->
        <div class="flex items-center justify-between">
@@ -30,18 +30,17 @@ import { DataTableV2Component } from '../ui/data-table.component';
   `
 })
 export class UsersComponent {
-    columns = [
-        { header: 'User', field: 'name', width: 'col-span-3', textClass: 'font-medium text-white' },
-        { header: 'Role', field: 'role', width: 'col-span-2', textClass: 'text-slate-300' },
-        { header: 'Email', field: 'email', width: 'col-span-3', textClass: 'text-slate-400' },
-        { header: 'Last Active', field: 'lastActive', width: 'col-span-2', type: 'time' },
-        { header: 'Status', field: 'status', width: 'col-span-2', type: 'status', class: 'text-right' }
-    ];
+   columns: { header: string; field: string; width?: string; textClass?: string; type?: 'default' | 'status' | 'time' | 'country'; class?: string }[] = [
+      { header: 'Username', field: 'username', width: 'col-span-3', textClass: 'font-bold text-white' },
+      { header: 'Role', field: 'role', width: 'col-span-3' },
+      { header: 'Last Login', field: 'lastLogin', width: 'col-span-3', type: 'time' },
+      { header: 'Status', field: 'status', width: 'col-span-3', type: 'status' }
+   ];
 
-    data = [
-        { name: 'Administrator', role: 'Super Admin', email: 'admin@madrigals.com', lastActive: 'Now', status: 'active' },
-        { name: 'Operator One', role: 'Viewer', email: 'op1@madrigals.com', lastActive: '2 days ago', status: 'active' },
-        { name: 'Audit Log Bot', role: 'System', email: 'bot@internal.io', lastActive: '5 mins ago', status: 'active' },
-        { name: 'Guest Developer', role: 'Contributor', email: 'dev@external.com', lastActive: '1 week ago', status: 'blocked' },
-    ];
+   data = [
+      { name: 'Administrator', role: 'Super Admin', email: 'admin@madrigals.com', lastActive: 'Now', status: 'active' },
+      { name: 'Operator One', role: 'Viewer', email: 'op1@madrigals.com', lastActive: '2 days ago', status: 'active' },
+      { name: 'Audit Log Bot', role: 'System', email: 'bot@internal.io', lastActive: '5 mins ago', status: 'active' },
+      { name: 'Guest Developer', role: 'Contributor', email: 'dev@external.com', lastActive: '1 week ago', status: 'blocked' },
+   ];
 }

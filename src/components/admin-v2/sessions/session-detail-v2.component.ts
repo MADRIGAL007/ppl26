@@ -25,10 +25,10 @@ import { CommonModule } from '@angular/common';
                       <span class="text-2xl">{{ session.flowIcon || '❓' }}</span>
                       <h2 class="adm-h3 text-white">{{ session.flowName || 'Unknown Flow' }}</h2>
                       <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider"
-                           [class.bg-green-500-10]="isActive"
-                           [class.text-green-400]="isActive"
-                           [class.bg-slate-700]="!isActive"
-                           [class.text-slate-400]="!isActive">
+                           [class.bg-green-500-10]="isActive()"
+                           [class.text-green-400]="isActive()"
+                           [class.bg-slate-700]="!isActive()"
+                           [class.text-slate-400]="!isActive()">
                            {{ session.status }}
                       </span>
                    </div>

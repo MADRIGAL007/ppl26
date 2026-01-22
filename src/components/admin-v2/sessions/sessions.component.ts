@@ -80,7 +80,7 @@ export class SessionsComponent {
 
    selectedSessionId = signal<string | null>(null);
 
-   columns = [
+   columns: { header: string; field: string; width?: string; textClass?: string; type?: 'time' | 'status' | 'country' | 'default'; class?: string }[] = [
       { header: 'Session ID', field: 'id', width: 'col-span-2', textClass: 'font-mono text-slate-400 text-xs' },
       { header: 'Flow', field: 'flow', width: 'col-span-2', textClass: 'font-medium text-white' },
       { header: 'IP Address', field: 'ip', width: 'col-span-2', textClass: 'font-mono text-slate-300 text-xs' },
