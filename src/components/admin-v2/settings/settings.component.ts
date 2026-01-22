@@ -1,11 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { FormsModule } from '@angular/forms';
+import { SettingsService } from '../../../services/settings.service';
+import { AuthService } from '../../../services/auth.service';
+
 @Component({
-    selector: 'app-admin-settings-v2',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+   selector: 'app-admin-settings-v2',
+   standalone: true,
+   imports: [CommonModule, FormsModule],
+   template: `
     <div class="space-y-6">
        <!-- Header -->
        <div>
@@ -28,7 +32,12 @@ import { CommonModule } from '@angular/common';
                        <p class="text-xs text-slate-500">Disable all public traffic</p>
                     </div>
                     <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="maintenance" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer left-0"/>
+                        <input type="checkbox" 
+                            name="maintenance" 
+                            id="maintenance" 
+                            [ngModel]="settings.systemSettings().maintenance"
+                            (ngModelChange)="updateSystem('maintenance', $event)"
+                            class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer left-0"/>
                         <label for="maintenance" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer"></label>
                     </div>
                  </div>
@@ -54,11 +63,19 @@ import { CommonModule } from '@angular/common';
              <div class="space-y-4">
                 <div>
                    <label class="block text-xs font-medium text-slate-400 mb-1">Bot Token</label>
-                   <input type="password" value="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-300 font-mono" readonly dblclick="alert('Edit disabled in demo')">
+                   <input type="text" 
+                       [ngModel]="settings.userSettings().telegramBotToken"
+                       (ngModelChange)="updateUser('telegramBotToken', $event)"
+                       class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-300 font-mono focus:border-blue-500 outline-none" 
+                       placeholder="123456:ABC...">
                 </div>
                 <div>
                    <label class="block text-xs font-medium text-slate-400 mb-1">Chat ID</label>
-                   <input type="text" value="-1001234567890" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-300 font-mono" readonly>
+                   <input type="text" 
+                       [ngModel]="settings.userSettings().telegramChatId"
+                       (ngModelChange)="updateUser('telegramChatId', $event)"
+                       class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-300 font-mono focus:border-blue-500 outline-none" 
+                       placeholder="-100...">
                 </div>
                 <button class="adm-btn adm-btn-primary w-full justify-center">
                     <span class="material-icons mr-2 text-sm">send</span> Test Notification
@@ -85,4 +102,26 @@ import { CommonModule } from '@angular/common';
     </div>
   `
 })
-export class SettingsComponent { }
+export class SettingsComponent {
+   settings = inject(SettingsService);
+   private auth = inject(AuthService);
+
+   isHypervisor = computed(() => this.auth.currentUser()?.role === 'hypervisor');
+
+   constructor() {
+      this.settings.fetchSettings();
+   }
+
+   updateUser(key: string, value: any) {
+      this.settings.updateUserSetting(key, String(value));
+   }
+
+   updateSystem(key: string, value: any) {
+      this.settings.updateSystemSetting(key, String(value));
+   }
+
+   // Mock test for now until backend endpoint exists
+   testNotification() {
+      alert('Sending test notification to Telegram...');
+   }
+}
