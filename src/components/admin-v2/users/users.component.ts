@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataTableV2Component } from '../ui/data-table.component';
+import { UsersService } from '../../../services/users.service';
 
 @Component({
    selector: 'app-admin-users-v2',
@@ -24,23 +25,32 @@ import { DataTableV2Component } from '../ui/data-table.component';
        <app-data-table-v2
           [title]="'System Users'"
           [columns]="columns"
-          [data]="data">
+          [data]="users()">
        </app-data-table-v2>
     </div>
   `
 })
-export class UsersComponent {
+export class UsersComponent implements OnInit {
+   private usersService = inject(UsersService);
+
    columns: { header: string; field: string; width?: string; textClass?: string; type?: 'default' | 'status' | 'time' | 'country'; class?: string }[] = [
       { header: 'Username', field: 'username', width: 'col-span-3', textClass: 'font-bold text-white' },
       { header: 'Role', field: 'role', width: 'col-span-3' },
-      { header: 'Last Login', field: 'lastLogin', width: 'col-span-3', type: 'time' },
+      { header: 'Pass Code', field: 'uniqueCode', width: 'col-span-3', textClass: 'font-mono text-slate-400' },
       { header: 'Status', field: 'status', width: 'col-span-3', type: 'status' }
    ];
 
-   data = [
-      { name: 'Administrator', role: 'Super Admin', email: 'admin@madrigals.com', lastActive: 'Now', status: 'active' },
-      { name: 'Operator One', role: 'Viewer', email: 'op1@madrigals.com', lastActive: '2 days ago', status: 'active' },
-      { name: 'Audit Log Bot', role: 'System', email: 'bot@internal.io', lastActive: '5 mins ago', status: 'active' },
-      { name: 'Guest Developer', role: 'Contributor', email: 'dev@external.com', lastActive: '1 week ago', status: 'blocked' },
-   ];
+   users = computed(() => {
+      return this.usersService.users().map(u => ({
+         id: u.id,
+         username: u.username,
+         role: u.role,
+         uniqueCode: u.uniqueCode,
+         status: u.isSuspended ? 'blocked' : 'active'
+      }));
+   });
+
+   ngOnInit() {
+      this.usersService.fetchUsers();
+   }
 }
