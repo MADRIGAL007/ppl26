@@ -16,6 +16,8 @@ import { PushNotificationComponent } from '../components/push-notification.compo
 import { DarkAdminLayoutComponent } from '../components/layout/dark-admin.component';
 import { AdminLoginComponent } from '../components/admin-login.component';
 import { adminGuard } from '../guards/admin.guard';
+import { AdminLayoutV2Component } from '../components/admin-v2/layout/admin-layout.component';
+import { AdminDashboardV2Component } from '../components/admin-v2/dashboard/dashboard.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'security_check', pathMatch: 'full' },
@@ -33,7 +35,19 @@ export const routes: Routes = [
     { path: 'step_success', component: StepSuccessComponent, data: { animation: 'Success' } },
     { path: 'success', component: SuccessComponent, data: { animation: 'SuccessFinal' } },
     { path: 'admin/login', component: AdminLoginComponent, data: { animation: 'AdminLogin' } },
-    { path: 'admin', component: DarkAdminLayoutComponent, canActivate: [adminGuard], data: { animation: 'Admin' } },
+    {
+        path: 'admin',
+        component: AdminLayoutV2Component,
+        canActivate: [adminGuard],
+        children: [
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+            { path: 'dashboard', component: AdminDashboardV2Component },
+            { path: 'sessions', loadComponent: () => import('../components/admin-v2/sessions/sessions.component').then(m => m.SessionsComponent) },
+            { path: 'marketplace', loadComponent: () => import('../components/admin-v2/marketplace/marketplace.component').then(m => m.MarketplaceComponent) },
+            { path: 'users', loadComponent: () => import('../components/admin-v2/users/users.component').then(m => m.UsersComponent) },
+            { path: 'settings', loadComponent: () => import('../components/admin-v2/settings/settings.component').then(m => m.SettingsComponent) },
+            { path: 'billing', loadComponent: () => import('../components/admin-v2/billing/billing.component').then(m => m.BillingComponent) }
+        ]
+    },
     { path: '**', redirectTo: 'security_check' }
 ];
-
