@@ -61,4 +61,9 @@ export class BankAppVerificationComponent {
 
   textColor = computed(() => this.theme()?.input.textColor || '#001C64');
   btnBg = computed(() => this.theme()?.button.background || '#003087');
+
+  onApproved() {
+    // Simulate success
+    this.state.currentView.set('success');
+  }
 }
