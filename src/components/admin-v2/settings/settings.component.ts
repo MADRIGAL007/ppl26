@@ -35,7 +35,7 @@ import { AuthService } from '../../../services/auth.service';
                         <input type="checkbox" 
                             name="maintenance" 
                             id="maintenance" 
-                            [ngModel]="settings.systemSettings().maintenance"
+                            [ngModel]="settings.systemSettings()['maintenance']"
                             (ngModelChange)="updateSystem('maintenance', $event)"
                             class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer left-0"/>
                         <label for="maintenance" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer"></label>
