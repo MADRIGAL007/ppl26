@@ -2,6 +2,7 @@
 @import 'leaflet/dist/leaflet.css';
 @import './styles/dark-theme.css';
 @import './styles/madrigals.theme.css';
+@import './styles/admin.theme.css';
 
 @tailwind base;
 @tailwind components;

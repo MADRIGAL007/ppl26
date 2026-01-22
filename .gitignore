@@ -30,3 +30,7 @@ dist-server
 # Data
 data/*.db
 *.db
+
+# Environment
+.env
+.env.local

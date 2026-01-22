@@ -1,0 +1,154 @@
+/* Madrigals Admin v2 Theme - Premium Command Center */
+:root {
+    /* 
+     * Palette: Modern Slate (Tailwind-inspired but custom tuned)
+     * Philosophy: High contrast, low eye fatigue, data-first.
+     */
+
+    /* Backgrounds */
+    --adm-bg-base: #020617;
+    /* Slate 950 - Main background */
+    --adm-bg-card: #0f172a;
+    /* Slate 900 - Cards/Panels */
+    --adm-bg-hover: #1e293b;
+    /* Slate 800 - Hoover states */
+    --adm-bg-active: #334155;
+    /* Slate 700 - Active items */
+
+    /* Borders */
+    --adm-border-subtle: rgba(255, 255, 255, 0.08);
+    --adm-border-default: #1e293b;
+    /* Slate 800 */
+    --adm-border-focus: #3b82f6;
+    /* Blue 500 */
+
+    /* Text */
+    --adm-text-primary: #f8fafc;
+    /* Slate 50 */
+    --adm-text-secondary: #94a3b8;
+    /* Slate 400 */
+    --adm-text-muted: #64748b;
+    /* Slate 500 */
+
+    /* Accents */
+    --adm-accent: #3b82f6;
+    /* Blue 500 - Primary Action */
+    --adm-accent-hover: #2563eb;
+    /* Blue 600 */
+    --adm-accent-glow: rgba(59, 130, 246, 0.4);
+
+    /* Status Indicators */
+    --adm-success: #10b981;
+    /* Emerald 500 */
+    --adm-warning: #f59e0b;
+    /* Amber 500 */
+    --adm-excess: #ef4444;
+    /* Red 500 */
+    --adm-info: #0ea5e9;
+    /* Sky 500 */
+
+    /* Layout & Spacing */
+    --adm-header-height: 64px;
+    --adm-sidebar-width: 260px;
+    --adm-sidebar-collapsed: 64px;
+
+    /* Effects */
+    --adm-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --adm-shadow-glow: 0 0 15px rgba(59, 130, 246, 0.15);
+    --adm-glass: blur(12px) saturate(180%);
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Global Admin Resets */
+.admin-root {
+    background-color: var(--adm-bg-base);
+    color: var(--adm-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+}
+
+/* Typography Utilities */
+.adm-h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.adm-h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.adm-h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.adm-mono {
+    font-family: var(--font-mono);
+}
+
+/* Common Components */
+.adm-card {
+    background: var(--adm-bg-card);
+    border: 1px solid var(--adm-border-default);
+    border-radius: 8px;
+    box-shadow: var(--adm-shadow-card);
+}
+
+.adm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.adm-btn-primary {
+    background: var(--adm-accent);
+    color: white;
+    border: 1px solid transparent;
+}
+
+.adm-btn-primary:hover {
+    background: var(--adm-accent-hover);
+    box-shadow: 0 0 12px var(--adm-accent-glow);
+}
+
+.adm-btn-ghost {
+    background: transparent;
+    color: var(--adm-text-secondary);
+}
+
+.adm-btn-ghost:hover {
+    background: var(--adm-bg-hover);
+    color: var(--adm-text-primary);
+}
+
+/* Scrollbar */
+.admin-root ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.admin-root ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-root ::-webkit-scrollbar-thumb {
+    background: var(--adm-bg-active);
+    border-radius: 3px;
+}
+
+.admin-root ::-webkit-scrollbar-thumb:hover {
+    background: var(--adm-text-muted);
+}
