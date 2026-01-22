@@ -148,12 +148,11 @@ export class AdminDashboardV2Component {
    });
 
    // Feed Data
-   feedColumns = [
-      { header: 'Time', field: 'time', width: 'col-span-2', type: 'time' },
-      { header: 'Flow', field: 'flowName', width: 'col-span-2', textClass: 'font-medium text-white' },
-      { header: 'IP Address', field: 'ip', width: 'col-span-3', textClass: 'font-mono text-slate-300 text-xs' },
-      { header: 'Device', field: 'device', width: 'col-span-2' },
-      { header: 'Status', field: 'status', width: 'col-span-3', type: 'status', class: 'text-right' }
+   feedColumns: { header: string; field: string; width?: string; textClass?: string; type?: 'default' | 'status' | 'time' | 'country'; class?: string }[] = [
+      { header: 'Event', field: 'event', width: 'col-span-4' },
+      { header: 'Flow', field: 'flow', width: 'col-span-2' },
+      { header: 'Status', field: 'status', width: 'col-span-2', type: 'status' },
+      { header: 'Time', field: 'time', width: 'col-span-4', class: 'text-right text-slate-500 font-mono text-xs' }
    ];
 
    recentActivity = computed(() => {
