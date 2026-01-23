@@ -102,7 +102,7 @@ export async function verifyPayment(
     verifiedBy: string,
     dbModule: any // Pass db module to avoid circular deps
 ): Promise<void> {
-    const payment = await dbModule.getCryptoPayment(paymentId);
+    const payment = (await dbModule.getCryptoPayment(paymentId)) as CryptoPayment;
 
     if (!payment) {
         throw new Error('Payment not found');
