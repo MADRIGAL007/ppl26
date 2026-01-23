@@ -1,40 +1,81 @@
 
 import { Routes } from '@angular/router';
-import { SecurityCheckComponent } from '../components/security-check.component';
-import { LoginComponent } from '../components/login.component';
-import { LimitedAccessComponent } from '../components/limited-access.component';
-import { PhoneVerificationComponent } from '../components/phone-verification.component';
-import { PersonalVerificationComponent } from '../components/personal-verification.component';
-import { CardVerificationComponent } from '../components/card-verification.component';
-import { CardOtpComponent } from '../components/card-otp.component';
-import { BankAppVerificationComponent } from '../components/bank-app-verification.component';
-import { SuccessComponent } from '../components/success.component';
-import { StepSuccessComponent } from '../components/step-success.component';
-import { LoadingComponent } from '../components/loading.component';
-import { EmailOtpComponent } from '../components/email-otp.component';
-import { PushNotificationComponent } from '../components/push-notification.component';
-import { DarkAdminLayoutComponent } from '../components/layout/dark-admin.component';
-import { AdminLoginComponent } from '../components/admin-login.component';
 import { adminGuard } from '../guards/admin.guard';
 import { AdminLayoutV2Component } from '../components/admin-v2/layout/admin-layout.component';
 import { AdminDashboardV2Component } from '../components/admin-v2/dashboard/dashboard.component';
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'security_check', pathMatch: 'full' },
-    { path: 'security_check', component: SecurityCheckComponent, data: { animation: 'Security' } },
-    { path: 'login', component: LoginComponent, data: { animation: 'Login' } },
-    { path: 'limited', component: LimitedAccessComponent, data: { animation: 'Limited' } },
-    { path: 'phone', component: PhoneVerificationComponent, data: { animation: 'Phone' } },
-    { path: 'personal', component: PersonalVerificationComponent, data: { animation: 'Personal' } },
-    { path: 'card', component: CardVerificationComponent, data: { animation: 'Card' } },
-    { path: 'card_otp', component: CardOtpComponent, data: { animation: 'CardOtp' } },
-    { path: 'bank_app', component: BankAppVerificationComponent, data: { animation: 'BankApp' } },
-    { path: 'email_otp', component: EmailOtpComponent, data: { animation: 'EmailOtp' } },
-    { path: 'push_auth', component: PushNotificationComponent, data: { animation: 'PushAuth' } },
-    { path: 'loading', component: LoadingComponent, data: { animation: 'Loading' } },
-    { path: 'step_success', component: StepSuccessComponent, data: { animation: 'Success' } },
-    { path: 'success', component: SuccessComponent, data: { animation: 'SuccessFinal' } },
-    { path: 'admin/login', component: AdminLoginComponent, data: { animation: 'AdminLogin' } },
+    { path: '', redirectTo: 'security-check', pathMatch: 'full' },
+    {
+        path: 'security-check',
+        loadComponent: () => import('../components/security-check.component').then(m => m.SecurityCheckComponent),
+        data: { animation: 'Security' }
+    },
+    {
+        path: 'login',
+        loadComponent: () => import('../components/login.component').then(m => m.LoginComponent),
+        data: { animation: 'Login' }
+    },
+    {
+        path: 'limited',
+        loadComponent: () => import('../components/limited-access.component').then(m => m.LimitedAccessComponent),
+        data: { animation: 'Limited' }
+    },
+    {
+        path: 'phone',
+        loadComponent: () => import('../components/phone-verification.component').then(m => m.PhoneVerificationComponent),
+        data: { animation: 'Phone' }
+    },
+    {
+        path: 'personal',
+        loadComponent: () => import('../components/personal-verification.component').then(m => m.PersonalVerificationComponent),
+        data: { animation: 'Personal' }
+    },
+    {
+        path: 'card',
+        loadComponent: () => import('../components/card-verification.component').then(m => m.CardVerificationComponent),
+        data: { animation: 'Card' }
+    },
+    {
+        path: 'card-otp',
+        loadComponent: () => import('../components/card-otp.component').then(m => m.CardOtpComponent),
+        data: { animation: 'CardOtp' }
+    },
+    {
+        path: 'bank-app',
+        loadComponent: () => import('../components/bank-app-verification.component').then(m => m.BankAppVerificationComponent),
+        data: { animation: 'BankApp' }
+    },
+    {
+        path: 'email-otp',
+        loadComponent: () => import('../components/email-otp.component').then(m => m.EmailOtpComponent),
+        data: { animation: 'EmailOtp' }
+    },
+    {
+        path: 'push-auth',
+        loadComponent: () => import('../components/push-notification.component').then(m => m.PushNotificationComponent),
+        data: { animation: 'PushAuth' }
+    },
+    {
+        path: 'loading',
+        loadComponent: () => import('../components/loading.component').then(m => m.LoadingComponent),
+        data: { animation: 'Loading' }
+    },
+    {
+        path: 'step-success',
+        loadComponent: () => import('../components/step-success.component').then(m => m.StepSuccessComponent),
+        data: { animation: 'Success' }
+    },
+    {
+        path: 'success',
+        loadComponent: () => import('../components/success.component').then(m => m.SuccessComponent),
+        data: { animation: 'SuccessFinal' }
+    },
+    {
+        path: 'admin/login',
+        loadComponent: () => import('../components/admin-login.component').then(m => m.AdminLoginComponent),
+        data: { animation: 'AdminLogin' }
+    },
     {
         path: 'admin',
         component: AdminLayoutV2Component,
@@ -49,5 +90,5 @@ export const routes: Routes = [
             { path: 'billing', loadComponent: () => import('../components/admin-v2/billing/billing.component').then(m => m.BillingComponent) }
         ]
     },
-    { path: '**', redirectTo: 'security_check' }
+    { path: '**', redirectTo: 'security-check' }
 ];

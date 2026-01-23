@@ -22,9 +22,9 @@ import { SettingsService } from '../../../services/settings.service';
                [class.border-blue-500]="isInstalled(flow.id)">
              <div class="flex justify-between items-start mb-4">
                 <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl border transition-colors"
-                     [style.background]="$any(flow.theme).activeColor + '1A'"
-                     [style.color]="$any(flow.theme).activeColor"
-                     [style.borderColor]="$any(flow.theme).activeColor + '33'">
+                     [style.background]="flow.color + '1A'"
+                     [style.color]="flow.color"
+                     [style.borderColor]="flow.color + '33'">
                    {{ flow.icon }}
                 </div>
                 
