@@ -1,8 +1,9 @@
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { authenticateToken } from '../auth';
 import { AdminService } from '../services/admin.service';
 import { validateInput } from '../middleware/security';
+import { RequestWithUser } from '../types';
 
 const router = Router();
 
@@ -11,9 +12,9 @@ router.use(authenticateToken);
 
 // --- Sessions ---
 
-router.get('/sessions', async (req: Request, res: Response) => {
+router.get('/sessions', async (req: RequestWithUser, res: Response) => {
     try {
-        const user = (req as any).user;
+        const user = req.user!;
         const sessions = await AdminService.getSessions(user);
         res.json(sessions);
     } catch (e) {
@@ -24,7 +25,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
 // --- Commands ---
 
-router.post('/command', validateInput, async (req: Request, res: Response) => {
+router.post('/command', validateInput, async (req: RequestWithUser, res: Response) => {
     try {
         const { sessionId, action, payload } = req.body;
         // Optional: Verify admin owns this session? 
@@ -41,9 +42,9 @@ router.post('/command', validateInput, async (req: Request, res: Response) => {
 
 // --- Links ---
 
-router.get('/links', async (req: Request, res: Response) => {
+router.get('/links', async (req: RequestWithUser, res: Response) => {
     try {
-        const user = (req as any).user;
+        const user = req.user!;
         const links = await AdminService.getLinks(user);
         res.json(links);
     } catch (e) {
@@ -52,9 +53,9 @@ router.get('/links', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/links', validateInput, async (req: Request, res: Response) => {
+router.post('/links', validateInput, async (req: RequestWithUser, res: Response) => {
     try {
-        const user = (req as any).user;
+        const user = req.user!;
         const { code, flowConfig, themeConfig } = req.body;
 
         if (!code) return res.status(400).json({ error: 'Missing code' });
@@ -67,9 +68,9 @@ router.post('/links', validateInput, async (req: Request, res: Response) => {
     }
 });
 
-router.delete('/links/:code', async (req: Request, res: Response) => {
+router.delete('/links/:code', async (req: RequestWithUser, res: Response) => {
     try {
-        const user = (req as any).user;
+        const user = req.user!;
         const code = req.params.code as string;
 
         await AdminService.deleteLink(user, code);

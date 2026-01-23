@@ -5,6 +5,8 @@ import { RouterOutlet, ChildrenOutletContexts } from '@angular/router';
 import { StateService } from './services/state.service';
 import { ModalComponent } from './components/modal.component';
 import { LanguageConflictComponent } from './components/language-conflict.component';
+import { ToastComponent } from './components/common/toast.component';
+import { GlobalSpinnerComponent } from './components/common/global-spinner.component';
 import { slideInAnimation } from './app/animations';
 
 @Component({
@@ -14,7 +16,9 @@ import { slideInAnimation } from './app/animations';
     CommonModule,
     RouterOutlet,
     ModalComponent,
-    LanguageConflictComponent
+    LanguageConflictComponent,
+    ToastComponent,
+    GlobalSpinnerComponent
   ],
   templateUrl: './app.component.html',
   animations: [slideInAnimation]

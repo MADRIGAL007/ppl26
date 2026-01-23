@@ -106,4 +106,86 @@ test.describe('Admin Dashboard E2E', () => {
         // Expect toast/notification
         await expect(page.locator('text=Link Configuration Saved')).toBeVisible();
     });
+
+    test('should view system dashboard health and stats', async ({ page }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('admin_token', 'mock-token');
+        });
+
+        // Mock System API
+        await page.route('/api/system/health', async route => {
+            await route.fulfill({
+                json: {
+                    status: 'ok',
+                    uptimeFormatted: '2h 15m',
+                    memory: { used: 512, total: 1024 },
+                    cpu: { loadAvg1: '0.5' },
+                    database: 'connected'
+                }
+            });
+        });
+
+        await page.route('/api/system/stats', async route => {
+            await route.fulfill({
+                json: { active: 10, total: 100, verified: 50, links: 5, successRate: 50 }
+            });
+        });
+
+        await page.route('/api/system/audit-logs?limit=10', async route => {
+            await route.fulfill({ json: { logs: [] } });
+        });
+
+        await page.goto('/admin');
+
+        // Check cards
+        await expect(page.locator('.card:has-text("Status")')).toContainText('OK');
+        await expect(page.locator('.card:has-text("Uptime")')).toContainText('2h 15m');
+        await expect(page.locator('.card:has-text("Database")')).toContainText('CONNECTED');
+
+        // Check stats
+        await expect(page.locator('.stat:has-text("Success Rate")')).toContainText('50.0%');
+    });
+
+    test('should manage users', async ({ page }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('admin_token', 'mock-token');
+        });
+
+        await page.route('/api/admin/users', async route => {
+            if (route.request().method() === 'GET') {
+                await route.fulfill({
+                    json: [
+                        { id: '1', username: 'admin', role: 'admin' },
+                        { id: '2', username: 'hypervisor', role: 'hypervisor' }
+                    ]
+                });
+            } else if (route.request().method() === 'POST') {
+                await route.fulfill({
+                    status: 201,
+                    json: { id: '3', username: 'newuser', role: 'admin' }
+                });
+            }
+        });
+
+        await page.goto('/admin/users');
+
+        // Check list
+        await expect(page.locator('table')).toContainText('admin');
+        await expect(page.locator('table')).toContainText('hypervisor');
+
+        // Open Add User Modal
+        await page.click('button:has-text("Create User")');
+        await expect(page.locator('h3')).toContainText('Create');
+
+        // Fill Form
+        await page.fill('input[placeholder="Username"]', 'newuser');
+        await page.fill('input[placeholder="Password"]', 'TestPass123!');
+        await page.selectOption('select', 'admin');
+
+        // Submit
+        await page.click('button:has-text("Save")');
+
+        // Toast check (Generic matching as actual text depends on NotificationService)
+        // await expect(page.locator('.toast')).toBeVisible();
+    });
 });

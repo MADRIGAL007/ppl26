@@ -139,6 +139,23 @@ export async function getOrgPayments(orgId: string): Promise<CryptoPayment[]> {
     }
 }
 
+/**
+ * Get payments by status for admin dashboard
+ */
+export async function getCryptoPaymentsByStatus(status: string): Promise<CryptoPayment[]> {
+    if (isPostgres) {
+        const result = await pgPool!.query('SELECT * FROM crypto_payments WHERE status = $1 ORDER BY created_at DESC', [status]);
+        return result.rows.map(mapPaymentRow);
+    } else {
+        return new Promise((resolve, reject) => {
+            sqliteDb!.all('SELECT * FROM crypto_payments WHERE status = ? ORDER BY created_at DESC', [status], (err: any, rows: any[]) => {
+                if (err) reject(err);
+                else resolve((rows || []).map(mapPaymentRow));
+            });
+        });
+    }
+}
+
 // --- Helpers ---
 
 function mapPaymentRow(row: any): CryptoPayment {

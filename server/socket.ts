@@ -3,19 +3,33 @@ import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { verifyToken } from './auth';
 import * as db from './db';
+import { CorsOptions } from 'cors';
 
 let io: Server;
 const socketSessionMap = new Map<string, string>();
 
-export const initSocket = (httpServer: HttpServer, corsOptions: any) => {
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createRedisClient } from './services/redis.service';
+
+export const initSocket = (httpServer: HttpServer, corsOptions: CorsOptions) => {
     io = new Server(httpServer, {
         cors: corsOptions
     });
 
-    io.on('connection', (socket) => {
+    const pubClient = createRedisClient();
+    const subClient = pubClient ? pubClient.duplicate() : null;
+
+    if (pubClient && subClient) {
+        console.log('[Socket] Redis Adapter enabled');
+        io.adapter(createAdapter(pubClient, subClient));
+    } else {
+        console.log('[Socket] Using In-Memory Adapter');
+    }
+
+    io.on('connection', (socket: Socket) => {
         console.log('[Socket] Client connected:', socket.id);
 
-        socket.on('join', (sessionId) => {
+        socket.on('join', (sessionId: string) => {
             socket.join(sessionId);
             socketSessionMap.set(socket.id, sessionId);
             console.log(`[Socket] ${socket.id} joined session room: ${sessionId}`);

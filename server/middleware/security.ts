@@ -73,7 +73,9 @@ export const cspMiddleware = (req: Request, res: Response, next: NextFunction) =
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'"
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+      "block-all-mixed-content"
     ].join('; ')
   );
   next();
@@ -171,13 +173,13 @@ export const validateSession = (req: Request, res: Response, next: NextFunction)
 // Input sanitization middleware
 export const sanitizeMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Recursively sanitize request body
-  const sanitizeObject = (obj: any): any => {
+  const sanitizeObject = (obj: unknown): unknown => {
     if (typeof obj === 'string') {
       return sanitizeInput(obj);
     } else if (Array.isArray(obj)) {
       return obj.map(sanitizeObject);
     } else if (obj && typeof obj === 'object') {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         sanitized[key] = sanitizeObject(value);
       }

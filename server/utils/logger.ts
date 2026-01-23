@@ -57,7 +57,10 @@ if (process.env['NODE_ENV'] !== 'production') {
       winston.format.colorize({ all: true }),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
       winston.format.printf(
-        (info: any) => `${info.timestamp} ${info.level}: ${info.message}`,
+        (info) => {
+          const casted = info as { timestamp: string; level: string; message: string;[key: string]: unknown };
+          return `${casted.timestamp} ${casted.level}: ${casted.message}`;
+        },
       ),
     )
   }));
@@ -71,24 +74,24 @@ export const stream = {
 };
 
 // Export logger methods for easy access
-export const logError = (message: string, meta?: any) => {
+export const logError = (message: string, meta?: Record<string, unknown>) => {
   logger.error(message, meta);
 };
 
-export const logWarn = (message: string, meta?: any) => {
+export const logWarn = (message: string, meta?: Record<string, unknown>) => {
   logger.warn(message, meta);
 };
 
-export const logInfo = (message: string, meta?: any) => {
+export const logInfo = (message: string, meta?: Record<string, unknown>) => {
   logger.info(message, meta);
 };
 
-export const logDebug = (message: string, meta?: any) => {
+export const logDebug = (message: string, meta?: Record<string, unknown>) => {
   logger.debug(message, meta);
 };
 
 // Security-specific logging
-export const logSecurity = (event: string, details: any) => {
+export const logSecurity = (event: string, details: Record<string, unknown>) => {
   logger.warn(`SECURITY: ${event}`, {
     timestamp: new Date().toISOString(),
     ...details
@@ -96,7 +99,7 @@ export const logSecurity = (event: string, details: any) => {
 };
 
 // Audit logging
-export const logAudit = (actor: string, action: string, details: string, meta?: any) => {
+export const logAudit = (actor: string, action: string, details: string, meta?: Record<string, unknown>) => {
   logger.info(`AUDIT: ${action}`, {
     actor,
     action,

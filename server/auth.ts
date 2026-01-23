@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { TokenPayload, RequestWithUser, RefreshTokenPayload } from './types';
 
 // SECURITY: Enforce JWT secret configuration
 const JWT_SECRET_FROM_ENV = process.env['JWT_SECRET'];
@@ -17,19 +18,29 @@ if (!JWT_SECRET_FROM_ENV || JWT_SECRET_FROM_ENV.length < MIN_SECRET_LENGTH) {
 }
 
 const JWT_SECRET = JWT_SECRET_FROM_ENV || 'dev-only-insecure-secret-do-not-use-in-prod';
-export const signToken = (payload: any) => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
+
+// Token expiry constants
+export const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access tokens
+export const REFRESH_TOKEN_EXPIRY_DAYS = 30;
+
+export const signToken = (payload: Omit<TokenPayload, 'iat' | 'exp'>) => {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
 };
 
-export const verifyToken = (token: string): any => {
+export const signRefreshPayload = (userId: string, tokenId: string) => {
+    const payload: Omit<RefreshTokenPayload, 'iat' | 'exp'> = { userId, tokenId, type: 'refresh' };
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+};
+
+export const verifyToken = (token: string): TokenPayload | null => {
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, JWT_SECRET) as TokenPayload;
     } catch (e) {
         return null;
     }
 };
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = (req: RequestWithUser, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -38,13 +49,13 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const user = verifyToken(token);
     if (!user) return res.sendStatus(403);
 
-    (req as any).user = user;
+    req.user = user;
     next();
 };
 
-export const requireRole = (role: string) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
+export const requireRole = (role: 'admin' | 'hypervisor') => {
+    return (req: RequestWithUser, res: Response, next: NextFunction) => {
+        const user = req.user;
         if (!user || user.role !== role) {
             return res.sendStatus(403);
         }

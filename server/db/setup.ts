@@ -49,7 +49,7 @@ const seedHypervisor = async () => {
             id: crypto.randomUUID(),
             username,
             password, // Will be hashed by createUser via ensureHashedPassword
-            role: 'hypervisor',
+            role: 'hypervisor' as const,
             uniqueCode: crypto.randomUUID().substring(0, 8),
             settings: JSON.stringify({}),
             telegramConfig: JSON.stringify({}),
@@ -169,6 +169,23 @@ const initSqliteSchema = async () => {
         )
     `);
     await runSqlite(`CREATE INDEX IF NOT EXISTS idx_payments_org_id ON crypto_payments (org_id)`);
+
+    // Refresh Tokens table for secure token rotation
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token_hash TEXT NOT NULL,
+            expires_at INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            is_revoked INTEGER DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    `);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens (user_id)`);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens (token_hash)`);
 
     // 2. Migrations (Try/Catch to ignore "duplicate column")
     try {
@@ -340,6 +357,23 @@ const initPostgresSchema = async () => {
         `);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_payments_org_id ON crypto_payments (org_id)`);
 
+        // Refresh Tokens table for secure token rotation
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                token_hash TEXT NOT NULL,
+                expires_at BIGINT NOT NULL,
+                created_at BIGINT NOT NULL,
+                ip_address TEXT,
+                user_agent TEXT,
+                is_revoked BOOLEAN DEFAULT FALSE,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens (user_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens (token_hash)`);
+
         // Create index for admin_links AFTER table is created
         await client.query(`CREATE INDEX IF NOT EXISTS idx_links_code ON admin_links (code)`);
 
@@ -381,14 +415,35 @@ export const initDB = async () => {
 
         const pool = new Pool({
             connectionString: DATABASE_URL,
-            ssl: sslConfig
+            ssl: sslConfig,
+            // Optimization: Connection Pooling
+            max: parseInt(process.env['DB_POOL_MAX'] || '20'), // Max clients in the pool
+            idleTimeoutMillis: parseInt(process.env['DB_POOL_IDLE_TIMEOUT'] || '30000'), // Close idle clients after 30s
+            connectionTimeoutMillis: parseInt(process.env['DB_POOL_CONN_TIMEOUT'] || '2000'), // Fail if connection takes too long
         });
         setPgPool(pool);
+
+        // Error handling for idle clients
+        pool.on('error', (err, client) => {
+            console.error('[DB] Unexpected error on idle client', err);
+        });
+
+        pool.on('connect', (client) => {
+            // console.debug('[DB] New client connected to pool'); // Too noisy for prod? Maybe debug level.
+        });
+
+        pool.on('remove', (client) => {
+            // console.debug('[DB] Client removed from pool');
+        });
 
         try {
             await pool.query('SELECT 1');
             console.log('[DB] Connected to PostgreSQL.');
             await initPostgresSchema();
+
+            // Run migrations
+            const { runMigrations } = require('./migrations');
+            await runMigrations();
         } catch (e) {
             console.error('[DB] PostgreSQL Connection Error:', e);
             process.exit(1);

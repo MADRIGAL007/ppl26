@@ -9,6 +9,7 @@ import * as notes from './repos/notes';
 import * as commands from './repos/commands';
 import * as billing from './repos/billing';
 import * as orgs from './organizations';
+import * as refreshTokens from './repos/refresh-tokens';
 
 // Re-export named exports
 export { initDB } from './setup';
@@ -20,6 +21,7 @@ export * from './repos/audit';
 export * from './repos/notes';
 export * from './repos/commands';
 export * from './repos/billing';
+export * from './repos/refresh-tokens';
 export * from './organizations';
 
 // Default export for backward compatibility
@@ -33,5 +35,6 @@ export default {
     ...notes,
     ...commands,
     ...billing,
+    ...refreshTokens,
     ...orgs
 };

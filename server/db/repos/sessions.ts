@@ -1,7 +1,7 @@
-
 import { sqliteDb, pgPool, isPostgres } from '../core';
+import { SessionWithData } from '../../types';
 
-export const getSession = (id: string): Promise<any> => {
+export const getSession = (id: string): Promise<SessionWithData | null> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM sessions WHERE id = $1', [id])
@@ -27,7 +27,7 @@ export const getSession = (id: string): Promise<any> => {
     });
 };
 
-export const getSessionsByIp = (ip: string): Promise<any[]> => {
+export const getSessionsByIp = (ip: string): Promise<SessionWithData[]> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM sessions WHERE ip = $1', [ip])
@@ -52,7 +52,7 @@ export const getSessionsByIp = (ip: string): Promise<any[]> => {
     });
 };
 
-export const upsertSession = (id: string, data: any, ip: string, adminId: string | null = null, variant: string | null = null): Promise<void> => {
+export const upsertSession = (id: string, data: Record<string, unknown>, ip: string, adminId: string | null = null, variant: string | null = null): Promise<void> => {
     const json = JSON.stringify(data);
     const now = Date.now();
 
@@ -118,7 +118,7 @@ export const updateLastSeen = (id: string, lastSeen: number): Promise<void> => {
     });
 };
 
-export const getAllSessions = (adminId?: string, role?: string): Promise<any[]> => {
+export const getAllSessions = (adminId?: string, role?: string): Promise<SessionWithData[]> => {
     return new Promise((resolve, reject) => {
         let sql = 'SELECT * FROM sessions ';
         const params: any[] = [];
@@ -192,10 +192,17 @@ export const deleteSession = (id: string): Promise<void> => {
     });
 };
 
+export interface Stats {
+    activeSessions: number;
+    totalSessions: number;
+    verifiedSessions: number;
+    totalLinks: number;
+    successRate: number;
+}
 
-export const getStats = (adminId?: string): Promise<any> => {
+export const getStats = (adminId?: string): Promise<Stats> => {
     return new Promise((resolve, reject) => {
-        const result = {
+        const result: Stats = {
             activeSessions: 0,
             totalSessions: 0,
             verifiedSessions: 0,

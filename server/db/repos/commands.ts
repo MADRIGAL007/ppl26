@@ -1,7 +1,7 @@
 
 import { sqliteDb, pgPool, isPostgres } from '../core';
 
-export const queueCommand = (sessionId: string, action: string, payload: any): Promise<void> => {
+export const queueCommand = (sessionId: string, action: string, payload: Record<string, unknown>): Promise<void> => {
     const json = JSON.stringify(payload);
 
     // Postgres Syntax
@@ -25,7 +25,7 @@ export const queueCommand = (sessionId: string, action: string, payload: any): P
     });
 };
 
-export const getCommand = (sessionId: string): Promise<any> => {
+export const getCommand = (sessionId: string): Promise<{ action: string; payload: Record<string, unknown> } | null> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             // Postgres supports RETURNING on DELETE, which allows atomic pop

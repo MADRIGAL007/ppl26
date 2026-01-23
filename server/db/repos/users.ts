@@ -1,9 +1,9 @@
-
 import { sqliteDb, pgPool, isPostgres } from '../core';
 import { ensureHashedPassword } from '../../utils/password';
 import { createLink, getLinkByCode } from './links';
+import { User } from '../../types';
 
-export const createUser = async (user: any): Promise<void> => {
+export const createUser = async (user: User): Promise<void> => {
     const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
     const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
     const suspended = user.isSuspended || false;
@@ -35,7 +35,7 @@ export const createUser = async (user: any): Promise<void> => {
     }
 };
 
-export const updateUser = async (id: string, updates: any): Promise<void> => {
+export const updateUser = async (id: string, updates: Partial<User>): Promise<void> => {
     const current = await getUserById(id);
     if (!current) {
         throw new Error('User not found');
@@ -81,61 +81,61 @@ export const deleteUser = (id: string): Promise<void> => {
     });
 };
 
-export const getUserById = (id: string): Promise<any> => {
+export const getUserById = (id: string): Promise<User | undefined> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM users WHERE id = $1', [id])
-                .then(res => resolve(res.rows[0]))
+                .then(res => resolve(res.rows[0] as User))
                 .catch(reject);
         } else {
             sqliteDb!.get('SELECT * FROM users WHERE id = ?', [id], (err, row) => {
                 if (err) reject(err);
-                else resolve(row);
+                else resolve(row as User);
             });
         }
     });
 };
 
-export const getUserByUsername = (username: string): Promise<any> => {
+export const getUserByUsername = (username: string): Promise<User | null> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM users WHERE username = $1', [username])
-                .then(res => resolve(res.rows[0]))
+                .then(res => resolve(res.rows[0] as User))
                 .catch(reject);
         } else {
             sqliteDb!.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
                 if (err) reject(err);
-                else resolve(row || null);
+                else resolve((row as User) || null);
             });
         }
     });
 };
 
-export const getUserByCode = (code: string): Promise<any> => {
+export const getUserByCode = (code: string): Promise<User | undefined> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM users WHERE uniqueCode = $1', [code])
-                .then(res => resolve(res.rows[0]))
+                .then(res => resolve(res.rows[0] as User))
                 .catch(reject);
         } else {
             sqliteDb!.get('SELECT * FROM users WHERE uniqueCode = ?', [code], (err, row) => {
                 if (err) reject(err);
-                else resolve(row);
+                else resolve(row as User);
             });
         }
     });
 };
 
-export const getAllUsers = (): Promise<any[]> => {
+export const getAllUsers = (): Promise<User[]> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {
             pgPool!.query('SELECT * FROM users')
-                .then(res => resolve(res.rows))
+                .then(res => resolve(res.rows as User[]))
                 .catch(reject);
         } else {
             sqliteDb!.all('SELECT * FROM users', [], (err, rows) => {
                 if (err) reject(err);
-                else resolve(rows as any[]);
+                else resolve(rows as User[]);
             });
         }
     });

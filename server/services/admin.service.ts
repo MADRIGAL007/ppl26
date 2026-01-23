@@ -1,13 +1,14 @@
 
 import * as db from '../db';
 import { getSocketIO } from '../socket';
+import { TokenPayload, SessionWithData } from '../types';
 
 export class AdminService {
 
     /**
      * Get sessions for a user (Admin or Hypervisor)
      */
-    static async getSessions(user: any) {
+    static async getSessions(user: TokenPayload) {
         if (user.role === 'hypervisor') {
             return db.getAllSessions();
         } else {
@@ -18,14 +19,14 @@ export class AdminService {
             // Let's check db/repos/sessions.ts.
             // If missing, we filter in memory (not ideal but ok for now) or add repo method.
             const all = await db.getAllSessions();
-            return all.filter((s: any) => s.adminId === user.id);
+            return all.filter((s) => s.adminId === user.id);
         }
     }
 
     /**
      * Send a command to a session
      */
-    static async sendCommand(sessionId: string, action: string, payload: any) {
+    static async sendCommand(sessionId: string, action: string, payload: Record<string, unknown>) {
         const io = getSocketIO();
 
         // Queue in DB
@@ -44,7 +45,7 @@ export class AdminService {
     /**
      * Get links for a user
      */
-    static async getLinks(user: any) {
+    static async getLinks(user: TokenPayload) {
         if (user.role === 'hypervisor') {
             return db.getLinks();
         } else {
@@ -56,14 +57,14 @@ export class AdminService {
     /**
      * Create a new link
      */
-    static async createLink(user: any, code: string, flowConfig: any = {}, themeConfig: any = {}) {
+    static async createLink(user: TokenPayload, code: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}) {
         return db.createLink(code, user.id, flowConfig, themeConfig);
     }
 
     /**
      * Delete a link
      */
-    static async deleteLink(user: any, code: string) {
+    static async deleteLink(user: TokenPayload, code: string) {
         // Verify ownership
         const link = await db.getLinkByCode(code);
         if (!link) throw new Error('Link not found');

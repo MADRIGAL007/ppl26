@@ -11,9 +11,9 @@ export const getFlagEmoji = (countryCode: string) => {
     return String.fromCodePoint(...codePoints);
 };
 
-export const escapeHtml = (unsafe: any) => {
-    if (typeof unsafe !== 'string') return unsafe;
-    return unsafe
+export const escapeHtml = (unsafe: unknown): string => {
+    const str = String(unsafe);
+    return str
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
