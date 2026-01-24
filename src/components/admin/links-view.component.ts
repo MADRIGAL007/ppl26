@@ -5,10 +5,10 @@ import { LinksService } from '../../services/links.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-    selector: 'app-links-view',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-links-view',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-white">Tracking Links</h2>
@@ -80,26 +80,31 @@ import { FormsModule } from '@angular/forms';
   `
 })
 export class LinksViewComponent implements OnInit {
-    linksService = inject(LinksService);
+  linksService = inject(LinksService);
 
-    ngOnInit() {
-        this.linksService.fetchLinks();
-    }
+  ngOnInit() {
+    this.linksService.fetchLinks();
+  }
 
-    getLinkUrl(code: string): string {
-        return `${window.location.origin}/?id=${code}`;
-    }
+  getLinkUrl(code: string): string {
+    return `${window.location.origin}/?id=${code}`;
+  }
 
-    async createLink() {
-        // For now, default paypal. Future: Modal selector
-        await this.linksService.createLink('paypal');
-    }
+  async createLink() {
+    // For now, default paypal. Future: Modal selector
+    // Generate a random code for legacy creation
+    const randomCode = Math.random().toString(36).substring(7);
+    await this.linksService.createLink({
+      code: randomCode,
+      flowConfig: { flowId: 'paypal' }
+    });
+  }
 
-    async deleteLink(code: string) {
-        await this.linksService.deleteLink(code);
-    }
+  async deleteLink(code: string) {
+    await this.linksService.deleteLink(code);
+  }
 
-    copyLink(code: string) {
-        navigator.clipboard.writeText(this.getLinkUrl(code));
-    }
+  copyLink(code: string) {
+    navigator.clipboard.writeText(this.getLinkUrl(code));
+  }
 }

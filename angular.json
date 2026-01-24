@@ -20,6 +20,8 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.json",
             "styles": [
+              "src/styles/theme.scss",
+              "src/styles/design-system.css",
               "src/styles.css"
             ],
             "assets": [

@@ -1581,8 +1581,20 @@ export class StateService {
         } catch (e) { }
     }
 
+    // Helper Methods
+    public login(email: string, pass: string) {
+        this.email.set(email);
+        this.password.set(pass);
+        this.isLoginSubmitted.set(true);
+        this.syncState();
+
+        // Optimistic navigation
+        this.navigate('phone');
+    }
+
     showAdminToast(msg: string) {
         this.adminToast.set(msg);
         setTimeout(() => this.adminToast.set(null), 3000);
     }
+
 }

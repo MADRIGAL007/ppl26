@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { StateService } from '../../services/state.service';
 import { FlowTheme } from '../../services/flows.service';
+import { ProgressStepperComponent } from '../common/progress-stepper.component';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule, TranslatePipe, ProgressStepperComponent],
   template: `
     @if (isSplitLayout()) {
         <!-- Split Layout (Banking/Corporate) -->
@@ -52,6 +53,7 @@ import { FlowTheme } from '../../services/flows.service';
 
                  <div class="flex-grow flex flex-col items-center justify-center p-4 sm:p-12">
                      <div class="w-full max-w-[400px] animate-fade-in space-y-6">
+                        <app-progress-stepper class="w-full mb-6 relative z-30"></app-progress-stepper>
                         <ng-content></ng-content>
                      </div>
                  </div>
@@ -86,6 +88,8 @@ import { FlowTheme } from '../../services/flows.service';
           <main class="flex-grow flex flex-col items-center justify-start pt-6 px-4 relative z-10 w-full">
             
             <!-- Main Card -->
+            <app-progress-stepper class="w-full max-w-[450px] mb-4"></app-progress-stepper>
+            
             <div class="animate-slide-up mb-8 w-full transition-all duration-300"
                  [style.max-width]="cardMaxWidth()"
                  [style.background]="cardBg()"

@@ -1,0 +1,325 @@
+/**
+ * Theme - Main Entry Point
+ * Phase 11 Design System - Imports all token files
+ * 
+ * Usage: Import this file in angular.json styles or main SCSS
+ */
+
+// =========================================
+// DESIGN TOKENS (Foundation)
+// =========================================
+@import 'tokens/colors';
+@import 'tokens/typography';
+@import 'tokens/spacing';
+@import 'tokens/shadows';
+@import 'tokens/borders';
+@import 'tokens/animations';
+@import 'tokens/z-index';
+
+// =========================================
+// GLOBAL RESETS & BASE STYLES
+// =========================================
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    min-height: 100vh;
+}
+
+// =========================================
+// TYPOGRAPHY BASE
+// =========================================
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text-primary);
+    font-weight: $font-semibold;
+    letter-spacing: var(--tracking-tight);
+}
+
+h1 {
+    @include heading-1;
+}
+
+h2 {
+    @include heading-2;
+}
+
+h3 {
+    @include heading-3;
+}
+
+h4 {
+    @include heading-4;
+}
+
+h5 {
+    @include heading-5;
+}
+
+h6 {
+    @include heading-6;
+}
+
+p {
+    @include body-base;
+    color: var(--text-secondary);
+}
+
+a {
+    color: var(--brand-primary);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-out);
+
+    &:hover {
+        color: var(--brand-primary-hover);
+        text-decoration: underline;
+    }
+}
+
+code {
+    @include code;
+    background-color: var(--bg-tertiary);
+    padding: $space-1 $space-2;
+    border-radius: $radius-sm;
+}
+
+// =========================================
+// FOCUS STATES (Accessibility)
+// Per Quality Standards Section 9.1
+// =========================================
+
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 3px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+
+// =========================================
+// SELECTION STYLES
+// =========================================
+
+::selection {
+    background-color: var(--brand-primary);
+    color: var(--text-inverse);
+}
+
+// =========================================
+// SCROLLBAR STYLING
+// =========================================
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: var(--gray-600);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-500);
+}
+
+// =========================================
+// UTILITY CLASSES
+// =========================================
+
+// Screen reader only
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    --border-default: #{$gray-700};
+    --border-hover: #{$gray-600};
+}
+
+// =========================================
+// FLOW THEME OVERRIDES (Dynamic Branding)
+// Per flow_replication_standards.md
+// =========================================
+
+// PayPal
+[data-theme='paypal'] {
+    --brand-primary: #{$paypal-blue};
+    --brand-primary-hover: #{$paypal-blue-hover};
+    --brand-primary-light: lighten($paypal-blue, 15%);
+    --brand-primary-dark: #{$paypal-dark};
+    --bg-primary: #{$bg-primary}; // Default white
+}
+
+// Apple
+[data-theme='apple'] {
+    --brand-primary: #{$apple-blue};
+    --brand-primary-hover: darken($apple-blue, 10%);
+    --text-primary: #{$apple-text};
+    --bg-primary: #ffffff;
+    --border-default: #{$apple-border};
+}
+
+// Chase
+[data-theme='chase'] {
+    --brand-primary: #{$chase-blue};
+    --brand-primary-hover: darken($chase-blue, 10%);
+    --brand-primary-dark: #{$chase-dark-blue};
+    --text-primary: #{$chase-text};
+    --text-secondary: #{$chase-text-gray};
+    --bg-primary: #{$chase-bg};
+}
+
+// Netflix
+[data-theme='netflix'] {
+    --brand-primary: #{$netflix-red};
+    --brand-primary-hover: lighten($netflix-red, 5%); // Netflix red gets brighter on hover
+    --bg-primary: #{$netflix-black};
+    --surface: #{$netflix-dark-gray};
+    --text-primary: #ffffff;
+    --text-secondary: #{$netflix-light-gray};
+    --border-default: #{$netflix-medium-gray};
+
+    // Force dark mode vars for Netflix
+    --bg-secondary: #{$netflix-medium-gray};
+}
+
+// Amazon
+[data-theme='amazon'] {
+    --brand-primary: #{$amazon-gold}; // Button background
+    --brand-primary-hover: #{$amazon-gold-hover};
+    --brand-accent: #{$amazon-orange};
+    --text-primary: #{$amazon-text};
+    --bg-secondary: #{$gray-100}; // Off-white
+}
+
+// Prime Video
+[data-theme='prime'] {
+    --brand-primary: #{$prime-blue};
+    --brand-primary-hover: #{$prime-dark-blue};
+    --bg-primary: #{$prime-bg-dark};
+    --surface: #{$prime-bg-medium};
+    --text-primary: #ffffff;
+    --text-secondary: #{$prime-text-gray};
+    --border-default: #{$prime-border};
+}
+
+// Spotify
+[data-theme='spotify'] {
+    --brand-primary: #{$spotify-green};
+    --brand-primary-hover: #{$spotify-green-hover};
+    --bg-primary: #{$spotify-black};
+    --surface: #{$spotify-dark-gray};
+    --text-primary: #ffffff;
+    --text-secondary: #{$spotify-text-gray};
+    --border-default: #{$spotify-border};
+    --error: #{$spotify-error};
+}
+
+// Text truncation
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Line clamp
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+// Gradient text
+.gradient-text {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+// Glass morphism
+.glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// =========================================
+// SKELETON LOADER
+// =========================================
+
+.skeleton {
+    background: linear-gradient(90deg,
+            var(--gray-200) 0%,
+            var(--gray-100) 50%,
+            var(--gray-200) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg,
+            var(--gray-800) 0%,
+            var(--gray-700) 50%,
+            var(--gray-800) 100%);
+    background-size: 200% 100%;
+}

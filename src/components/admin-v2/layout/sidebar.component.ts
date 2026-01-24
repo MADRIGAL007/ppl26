@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 @Component({
-    selector: 'app-admin-sidebar-v2',
-    standalone: true,
-    imports: [CommonModule, RouterModule],
-    template: `
+  selector: 'app-admin-sidebar-v2',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
     <aside class="w-[260px] bg-slate-950 border-r border-slate-800 flex flex-col fixed h-full z-20">
       <!-- Logo Area -->
       <div class="h-16 flex items-center px-6 border-b border-slate-800">
@@ -43,6 +43,12 @@ import { RouterModule } from '@angular/router';
               class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-md transition-colors cursor-pointer group">
              <span class="material-icons text-[20px] group-hover:text-slate-300 transition-colors">people</span>
              Users
+           </a>
+
+           <a routerLink="/admin/system" routerLinkActive="bg-slate-800 text-white" 
+              class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-md transition-colors cursor-pointer group">
+             <span class="material-icons text-[20px] group-hover:text-red-400 transition-colors">memory</span>
+             System Tools
            </a>
            
            <a routerLink="/admin/settings" routerLinkActive="bg-slate-800 text-white" 

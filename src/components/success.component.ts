@@ -1,17 +1,22 @@
 
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PublicLayoutComponent } from './layout/public-layout.component';
 import { StateService } from '../services/state.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { ButtonComponent } from './ui/button.component';
+import { CardComponent, CardVariant } from './ui/card.component';
 
 @Component({
   selector: 'app-success',
   standalone: true,
-  imports: [CommonModule, PublicLayoutComponent, TranslatePipe],
+  imports: [CommonModule, TranslatePipe, ButtonComponent, CardComponent],
+  host: {
+    '[attr.data-theme]': 'currentFlowId()',
+    'class': 'block w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500'
+  },
   template: `
-    <app-public-layout>
-      <div class="flex flex-col items-center text-center py-6 animate-in fade-in duration-500">
+    <ui-card [variant]="cardVariant()">
+      <div class="flex flex-col items-center text-center py-2 animate-in fade-in duration-500">
         
         <div class="mb-8 relative">
           <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center shadow-sm"
@@ -24,35 +29,39 @@ import { TranslatePipe } from '../pipes/translate.pipe';
           {{ 'SUCCESS.TITLE' | translate }}
         </h1>
 
-        <div class="bg-slate-50 border border-slate-100 rounded-lg p-4 mb-6 text-left w-full">
+        <div class="bg-slate-50 border border-slate-100 rounded-lg p-4 mb-6 text-left w-full dark:bg-slate-800 dark:border-slate-700">
             <div class="flex items-start gap-3">
                 <span class="material-icons text-xl mt-0.5" [style.color]="brandColor()">check_circle</span>
                 <div>
                     <p class="text-sm font-bold mb-1" [style.color]="headerColor()">{{ 'SUCCESS.BADGE_TITLE' | translate }}</p>
-                    <p class="text-xs text-[#5e6c75]">{{ 'SUCCESS.BADGE_DESC' | translate }}</p>
+                    <p class="text-xs text-[#5e6c75] dark:text-slate-400">{{ 'SUCCESS.BADGE_DESC' | translate }}</p>
                 </div>
             </div>
         </div>
 
-        <p class="text-xs text-[#5e6c75] mb-8 px-4">
+        <p class="text-xs text-[#5e6c75] mb-8 px-4 dark:text-slate-400">
           {{ 'SUCCESS.EMAIL_SENT' | translate: { email: state.email() } }}
         </p>
 
-        <button 
-          (click)="finish()"
-          class="w-full font-bold py-3.5 px-4 rounded-full transition-all duration-200 shadow-md text-[15px] hover:shadow-lg transform active:scale-[0.98]"
-          [style.background]="btnBg()"
-          [style.color]="btnColor()"
+        <ui-button 
+          (clicked)="finish()"
+          [fullWidth]="true"
+          [size]="'lg'"
+          [style.--brand-primary]="btnBg()"
+          [style.--brand-primary-hover]="btnBg()"
         >
           {{ 'SUCCESS.BUTTON' | translate }}
-        </button>
+        </ui-button>
       </div>
-    </app-public-layout>
+    </ui-card>
   `
 })
 export class SuccessComponent {
   state = inject(StateService);
   theme = computed(() => this.state.currentFlow()?.theme);
+  currentFlowId = computed(() => this.state.currentFlow()?.id || 'generic');
+
+  cardVariant = computed<CardVariant>(() => 'elevated');
 
   brandColor = computed(() => this.theme()?.brandColor || '#10b981'); // Default green
   iconBg = computed(() => (this.theme()?.brandColor || '#10b981') + '15');

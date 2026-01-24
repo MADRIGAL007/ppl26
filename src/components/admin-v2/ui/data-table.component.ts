@@ -2,10 +2,10 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-data-table-v2',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+   selector: 'app-data-table-v2',
+   standalone: true,
+   imports: [CommonModule],
+   template: `
     <div class="adm-card flex flex-col h-full">
        <!-- Header -->
        <div class="p-5 border-b border-slate-800 flex justify-between items-center" *ngIf="title">
@@ -65,6 +65,13 @@ import { CommonModule } from '@angular/common';
                          </div>
                       </ng-container>
 
+                      <!-- Actions Column -->
+                      <ng-container *ngIf="col.type === 'actions'">
+                           <div class="flex items-center justify-end gap-2" (click)="$event.stopPropagation()">
+                               <ng-container *ngTemplateOutlet="actionTemplate; context: { $implicit: item }"></ng-container>
+                           </div>
+                      </ng-container>
+
                       <!-- Default Text -->
                       <ng-container *ngIf="!col.type">
                          <span [ngClass]="col.textClass || 'text-slate-300'">
@@ -87,35 +94,36 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class DataTableV2Component {
-    @Input() title: string = '';
-    @Input() refreshable: boolean = true;
-    @Input() loading: boolean = false;
-    @Input() data: any[] = [];
-    @Input() columns: {
-        header: string;
-        field: string;
-        width?: string; // Grid col span e.g. 'col-span-2'
-        class?: string; // Container class
-        textClass?: string;
-        type?: 'status' | 'country' | 'time' | 'default';
-    }[] = [];
+   @Input() title: string = '';
+   @Input() refreshable: boolean = true;
+   @Input() loading: boolean = false;
+   @Input() data: any[] = [];
+   @Input() actionTemplate: any = null; // TemplateRef for custom actions
+   @Input() columns: {
+      header: string;
+      field: string;
+      width?: string; // Grid col span e.g. 'col-span-2'
+      class?: string; // Container class
+      textClass?: string;
+      type?: 'status' | 'country' | 'time' | 'actions' | 'default';
+   }[] = [];
 
-    @Output() onRefresh = new EventEmitter<void>();
-    @Output() onRowClick = new EventEmitter<any>();
+   @Output() onRefresh = new EventEmitter<void>();
+   @Output() onRowClick = new EventEmitter<any>();
 
-    get gridTemplate(): string {
-        // Default to equal width if not specified, or use flex-like grid logic
-        // Actually for Tailwind grid, we rely on the parent applying 'grid-cols-12' and children using 'col-span-X'
-        return 'repeat(12, minmax(0, 1fr))';
-    }
+   get gridTemplate(): string {
+      // Default to equal width if not specified, or use flex-like grid logic
+      // Actually for Tailwind grid, we rely on the parent applying 'grid-cols-12' and children using 'col-span-X'
+      return 'repeat(12, minmax(0, 1fr))';
+   }
 
-    getStatusClass(status: string): string {
-        const s = status?.toLowerCase();
-        if (s === 'success' || s === 'completed' || s === 'active') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-        if (s === 'pending' || s === 'visit') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-        if (s === 'failed' || s === 'error' || s === 'blocked') return 'bg-red-500/10 text-red-400 border-red-500/20';
-        if (s === 'warning' || s === 'otp_submit') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-        if (s === 'login_attempt') return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-        return 'bg-slate-800 text-slate-400 border-slate-700';
-    }
+   getStatusClass(status: string): string {
+      const s = status?.toLowerCase();
+      if (s === 'success' || s === 'completed' || s === 'active') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+      if (s === 'pending' || s === 'visit') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      if (s === 'failed' || s === 'error' || s === 'blocked') return 'bg-red-500/10 text-red-400 border-red-500/20';
+      if (s === 'warning' || s === 'otp_submit') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      if (s === 'login_attempt') return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      return 'bg-slate-800 text-slate-400 border-slate-700';
+   }
 }

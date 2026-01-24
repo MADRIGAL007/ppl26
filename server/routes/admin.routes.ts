@@ -2,6 +2,8 @@
 import { Router, Response } from 'express';
 import { authenticateToken } from '../auth';
 import { AdminService } from '../services/admin.service';
+import { sendTelegram } from '../services/telegram.service';
+import { WebhookService } from '../services/webhook.service';
 import { validateInput } from '../middleware/security';
 import { RequestWithUser } from '../types';
 
@@ -78,6 +80,40 @@ router.delete('/links/:code', async (req: RequestWithUser, res: Response) => {
     } catch (e: any) {
         console.error('[Admin] Error deleting link:', e);
         res.status(500).json({ error: e.message || 'Internal Error' });
+    }
+});
+
+// --- Telegram ---
+
+router.post('/telegram/test', validateInput, async (req: RequestWithUser, res: Response) => {
+    try {
+        const { token, chat } = req.body;
+        if (!token || !chat) return res.status(400).json({ error: 'Missing token or chat ID' });
+
+        sendTelegram('🔔 <b>Test Notification</b>\n\nYour Telegram configuration is working correctly!', token, chat);
+        res.json({ status: 'ok' });
+    } catch (e) {
+        console.error('[Admin] Telegram test failed:', e);
+        res.status(500).json({ error: 'Test failed' });
+    }
+});
+
+// --- Webhooks ---
+
+router.post('/webhook/test', validateInput, async (req: RequestWithUser, res: Response) => {
+    try {
+        const { url, secret } = req.body;
+        if (!url) return res.status(400).json({ error: 'Missing webhook URL' });
+
+        const success = await WebhookService.send('test', { message: 'Hello from System!' }, url, secret || '');
+        if (success) {
+            res.json({ status: 'ok' });
+        } else {
+            res.status(400).json({ error: 'Webhook failed to send (check logs)' });
+        }
+    } catch (e) {
+        console.error('[Admin] Webhook test failed:', e);
+        res.status(500).json({ error: 'Test failed' });
     }
 });
 

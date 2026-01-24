@@ -111,6 +111,42 @@ export class SettingsService {
         this.fetchSettings();
     }
 
+    async testTelegram(token: string, chat: string): Promise<boolean> {
+        const authKey = this.auth.token();
+        try {
+            const res = await fetch('/api/admin/telegram/test', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token, chat })
+            });
+            return res.ok;
+        } catch (e) {
+            console.error('[Settings] Test failed', e);
+            return false;
+        }
+    }
+
+    async testWebhook(url: string, secret: string): Promise<boolean> {
+        const authKey = this.auth.token();
+        try {
+            const res = await fetch('/api/admin/webhook/test', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, secret })
+            });
+            return res.ok;
+        } catch (e) {
+            console.error('[Settings] Webhook Test failed', e);
+            return false;
+        }
+    }
+
     private async post(url: string, body: any) {
         const token = this.auth.token();
         try {

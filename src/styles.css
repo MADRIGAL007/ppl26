@@ -3,6 +3,8 @@
 @import './styles/dark-theme.css';
 @import './styles/madrigals.theme.css';
 @import './styles/admin.theme.css';
+@import './assets/fonts/manrope.css';
+@import './assets/icons/material-icons.css';
 
 @tailwind base;
 @tailwind components;

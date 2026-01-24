@@ -5,6 +5,7 @@ import { DataTableV2Component } from '../ui/data-table.component';
 import { StatsService } from '../../../services/stats.service';
 import { StateService } from '../../../services/state.service';
 import { getFlowById } from '../../../services/flows.service';
+import { SocketService } from '../../../services/socket.service';
 
 @Component({
    selector: 'app-admin-dashboard-v2',
@@ -105,6 +106,27 @@ import { getFlowById } from '../../../services/flows.service';
            <div class="adm-card flex-1 p-5">
               <h3 class="adm-h3 text-white mb-4">Alerts</h3>
               <div class="space-y-3">
+                 <!-- Connection Status Alert -->
+                 <div class="p-3 border rounded-md flex gap-3 items-start"
+                      [class.bg-emerald-900-10]="connectionStatus() === 'connected'"
+                      [class.border-emerald-800]="connectionStatus() === 'connected'"
+                      [class.bg-red-900-10]="connectionStatus() === 'disconnected'"
+                      [class.border-red-800]="connectionStatus() === 'disconnected'"
+                      [class.bg-amber-900-10]="connectionStatus() === 'connecting'"
+                      [class.border-amber-800]="connectionStatus() === 'connecting'">
+                     
+                     <span class="material-icons text-sm mt-0.5"
+                           [class.text-emerald-500]="connectionStatus() === 'connected'"
+                           [class.text-red-500]="connectionStatus() === 'disconnected'"
+                           [class.text-amber-500]="connectionStatus() === 'connecting'">
+                           {{ connectionStatus() === 'connected' ? 'wifi' : (connectionStatus() === 'disconnected' ? 'wifi_off' : 'sync') }}
+                     </span>
+                     <div>
+                        <p class="text-xs text-white font-medium capitalize">{{ connectionStatus() }}</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Real-time socket connection.</p>
+                     </div>
+                 </div>
+
                  <div class="p-3 bg-slate-900/50 border border-slate-800 rounded-md flex gap-3 items-start">
                      <span class="material-icons text-blue-500 text-sm mt-0.5">info</span>
                      <div>
@@ -125,11 +147,22 @@ import { getFlowById } from '../../../services/flows.service';
 export class AdminDashboardV2Component {
    private statsService = inject(StatsService);
    private stateService = inject(StateService);
+   private socketService = inject(SocketService);
 
    // Metrics
    totalSessions = computed(() => this.statsService.stats().totalSessions.toString());
    verifiedSessions = computed(() => this.statsService.stats().verifiedSessions.toString());
    successRate = computed(() => this.statsService.stats().successRate);
+
+   // Socket Status
+   connectionStatus = this.socketService.connectionStatus;
+
+   constructor() {
+      this.socketService.on<any>('stats-update').subscribe((newStats: any) => {
+         console.log('Received real-time stats:', newStats);
+         // Logic to update stats would go here
+      });
+   }
 
    verifiedPercent = computed(() => {
       const total = this.statsService.stats().totalSessions;

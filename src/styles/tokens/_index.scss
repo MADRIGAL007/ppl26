@@ -1,0 +1,12 @@
+/**
+ * Tokens Index
+ * Exports all design token files for external imports
+ */
+
+@forward 'colors';
+@forward 'typography';
+@forward 'spacing';
+@forward 'shadows';
+@forward 'borders';
+@forward 'animations';
+@forward 'z-index';

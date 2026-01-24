@@ -39,7 +39,7 @@ export class LinksService {
         }
     }
 
-    async createLink(flowId: string = 'paypal'): Promise<boolean> {
+    async createLink(payload: { code: string; flowConfig?: any; themeConfig?: any }): Promise<boolean> {
         if (!this.auth.isAuthenticated()) return false;
         try {
             const token = this.auth.token();
@@ -49,7 +49,7 @@ export class LinksService {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ flowId }) // Backend logic might differ, assuming basic create
+                body: JSON.stringify(payload)
             });
             if (res.ok) {
                 await this.fetchLinks(); // Refresh

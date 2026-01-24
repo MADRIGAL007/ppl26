@@ -5,6 +5,10 @@
 
 import { Router, Request, Response } from 'express';
 import * as crypto from '../billing/crypto';
+// We need to export getOrgPayments from crypto module if it's there, or import from repo.
+// Looking at repo billing.ts, it exports getOrgPayments.
+// Let's import it from the repo file which matches where it was defined in previous turns.
+import { getOrgPayments } from '../db/repos/billing';
 import * as orgDb from '../db/organizations';
 import { TenantRequest } from '../middleware/tenant';
 
@@ -187,6 +191,16 @@ router.get('/wallets', (req: Request, res: Response) => {
             USDC: crypto.PLATFORM_WALLETS.USDC || 'Not configured'
         }
     });
+});
+
+router.get('/history', requireAuth, async (req: TenantRequest, res: Response) => {
+    try {
+        const payments = await getOrgPayments(req.orgId!);
+        res.json({ payments });
+    } catch (error: any) {
+        console.error('[Billing] History error:', error);
+        res.status(500).json({ error: error.message || 'Failed to get payment history' });
+    }
 });
 
 export default router;

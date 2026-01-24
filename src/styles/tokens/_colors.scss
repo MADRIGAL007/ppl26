@@ -1,0 +1,251 @@
+/**
+ * Color Tokens
+ * Complete color palette for Phase 11 Design System
+ * Based on existing design-system.css + enhanced with flow brand colors
+ */
+
+// =========================================
+// BRAND COLORS (Admin Dashboard)
+// =========================================
+$brand-primary: #6366f1;         // Indigo 500 - Primary actions
+$brand-primary-hover: #4f46e5;   // Indigo 600 - Hover state
+$brand-primary-light: #818cf8;   // Indigo 400 - Light accent
+$brand-primary-dark: #4338ca;    // Indigo 700 - Dark accent
+
+$brand-secondary: #8b5cf6;       // Purple 500
+$brand-accent: #06b6d4;          // Cyan 500
+$brand-accent-hover: #0891b2;    // Cyan 600
+
+// =========================================
+// SEMANTIC COLORS
+// =========================================
+$success: #10b981;
+$success-light: #d1fae5;
+$success-dark: #059669;
+
+$warning: #f59e0b;
+$warning-light: #fef3c7;
+$warning-dark: #d97706;
+
+$error: #ef4444;
+$error-light: #fee2e2;
+$error-dark: #dc2626;
+
+$info: #3b82f6;
+$info-light: #dbeafe;
+$info-dark: #2563eb;
+
+// =========================================
+// NEUTRAL PALETTE (Slate)
+// =========================================
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+$gray-950: #030712;
+
+// =========================================
+// FLOW BRAND COLORS (Pixel-Perfect Replicas)
+// =========================================
+
+// PayPal
+$paypal-blue: #0070BA;
+$paypal-blue-hover: #005EA6;
+$paypal-navy: #001C64;
+$paypal-dark: #003087;
+$paypal-success: #00CF92;
+
+// Apple
+$apple-blue: #007AFF;
+$apple-gray: #F5F5F7;
+$apple-text: #1D1D1F;
+$apple-disabled: #86868B;
+$apple-border: #D2D2D7;
+
+// Chase
+$chase-blue: #117ACA;
+$chase-dark-blue: #004879;
+$chase-text: #000000;
+$chase-text-gray: #6D6E71;
+$chase-border: #CCCCCC;
+$chase-bg: #F4F4F4;
+$chase-success: #008000;
+$chase-error: #B00000;
+
+// Netflix
+$netflix-red: #E50914;
+$netflix-black: #000000;
+$netflix-dark-gray: #141414;
+$netflix-medium-gray: #333333;
+$netflix-light-gray: #8C8C8C;
+$netflix-error: #E87C03;
+
+// Amazon
+$amazon-orange: #FF9900;
+$amazon-gold: #F0C14B;
+$amazon-gold-hover: #F7DFA5;
+$amazon-blue: #146EB4;
+$amazon-link: #007185;
+$amazon-text: #0F1111;
+$amazon-text-gray: #565959;
+$amazon-border: #DDD;
+$amazon-focus: #E77600;
+$amazon-success: #067D62;
+$amazon-error: #C40000;
+
+// Amazon Prime Video
+$prime-blue: #00A8E1;
+$prime-dark-blue: #0F79AF;
+$prime-bg-dark: #0F171E;
+$prime-bg-medium: #1A242F;
+$prime-input-bg: #263340;
+$prime-text-gray: #89ABB4;
+$prime-border: #44546A;
+$prime-error: #D32F2F;
+
+// Spotify
+$spotify-green: #1DB954;
+$spotify-green-hover: #1ED760;
+$spotify-black: #191414;
+$spotify-dark-gray: #121212;
+$spotify-text-gray: #B3B3B3;
+$spotify-border: #727272;
+$spotify-error: #E91429;
+$spotify-facebook: #3B5998;
+
+// =========================================
+// BACKGROUND & SURFACE (Light Mode)
+// =========================================
+$bg-primary: #ffffff;
+$bg-secondary: $gray-50;
+$bg-tertiary: $gray-100;
+$surface: #ffffff;
+$surface-elevated: #ffffff;
+
+// =========================================
+// TEXT COLORS
+// =========================================
+$text-primary: $gray-900;
+$text-secondary: $gray-600;
+$text-tertiary: $gray-500;
+$text-muted: $gray-400;
+$text-inverse: #ffffff;
+
+// =========================================
+// BORDER COLORS
+// =========================================
+$border-default: $gray-200;
+$border-hover: $gray-300;
+$border-focus: $brand-primary;
+
+// =========================================
+// TRANSPARENCY VALUES (Scale of 10)
+// Per phase11_quality_standards.md Section 12
+// =========================================
+$opacity-0: 0;
+$opacity-5: 0.05;
+$opacity-10: 0.1;
+$opacity-20: 0.2;
+$opacity-30: 0.3;
+$opacity-40: 0.4;
+$opacity-50: 0.5;
+$opacity-60: 0.6;
+$opacity-70: 0.7;
+$opacity-80: 0.8;
+$opacity-90: 0.9;
+$opacity-100: 1;
+
+// =========================================
+// CSS CUSTOM PROPERTIES (For Dynamic Theming)
+// =========================================
+:root {
+  // Brand
+  --brand-primary: #{$brand-primary};
+  --brand-primary-hover: #{$brand-primary-hover};
+  --brand-primary-light: #{$brand-primary-light};
+  --brand-primary-dark: #{$brand-primary-dark};
+  --brand-secondary: #{$brand-secondary};
+  --brand-accent: #{$brand-accent};
+  --brand-accent-hover: #{$brand-accent-hover};
+
+  // Semantic
+  --success: #{$success};
+  --success-light: #{$success-light};
+  --success-dark: #{$success-dark};
+  --warning: #{$warning};
+  --warning-light: #{$warning-light};
+  --warning-dark: #{$warning-dark};
+  --error: #{$error};
+  --error-light: #{$error-light};
+  --error-dark: #{$error-dark};
+  --info: #{$info};
+  --info-light: #{$info-light};
+  --info-dark: #{$info-dark};
+
+  // Neutrals
+  --gray-50: #{$gray-50};
+  --gray-100: #{$gray-100};
+  --gray-200: #{$gray-200};
+  --gray-300: #{$gray-300};
+  --gray-400: #{$gray-400};
+  --gray-500: #{$gray-500};
+  --gray-600: #{$gray-600};
+  --gray-700: #{$gray-700};
+  --gray-800: #{$gray-800};
+  --gray-900: #{$gray-900};
+  --gray-950: #{$gray-950};
+
+  // Backgrounds
+  --bg-primary: #{$bg-primary};
+  --bg-secondary: #{$bg-secondary};
+  --bg-tertiary: #{$bg-tertiary};
+  --surface: #{$surface};
+  --surface-elevated: #{$surface-elevated};
+
+  // Text
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-tertiary: #{$text-tertiary};
+  --text-muted: #{$text-muted};
+  --text-inverse: #{$text-inverse};
+
+  // Borders
+  --border-default: #{$border-default};
+  --border-hover: #{$border-hover};
+  --border-focus: #{$border-focus};
+
+  // Flow brand colors (for dynamic flow theming)
+  --flow-paypal-blue: #{$paypal-blue};
+  --flow-apple-blue: #{$apple-blue};
+  --flow-chase-blue: #{$chase-blue};
+  --flow-netflix-red: #{$netflix-red};
+  --flow-amazon-orange: #{$amazon-orange};
+  --flow-prime-blue: #{$prime-blue};
+  --flow-spotify-green: #{$spotify-green};
+}
+
+// =========================================
+// DARK MODE OVERRIDES
+// =========================================
+:root.dark,
+.dark {
+  --bg-primary: #{$gray-950};
+  --bg-secondary: #{$gray-900};
+  --bg-tertiary: #{$gray-800};
+  --surface: #{$gray-900};
+  --surface-elevated: #{$gray-800};
+
+  --text-primary: #{$gray-50};
+  --text-secondary: #{$gray-300};
+  --text-tertiary: #{$gray-400};
+  --text-muted: #{$gray-500};
+
+  --border-default: #{$gray-700};
+  --border-hover: #{$gray-600};
+}

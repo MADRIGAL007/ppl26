@@ -1,0 +1,115 @@
+/**
+ * Shadow Tokens
+ * Elevation system for Phase 11 Design System
+ * Per phase11_quality_standards.md - Material Design elevation levels
+ */
+
+// =========================================
+// SHADOW SCALE (Elevation Levels)
+// Level 0: flat, Level 1-5: increasing elevation
+// =========================================
+$shadow-none: none;
+$shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+$shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+// =========================================
+// COLORED SHADOWS (For emphasis effects)
+// =========================================
+$shadow-primary: 0 4px 14px 0 rgba(99, 102, 241, 0.3);
+$shadow-success: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
+$shadow-warning: 0 4px 14px 0 rgba(245, 158, 11, 0.3);
+$shadow-error: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
+$shadow-info: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+
+// =========================================
+// FLOW-SPECIFIC SHADOWS
+// =========================================
+$shadow-paypal: 0 4px 12px rgba(0, 48, 135, 0.15);
+$shadow-apple: 0 0 0 4px rgba(0, 122, 255, 0.15);
+$shadow-chase: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-netflix: 0 2px 8px rgba(0, 0, 0, 0.3);
+$shadow-amazon: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+$shadow-amazon-focus: 0 0 3px 2px rgba(228, 121, 17, 0.5);
+$shadow-prime: 0 2px 8px rgba(0, 0, 0, 0.3);
+$shadow-spotify: none; // Spotify uses flat design
+
+// =========================================
+// FOCUS RING SHADOWS
+// =========================================
+$focus-ring-primary: 0 0 0 3px rgba(99, 102, 241, 0.3);
+$focus-ring-error: 0 0 0 3px rgba(239, 68, 68, 0.3);
+$focus-ring-success: 0 0 0 3px rgba(16, 185, 129, 0.3);
+
+// =========================================
+// DARK MODE SHADOWS
+// =========================================
+$shadow-sm-dark: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+$shadow-md-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+$shadow-lg-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+$shadow-xl-dark: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+
+// =========================================
+// CSS CUSTOM PROPERTIES
+// =========================================
+:root {
+    --shadow-xs: #{$shadow-xs};
+    --shadow-sm: #{$shadow-sm};
+    --shadow-md: #{$shadow-md};
+    --shadow-lg: #{$shadow-lg};
+    --shadow-xl: #{$shadow-xl};
+    --shadow-2xl: #{$shadow-2xl};
+    --shadow-inner: #{$shadow-inner};
+
+    --shadow-primary: #{$shadow-primary};
+    --shadow-success: #{$shadow-success};
+    --shadow-warning: #{$shadow-warning};
+    --shadow-error: #{$shadow-error};
+    --shadow-info: #{$shadow-info};
+
+    --focus-ring-primary: #{$focus-ring-primary};
+    --focus-ring-error: #{$focus-ring-error};
+    --focus-ring-success: #{$focus-ring-success};
+}
+
+// Dark mode shadow overrides
+:root.dark,
+.dark {
+    --shadow-sm: #{$shadow-sm-dark};
+    --shadow-md: #{$shadow-md-dark};
+    --shadow-lg: #{$shadow-lg-dark};
+    --shadow-xl: #{$shadow-xl-dark};
+}
+
+// =========================================
+// ELEVATION MIXIN
+// =========================================
+@mixin elevation($level: 1) {
+    @if $level ==0 {
+        box-shadow: $shadow-none;
+    }
+
+    @else if $level ==1 {
+        box-shadow: $shadow-sm;
+    }
+
+    @else if $level ==2 {
+        box-shadow: $shadow-md;
+    }
+
+    @else if $level ==3 {
+        box-shadow: $shadow-lg;
+    }
+
+    @else if $level ==4 {
+        box-shadow: $shadow-xl;
+    }
+
+    @else if $level ==5 {
+        box-shadow: $shadow-2xl;
+    }
+}

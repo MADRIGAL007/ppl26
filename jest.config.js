@@ -1,13 +1,17 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
+  preset: 'jest-preset-angular',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/setup-jest.ts', '<rootDir>/server/tests/setup.ts'],
   testMatch: [
     '**/server/tests/**/*.test.ts',
     '**/server/tests/**/*.spec.ts',
     '**/src/**/*.spec.ts'
   ],
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.(ts|js|html)$': ['jest-preset-angular', {
+      tsconfig: '<rootDir>/tsconfig.spec.json',
+      stringifyContentPathRegex: '\\.(html|svg)$',
+    }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
@@ -30,7 +34,6 @@ module.exports = {
       statements: 70
     }
   },
-  setupFilesAfterEnv: ['<rootDir>/server/tests/setup.ts'],
   testTimeout: 10000,
   verbose: true,
   forceExit: true,

@@ -1,0 +1,105 @@
+/**
+ * Border Tokens
+ * Border radius and border styles for Phase 11 Design System
+ * Per phase11_quality_standards.md
+ */
+
+// =========================================
+// BORDER RADIUS SCALE
+// =========================================
+$radius-none: 0;
+$radius-sm: 0.25rem; // 4px
+$radius-md: 0.375rem; // 6px
+$radius-lg: 0.5rem; // 8px
+$radius-xl: 0.75rem; // 12px
+$radius-2xl: 1rem; // 16px
+$radius-3xl: 1.5rem; // 24px
+$radius-full: 9999px; // Fully rounded (pill shape)
+
+// =========================================
+// SEMANTIC BORDER RADIUS
+// =========================================
+$radius-button: $radius-lg; // 8px - standard buttons
+$radius-button-pill: $radius-full; // Spotify-style pill buttons
+$radius-input: $radius-lg; // 8px - form inputs
+$radius-card: $radius-xl; // 12px - cards
+$radius-modal: $radius-2xl; // 16px - modals
+$radius-badge: $radius-full; // Fully rounded badges
+
+// =========================================
+// FLOW-SPECIFIC BORDER RADIUS
+// =========================================
+$radius-paypal: 24px; // PayPal's fully rounded buttons
+$radius-apple: 12px; // Apple's slightly rounded
+$radius-chase: 4px; // Chase's subtle rounding (corporate)
+$radius-netflix: 4px; // Netflix's subtle rounding
+$radius-amazon: 3px; // Amazon's very subtle rounding
+$radius-prime: 4px; // Prime Video's subtle rounding
+$radius-spotify: 500px; // Spotify's pill buttons
+
+// =========================================
+// BORDER WIDTH
+// =========================================
+$border-0: 0;
+$border-1: 1px;
+$border-2: 2px;
+$border-3: 3px;
+$border-4: 4px;
+
+// =========================================
+// BORDER STYLES
+// =========================================
+$border-solid: solid;
+$border-dashed: dashed;
+$border-dotted: dotted;
+
+// =========================================
+// CSS CUSTOM PROPERTIES
+// =========================================
+:root {
+    // Radius scale
+    --radius-none: #{$radius-none};
+    --radius-sm: #{$radius-sm};
+    --radius-md: #{$radius-md};
+    --radius-lg: #{$radius-lg};
+    --radius-xl: #{$radius-xl};
+    --radius-2xl: #{$radius-2xl};
+    --radius-3xl: #{$radius-3xl};
+    --radius-full: #{$radius-full};
+
+    // Semantic radius
+    --radius-button: #{$radius-button};
+    --radius-input: #{$radius-input};
+    --radius-card: #{$radius-card};
+    --radius-modal: #{$radius-modal};
+    --radius-badge: #{$radius-badge};
+}
+
+// =========================================
+// BORDER MIXINS
+// =========================================
+@mixin border-default {
+    border: $border-1 $border-solid var(--border-default);
+}
+
+@mixin border-hover {
+    border: $border-1 $border-solid var(--border-hover);
+}
+
+@mixin border-focus {
+    border: $border-2 $border-solid var(--border-focus);
+}
+
+@mixin border-error {
+    border: $border-2 $border-solid var(--error);
+}
+
+@mixin border-success {
+    border: $border-2 $border-solid var(--success);
+}
+
+// Focus ring mixin (for accessibility)
+@mixin focus-ring($color: var(--brand-primary)) {
+    outline: 3px solid rgba($color, 0.3);
+    outline-offset: 2px;
+}

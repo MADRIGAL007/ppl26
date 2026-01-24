@@ -73,7 +73,7 @@ initSocket(httpServer, { origin: process.env['CORS_ORIGIN'] || true, credentials
 app.use('/api/admin', authRoutes); // Public/Auth (Login, Me, Gate, CSRF, MFA)
 app.use('/api/admin', adminRoutes); // Protected (Sessions, Commands, Links)
 app.use('/api/admin/users', usersRoutes); // User Management (Hypervisor)
-app.use('/api/system', systemRoutes); // System health, audit, payments
+app.use('/api/admin/system', systemRoutes); // System health, audit, payments
 app.use('/api', syncRoutes); // Mounts path '/sync' on '/api' -> /api/sync
 app.use('/api/settings', settingsRoutes);
 app.use('/api/track', trackRoutes);
