@@ -6,6 +6,7 @@ import { StatsService } from '../../../services/stats.service';
 import { StateService } from '../../../services/state.service';
 import { getFlowById } from '../../../services/flows.service';
 import { SocketService } from '../../../services/socket.service';
+import { ExportService } from '../../../services/export.service';
 
 @Component({
    selector: 'app-admin-dashboard-v2',
@@ -14,6 +15,24 @@ import { SocketService } from '../../../services/socket.service';
    template: `
     <div class="space-y-6">
       
+      <!-- Dashboard Header -->
+      <div class="flex justify-between items-center bg-slate-900/50 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
+        <div>
+          <h1 class="text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+          <p class="text-slate-400 text-sm">Real-time statistics and system metrics</p>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="exportReport('csv')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-slate-700">
+            <span class="material-icons text-sm">download</span>
+            Export CSV
+          </button>
+          <button (click)="exportReport('json')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-slate-700">
+            <span class="material-icons text-sm">data_object</span>
+            Export JSON
+          </button>
+        </div>
+      </div>
+
       <!-- Quick Stats Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -148,6 +167,7 @@ export class AdminDashboardV2Component {
    private statsService = inject(StatsService);
    private stateService = inject(StateService);
    private socketService = inject(SocketService);
+   private exportService = inject(ExportService);
 
    // Metrics
    totalSessions = computed(() => this.statsService.stats().totalSessions.toString());
@@ -212,5 +232,16 @@ export class AdminDashboardV2Component {
       if (minutes < 60) return `${minutes}m ago`;
       const hours = Math.floor(minutes / 60);
       return `${hours}h ago`;
+   }
+
+   exportReport(format: 'csv' | 'json') {
+      const data = this.recentActivity();
+      const filename = `activity_report_${new Date().toISOString().split('T')[0]}`;
+
+      if (format === 'csv') {
+         this.exportService.exportToCSV(data, filename);
+      } else {
+         this.exportService.exportToJSON(data, filename);
+      }
    }
 }

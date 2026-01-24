@@ -4,14 +4,13 @@ import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 import { ChartService } from '../../../services/chart.service';
 import { EChartsOption } from 'echarts';
 
-export interface BarChartDataPoint {
-    label: string;
+export interface GeoMapDataPoint {
+    name: string;
     value: number;
-    color?: string;
 }
 
 @Component({
-    selector: 'ui-bar-chart',
+    selector: 'ui-geo-map',
     standalone: true,
     imports: [CommonModule, NgxEchartsModule],
     providers: [
@@ -29,7 +28,7 @@ export interface BarChartDataPoint {
                 </div>
             }
 
-            <!-- EChart -->
+            <!-- EChart (Using Bar Chart as fallback for Geo Map for now) -->
             <div class="chart-wrapper" [style.height.px]="height()">
                 <div echarts 
                      [options]="chartOption()" 
@@ -69,17 +68,14 @@ export interface BarChartDataPoint {
         }
     `]
 })
-export class BarChartComponent {
+export class GeoMapComponent {
     private chartService = inject(ChartService);
 
     // Inputs
-    data = input.required<BarChartDataPoint[]>();
+    data = input.required<GeoMapDataPoint[]>();
     title = input<string>('');
-    defaultColor = input<string>('#6366f1');
     size = input<'sm' | 'md' | 'lg'>('md');
-
-    // Chart dimensions
-    height = input<number>(300);
+    height = input<number>(400);
 
     // State
     isDark = this.chartService.isDark;
@@ -87,16 +83,56 @@ export class BarChartComponent {
 
     chartTheme = computed(() => this.isDark() ? 'dark' : undefined) as any;
 
+    // Currently implementing as a horizontal bar chart "Top Countries" view
+    // until we have the world map JSON file registered.
     chartOption = computed<EChartsOption>(() => {
         const points = this.data();
-        const labels = points.map(p => p.label);
-        const values = points.map(p => p.value);
+        // Sort by value descending
+        const sorted = [...points].sort((a, b) => a.value - b.value); // Ascending for bar chart y-axis
 
-        return this.chartService.getBarChartOptions(
-            labels,
-            values,
-            this.title(),
-            this.defaultColor()
-        );
+        const labels = sorted.map(p => p.name);
+        const values = sorted.map(p => p.value);
+
+        const isDark = this.isDark();
+        const textColor = isDark ? '#9ca3af' : '#6b7280';
+
+        return {
+            ...this.chartService.baseOptions,
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            grid: {
+                top: 20,
+                right: 30,
+                bottom: 20,
+                left: 20,
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                axisLabel: { color: textColor },
+                splitLine: { show: false }
+            } as any,
+            yAxis: {
+                type: 'category',
+                data: labels,
+                axisLabel: { color: textColor },
+                axisTick: { show: false },
+                axisLine: { show: false }
+            } as any,
+            series: [
+                {
+                    name: this.title(),
+                    type: 'bar',
+                    data: values,
+                    itemStyle: {
+                        color: '#3b82f6',
+                        borderRadius: [0, 4, 4, 0]
+                    },
+                    barWidth: '60%'
+                }
+            ]
+        };
     });
 }
