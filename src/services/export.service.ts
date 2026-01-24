@@ -54,6 +54,26 @@ export class ExportService {
         this.downloadFile(jsonContent, `${filename}.json`, 'application/json;charset=utf-8;');
     }
 
+    /**
+   * Export data to Text file
+   * @param data Array of objects to export
+   * @param filename Name of the file without extension
+   */
+    exportToTXT(data: any[], filename: string): void {
+        if (!data || !data.length) {
+            console.warn('No data to export');
+            return;
+        }
+
+        const content = data.map(row => {
+            return Object.entries(row)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('\n');
+        }).join('\n\n----------------------------------------\n\n');
+
+        this.downloadFile(content, `${filename}.txt`, 'text/plain;charset=utf-8;');
+    }
+
     private downloadFile(content: string, filename: string, contentType: string): void {
         const blob = new Blob([content], { type: contentType });
         const url = URL.createObjectURL(blob);

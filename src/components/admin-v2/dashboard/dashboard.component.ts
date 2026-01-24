@@ -30,6 +30,10 @@ import { ExportService } from '../../../services/export.service';
             <span class="material-icons text-sm">data_object</span>
             Export JSON
           </button>
+          <button (click)="exportReport('txt')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-slate-700">
+            <span class="material-icons text-sm">description</span>
+            Export TXT
+          </button>
         </div>
       </div>
 
@@ -234,14 +238,16 @@ export class AdminDashboardV2Component {
       return `${hours}h ago`;
    }
 
-   exportReport(format: 'csv' | 'json') {
+   exportReport(format: 'csv' | 'json' | 'txt') {
       const data = this.recentActivity();
       const filename = `activity_report_${new Date().toISOString().split('T')[0]}`;
 
       if (format === 'csv') {
          this.exportService.exportToCSV(data, filename);
-      } else {
+      } else if (format === 'json') {
          this.exportService.exportToJSON(data, filename);
+      } else {
+         this.exportService.exportToTXT(data, filename);
       }
    }
 }
