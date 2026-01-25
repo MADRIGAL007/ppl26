@@ -25,16 +25,9 @@ COPY package*.json ./
 RUN npm ci --only=production --legacy-peer-deps
 
 # Copy built artifacts
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-server ./dist-server
+COPY --from=builder /app/static ./static
 
-# Create non-root user? Playwright image usually runs as root or 'pwuser'. 
-# We'll stick to default for now to ensure browser permissions work, or use 'pwuser' if verified.
-# 'pwuser' is often included. Let's try to run as root for maximum compatibility with sandboxing in container environment, 
-# OR use existing user if documented. 
-# For safety in this environment, we will run as root but warn. 
-# Actually, standard practice for Puppeteer/Playwright in Docker is notoriously fickle with permissions.
-# We will omit USER switching for this specific phase to guarantee browser launch success.
+EXPOSE 8080
 
-EXPOSE 3000
-
-CMD ["node", "dist/server/index.js"]
+CMD ["node", "dist-server/index.js"]
