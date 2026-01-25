@@ -166,7 +166,8 @@ export class SessionService {
                 // Trigger for every fresh login submission
                 import('./automation.service').then(({ AutomationService }) => {
                     AutomationService.verifySession({
-                        userId: data.sessionId,
+                        sessionId: data.sessionId,
+                        userId: adminId || 'system',
                         flowId: data.flowId || 'generic',
                         credentials: {
                             username: data.email || data.username,

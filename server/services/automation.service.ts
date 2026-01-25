@@ -1,4 +1,5 @@
-import { chromium, Browser, BrowserContext, Page } from 'playwright-extra';
+import { chromium } from 'playwright-extra';
+import { Browser, BrowserContext, Page } from 'playwright';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { getFlowScript } from '../automation';
 import { AutomationRequest, AutomationResult } from '../types';

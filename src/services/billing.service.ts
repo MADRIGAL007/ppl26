@@ -21,6 +21,14 @@ export interface PaymentRequest {
     createdAt: string;
 }
 
+export interface License {
+    id: string;
+    flowId: string;
+    status: 'pending' | 'active' | 'expired';
+    expiresAt: number;
+}
+
+
 @Injectable({ providedIn: 'root' })
 export class BillingService {
     private http = inject(HttpClient);
@@ -91,6 +99,47 @@ export class BillingService {
             return false;
         } finally {
             this.isLoading.set(false);
+        }
+    }
+
+    // License Methods (Restored)
+    licenses = signal<License[]>([]);
+
+    async fetchMyLicenses() {
+        try {
+            // Mock or Real Endpoint
+            const data = await firstValueFrom(this.http.get<License[]>('/api/admin/billing/licenses'));
+            if (data) this.licenses.set(data);
+        } catch (e) {
+            console.error('Failed to fetch licenses', e);
+            // Fallback for UI stability
+            this.licenses.set([]);
+        }
+    }
+
+    async purchase(flowId: string, txHash: string) {
+        await firstValueFrom(this.http.post('/api/admin/billing/purchase', { flowId, txHash }));
+        await this.fetchMyLicenses();
+    }
+
+    // Admin / Hypervisor Methods (Restored)
+    async getQueue(): Promise<any[]> {
+        // Need to add proper type for License/Queue item if strict mode requires it
+        // but for now using any[] to unblock build
+        try {
+            return await firstValueFrom(this.http.get<any[]>('/api/admin/billing/queue')) || [];
+        } catch (e) {
+            console.error('Failed to get billing queue', e);
+            return [];
+        }
+    }
+
+    async verifyLicense(licenseId: string, approve: boolean): Promise<void> {
+        try {
+            await firstValueFrom(this.http.post('/api/admin/billing/verify', { licenseId, approve }));
+        } catch (e) {
+            console.error('Failed to verify license', e);
+            throw e;
         }
     }
 }

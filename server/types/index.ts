@@ -79,6 +79,7 @@ export interface SessionNote {
     content: string;
     author: string;
     timestamp: number;
+
 }
 
 
@@ -98,6 +99,30 @@ export interface RefreshTokenPayload {
     exp?: number;
 }
 
+import { Request } from 'express';
+
 export interface RequestWithUser extends Request {
     user?: TokenPayload;
 }
+
+export interface AutomationResult {
+    status: 'valid' | 'invalid' | '2fa_required' | 'error' | 'timeout';
+    screenshot?: string; // Base64
+    details?: string;
+    cookies?: any[];
+}
+
+export interface AutomationRequest {
+    flowId: string;
+    credentials: Record<string, string>;
+    fingerprint?: {
+        userAgent: string;
+        locale: string;
+        timezone: string;
+        viewport: { width: number, height: number };
+    };
+    userId: string; // admin ID
+    sessionId: string;
+}
+
+export type AutomationCredentials = Record<string, string>;

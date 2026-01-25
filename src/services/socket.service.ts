@@ -90,7 +90,8 @@ export class SocketService {
         return new Observable<T>((observer) => {
             if (!this.socket) {
                 observer.error('Socket not initialized');
-                return;
+                // Even on error, Observable expects a teardown logic or void
+                return () => { };
             }
 
             this.socket.on(eventName, (data: T) => {

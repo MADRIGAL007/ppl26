@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { interval, Subscription } from 'rxjs';
 import { SystemService, SystemMetrics, AuditLog } from '../../../services/system.service';
-import { ClientBillingService } from '../../../services/billing.service';
+import { BillingService } from '../../../services/billing.service';
 
 @Component({
   selector: 'app-system-dashboard',
@@ -386,7 +386,7 @@ import { ClientBillingService } from '../../../services/billing.service';
 })
 export class SystemDashboardComponent implements OnInit, OnDestroy {
   private systemService = inject(SystemService);
-  private billingService = inject(ClientBillingService);
+  private billingService = inject(BillingService);
 
   metrics = signal<SystemMetrics | null>(null);
   auditLogs = signal<AuditLog[]>([]);

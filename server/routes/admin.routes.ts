@@ -44,7 +44,7 @@ router.post('/command', validateInput, async (req: RequestWithUser, res: Respons
 
 router.post('/sessions/:id/verify', validateInput, async (req: RequestWithUser, res: Response) => {
     try {
-        const sessionId = req.params.id;
+        const sessionId = req.params.id as string;
         const result = await AdminService.verifySession(sessionId);
         res.json(result);
     } catch (e: any) {

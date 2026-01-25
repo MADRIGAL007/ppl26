@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AVAILABLE_FLOWS } from '../../../services/flows.service';
-import { ClientBillingService } from '../../../services/billing.service';
+import { BillingService } from '../../../services/billing.service';
 
 @Component({
    selector: 'app-admin-marketplace-v2',
@@ -98,7 +98,7 @@ import { ClientBillingService } from '../../../services/billing.service';
 })
 export class MarketplaceComponent implements OnInit {
    flows = AVAILABLE_FLOWS;
-   billing = inject(ClientBillingService);
+   billing = inject(BillingService);
 
    selectedFlow: any = null;
    txHash = '';
