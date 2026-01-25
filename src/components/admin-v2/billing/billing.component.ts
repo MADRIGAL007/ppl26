@@ -93,7 +93,7 @@ import { FormsModule } from '@angular/forms';
                                <label class="block text-xs text-slate-500 mb-1">Send Exactly</label>
                                <div class="flex items-center gap-2">
                                    <span class="text-white font-mono text-lg font-bold">{{ cp.amount }} {{ cp.cryptoType }}</span>
-                                   <button class="text-slate-400 hover:text-white" (click)="copy(cp.amount)"><span class="material-icons text-xs">content_copy</span></button>
+                                   <button class="text-slate-400 hover:text-white" (click)="copy(cp.amount + '')"><span class="material-icons text-xs">content_copy</span></button>
                                </div>
                            </div>
                            <div>
