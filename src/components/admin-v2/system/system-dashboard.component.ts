@@ -1,7 +1,9 @@
+
 import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { interval, Subscription } from 'rxjs';
 import { SystemService, SystemMetrics, AuditLog } from '../../../services/system.service';
+import { ClientBillingService } from '../../../services/billing.service';
 
 @Component({
   selector: 'app-system-dashboard',
@@ -59,6 +61,101 @@ import { SystemService, SystemMetrics, AuditLog } from '../../../services/system
                 <h3>System</h3>
                  <p class="value">Node {{ nodeVersion() }}</p>
             </div>
+        </div>
+      </div>
+
+       <!-- Financial Stats (New) -->
+       <div class="health-cards mb-6">
+           <div class="card status-ok">
+               <div class="card-icon">💰</div>
+               <div class="card-content">
+                   <h3>Total Revenue</h3>
+                   <p class="value">$45,250</p> <!-- Mocked for now, connect to real data later -->
+               </div>
+           </div>
+           <div class="card">
+               <div class="card-icon">📈</div>
+               <div class="card-content">
+                   <h3>MRR (Est)</h3>
+                   <p class="value">$12,400</p>
+               </div>
+           </div>
+       </div>
+
+       <!-- Deposit Queue (Hypervisor Only) -->
+       <div class="audit-section">
+        <div class="section-header">
+            <h3>Deposit Verification Queue</h3>
+            <button class="btn-sm" (click)="loadQueue()">Refresh</button>
+        </div>
+        <div class="audit-table-container">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Admin ID</th>
+                <th>Amount</th>
+                <th>TX Hash</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Add logic to fetch deposit queue in component logic -->
+              <tr *ngIf="true"> <!-- Placeholder until wired up -->
+                 <td colspan="5" class="no-data">No pending deposits.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+       <!-- Billing Queue (Hypervisor Only) -->
+       <div class="audit-section">
+        <div class="section-header">
+            <h3>Billing Verification Queue</h3>
+            <button class="btn-sm" (click)="loadQueue()">Refresh</button>
+        </div>
+        <div class="audit-table-container">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Admin ID</th>
+                <th>Flow</th>
+                <th>TX Hash</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let lic of billingQueue()">
+                <td>{{ lic.created_at | date:'short' }}</td>
+                <td><span class="font-mono text-xs">{{ lic.adminId }}</span></td>
+                <td><span class="action-badge">{{ lic.flowId }}</span></td>
+                <td><code class="text-xs text-blue-400">{{ lic.txHash }}</code></td>
+                <td>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                        [class.bg-yellow-500-10]="lic.status === 'pending'"
+                        [class.text-yellow-400]="lic.status === 'pending'"
+                        [class.bg-emerald-500-10]="lic.status === 'active'"
+                        [class.text-emerald-400]="lic.status === 'active'">
+                        {{ lic.status | uppercase }}
+                    </span>
+                </td>
+                <td>
+                    @if (lic.status === 'pending') {
+                        <div class="flex gap-2">
+                            <button class="btn-sm text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10" (click)="verify(lic.id, true)">Approve</button>
+                            <button class="btn-sm text-red-500 border-red-500/30 hover:bg-red-500/10" (click)="verify(lic.id, false)">Reject</button>
+                        </div>
+                    }
+                </td>
+              </tr>
+              <tr *ngIf="billingQueue().length === 0">
+                <td colspan="6" class="no-data">No pending license requests.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -289,15 +386,16 @@ import { SystemService, SystemMetrics, AuditLog } from '../../../services/system
 })
 export class SystemDashboardComponent implements OnInit, OnDestroy {
   private systemService = inject(SystemService);
+  private billingService = inject(ClientBillingService);
 
   metrics = signal<SystemMetrics | null>(null);
   auditLogs = signal<AuditLog[]>([]);
+  billingQueue = signal<any[]>([]);
   isLoading = signal<boolean>(false);
 
   memoryPercent = computed(() => {
     const m = this.metrics();
     if (!m?.process?.memoryUsage || !m?.os?.totalMem) return 0;
-    // Using RSS vs Total System Mem is a rough proxy but useful
     return Math.min(100, Math.round((m.process.memoryUsage.rss / m.os.totalMem) * 100));
   });
 
@@ -319,6 +417,24 @@ export class SystemDashboardComponent implements OnInit, OnDestroy {
   loadData() {
     this.loadMetrics();
     this.loadLogs();
+    this.loadQueue();
+  }
+
+  loadQueue() {
+    this.billingService.getQueue().then(
+      res => this.billingQueue.set(res || []),
+      err => console.error('Failed to load queue', err)
+    );
+  }
+
+  async verify(id: string, approve: boolean) {
+    if (!confirm(approve ? 'Approve this license?' : 'Reject this license?')) return;
+    try {
+      await this.billingService.verifyLicense(id, approve);
+      this.loadQueue();
+    } catch (e) {
+      alert('Action failed');
+    }
   }
 
   loadMetrics() {

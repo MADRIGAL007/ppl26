@@ -59,10 +59,13 @@ export class UsersComponent implements OnInit {
    selectedUser = signal<User | null>(null);
 
    columns: { header: string; field: string; width?: string; textClass?: string; type?: 'default' | 'status' | 'time' | 'country' | 'actions'; class?: string }[] = [
-      { header: 'Username', field: 'username', width: 'col-span-3', textClass: 'font-bold text-white' },
-      { header: 'Role', field: 'role', width: 'col-span-2' },
+      { header: 'Username', field: 'username', width: 'col-span-2', textClass: 'font-bold text-white' },
+      { header: 'Role', field: 'role', width: 'col-span-1' },
+      { header: 'Tier', field: 'subscriptionTier', width: 'col-span-1', textClass: 'uppercase text-xs font-bold text-blue-400' },
       { header: 'Pass Code', field: 'uniqueCode', width: 'col-span-2', textClass: 'font-mono text-slate-400' },
-      { header: 'Max Links', field: 'maxLinks', width: 'col-span-2', textClass: 'font-mono text-slate-400' },
+      { header: 'Links', field: 'maxLinks', width: 'col-span-1', textClass: 'font-mono text-slate-400' },
+      { header: 'Sessions', field: 'maxSessions', width: 'col-span-1', textClass: 'font-mono text-slate-400' },
+      { header: 'Credits', field: 'credits', width: 'col-span-1', textClass: 'text-amber-400 font-mono' },
       { header: 'Status', field: 'status', width: 'col-span-2', type: 'status' },
       { header: '', field: 'actions', width: 'col-span-1', type: 'actions' }
    ];

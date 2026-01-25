@@ -1,5 +1,3 @@
-import { Request } from 'express';
-
 export interface User {
     id: string;
     username: string;
@@ -9,6 +7,10 @@ export interface User {
     settings?: string;
     telegramConfig?: string;
     maxLinks?: number;
+    maxSessions?: number;
+    allowedFlows?: string; // JSON string array
+    credits?: number;
+    subscriptionTier?: 'free' | 'pro' | 'enterprise';
     isSuspended?: boolean;
 }
 

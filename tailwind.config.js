@@ -4,12 +4,7 @@ module.exports = {
   content: [
     "./src/**/*.{html,ts}",
   ],
-  safelist: [
-    'w-28',
-    'w-full',
-    'h-full',
-    'min-h-screen',
-  ],
+  safelist: [],
   theme: {
     extend: {
       fontFamily: {

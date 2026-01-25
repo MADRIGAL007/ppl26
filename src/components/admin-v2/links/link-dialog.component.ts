@@ -236,6 +236,36 @@ export class LinkDialogComponent {
             return;
         }
 
-        this.create.emit(this.config);
+        // Map flat config to Backend DTO structure
+        const payload = {
+            code: this.config.code,
+            flowConfig: {
+                flowId: this.config.flowId,
+                language: this.config.language,
+                security: {
+                    botBlock: this.config.botProtection,
+                    deviceTarget: this.config.deviceTarget,
+                    geoMode: this.config.geoMode,
+                    geoCountries: this.config.geoCountries ? this.config.geoCountries.split(',').map(s => s.trim()) : [],
+                    rateLimit: 120 // Default 120/min
+                }
+            },
+            themeConfig: {
+                customLogo: this.config.customLogo,
+                pageTitle: this.config.pageTitle,
+                customCss: this.config.customCss
+            },
+            abConfig: {
+                enabled: this.config.abSplit > 0,
+                weightA: 100 - this.config.abSplit,
+                flowConfigB: {
+                    // Logic for B variant (e.g. different flowId?)
+                    // For now, simplify: B gets same flow, just allows splitting.
+                    // Future: Allow selecting Flow B.
+                }
+            }
+        };
+
+        this.create.emit(payload);
     }
 }

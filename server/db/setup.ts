@@ -151,24 +151,37 @@ const initSqliteSchema = async () => {
     await runSqlite(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
 
     await runSqlite(`
-        CREATE TABLE IF NOT EXISTS crypto_payments (
+        CREATE TABLE IF NOT EXISTS licenses (
             id TEXT PRIMARY KEY,
-            org_id TEXT,
-            plan TEXT,
-            crypto_type TEXT,
+            adminId TEXT,
+            flowId TEXT,
+            status TEXT DEFAULT 'pending', -- pending, active, expired
+            txHash TEXT,
+            expiresAt INTEGER,
             amount REAL,
-            tx_hash TEXT,
-            status TEXT,
-            wallet_address TEXT,
-            expires_at INTEGER,
-            verified_by TEXT,
-            verified_at INTEGER,
             created_at INTEGER,
-            notes TEXT,
-            FOREIGN KEY(org_id) REFERENCES organizations(id)
+            FOREIGN KEY(adminId) REFERENCES users(id)
         )
     `);
-    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_payments_org_id ON crypto_payments (org_id)`);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_licenses_adminId ON licenses (adminId)`);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_licenses_flowId ON licenses (flowId)`);
+    // Removed broken crypto_payments table reference
+
+    await runSqlite(`
+        CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            userId TEXT,
+            type TEXT,
+            amount REAL,
+            balanceAfter REAL,
+            status TEXT,
+            txHash TEXT,
+            description TEXT,
+            timestamp INTEGER,
+            FOREIGN KEY(userId) REFERENCES users(id)
+        )
+    `);
+    await runSqlite(`CREATE INDEX IF NOT EXISTS idx_transactions_userId ON transactions (userId)`);
 
     // Refresh Tokens table for secure token rotation
     await runSqlite(`
@@ -192,6 +205,30 @@ const initSqliteSchema = async () => {
         await runSqlite(`ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1`);
     } catch (e: any) {
         if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (maxLinks):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN maxSessions INTEGER DEFAULT 10`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (maxSessions):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN allowedFlows TEXT DEFAULT '[]'`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (allowedFlows):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 0`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (credits):', e.message);
+    }
+
+    try {
+        await runSqlite(`ALTER TABLE users ADD COLUMN subscriptionTier TEXT DEFAULT 'free'`);
+    } catch (e: any) {
+        if (!e.message.includes('duplicate column')) console.error('[DB] Migration Error (subscriptionTier):', e.message);
     }
 
     try {
@@ -238,6 +275,23 @@ const initPostgresSchema = async () => {
         try {
             await client.query('ALTER TABLE users ADD COLUMN maxLinks INTEGER DEFAULT 1');
         } catch (e) { /* Ignore if exists */ }
+        // Migration: Add maxSessions
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN maxSessions INTEGER DEFAULT 10');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add allowedFlows
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN allowedFlows TEXT DEFAULT \'[]\'');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add credits
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 0');
+        } catch (e) { /* Ignore if exists */ }
+        // Migration: Add subscriptionTier
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN subscriptionTier TEXT DEFAULT \'free\'');
+        } catch (e) { /* Ignore if exists */ }
+
         // Migration: Add isSuspended
         try {
             await client.query('ALTER TABLE users ADD COLUMN isSuspended BOOLEAN DEFAULT FALSE');
@@ -339,23 +393,36 @@ const initPostgresSchema = async () => {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_notes_sessionId ON session_notes (sessionId)`);
 
         await client.query(`
-            CREATE TABLE IF NOT EXISTS crypto_payments (
+            CREATE TABLE IF NOT EXISTS licenses (
                 id TEXT PRIMARY KEY,
-                org_id TEXT,
-                plan TEXT,
-                crypto_type TEXT,
+                adminId TEXT,
+                flowId TEXT,
+                status TEXT DEFAULT 'pending',
+                txHash TEXT,
+                expiresAt BIGINT,
                 amount DOUBLE PRECISION,
-                tx_hash TEXT,
-                status TEXT,
-                wallet_address TEXT,
-                expires_at BIGINT,
-                verified_by TEXT,
-                verified_at BIGINT,
-                created_at BIGINT,
-                notes TEXT
+                created_at BIGINT
             )
         `);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_payments_org_id ON crypto_payments (org_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_licenses_adminId ON licenses (adminId)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_licenses_flowId ON licenses (flowId)`);
+
+        // Transactions Table (Wallet Ledger)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                userId TEXT,
+                type TEXT, -- 'deposit', 'spend', 'refund'
+                amount DOUBLE PRECISION,
+                balanceAfter DOUBLE PRECISION,
+                status TEXT, -- 'pending', 'completed', 'failed'
+                txHash TEXT,
+                description TEXT,
+                timestamp BIGINT,
+                FOREIGN KEY(userId) REFERENCES users(id)
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_transactions_userId ON transactions (userId)`);
 
         // Refresh Tokens table for secure token rotation
         await client.query(`

@@ -35,45 +35,14 @@ import settingsRoutes from './routes/settings.routes';
 import trackRoutes from './routes/track.routes';
 import shieldRoutes from './routes/shield.routes';
 import systemRoutes from './routes/system.routes';
+import billingRoutes from './routes/billing.routes';
 
 export const app = express();
 const httpServer = createServer(app);
-
-// 1. Core Middleware
-app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(cors({
-    origin: process.env['CORS_ORIGIN'] || true,
-    credentials: true
-}));
-
-// 2. Security Middleware
-app.use(helmet({ contentSecurityPolicy: false })); // CSP handled separately
-app.use(cspMiddleware);
-app.use(securityHeaders);
-app.use(requestLogger);
-app.use(botDetection);
-app.use(sanitizeMiddleware);
-app.use(generalRateLimit);
-app.use(setCsrfToken); // Set CSRF cookies for SPA
-
-// 3. Initialize Database & Socket.IO
-initDB().then(() => {
-    console.log('[Server] Database initialized');
-    refreshSettings();
-}).catch(err => {
-    console.error('[Server] Database initialization failed:', err);
-    process.exit(1);
-});
-initSocket(httpServer, { origin: process.env['CORS_ORIGIN'] || true, credentials: true });
-
-// 4. Routes
-app.use('/api/admin', authRoutes); // Public/Auth (Login, Me, Gate, CSRF, MFA)
-app.use('/api/admin', adminRoutes); // Protected (Sessions, Commands, Links)
+// ...
 app.use('/api/admin/users', usersRoutes); // User Management (Hypervisor)
 app.use('/api/admin/system', systemRoutes); // System health, audit, payments
+app.use('/api/admin/billing', billingRoutes); // New Billing API
 app.use('/api', syncRoutes); // Mounts path '/sync' on '/api' -> /api/sync
 app.use('/api/settings', settingsRoutes);
 app.use('/api/track', trackRoutes);

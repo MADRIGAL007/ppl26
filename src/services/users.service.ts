@@ -7,6 +7,10 @@ export interface User {
     role: 'admin' | 'hypervisor';
     uniqueCode: string;
     maxLinks: number;
+    maxSessions?: number;
+    allowedFlows?: string; // JSON string
+    credits?: number;
+    subscriptionTier?: 'free' | 'pro' | 'enterprise';
     isSuspended: boolean;
     settings?: any;
     password?: string; // For creation/update

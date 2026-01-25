@@ -5,8 +5,8 @@ import crypto from 'crypto';
 
 const router = Router();
 
-router.use(authenticateToken);
-router.use(requireRole('hypervisor')); // All user management is hypervisor-only
+router.use(authenticateToken as any);
+router.use(requireRole('hypervisor') as any); // All user management is hypervisor-only
 
 // Get all users
 router.get('/', async (req: Request, res: Response) => {
@@ -43,7 +43,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const admin: any = (req as any).user;
-        const { username, password, role, maxLinks } = req.body;
+        const { username, password, role, maxLinks, maxSessions, allowedFlows } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
@@ -54,7 +54,7 @@ router.post('/', async (req: Request, res: Response) => {
             return res.status(409).json({ error: 'Username already exists' });
         }
 
-        const newUser = {
+        const newUser: any = {
             id: crypto.randomUUID(),
             username,
             password,
@@ -63,6 +63,10 @@ router.post('/', async (req: Request, res: Response) => {
             settings: JSON.stringify({}),
             telegramConfig: JSON.stringify({}),
             maxLinks: maxLinks || 1,
+            maxSessions: maxSessions || 10,
+            allowedFlows: JSON.stringify(allowedFlows || []),
+            credits: 0,
+            subscriptionTier: 'free',
             isSuspended: false
         };
 

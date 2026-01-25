@@ -1,128 +1,63 @@
-# Docker Compose configuration for PayPal Verification App
-# Note: 'version' key is deprecated in Docker Compose V2 and has been removed
+
+version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      target: production
-      args:
-        NODE_VERSION: 22
-    container_name: paypal-verifier
-    restart: unless-stopped
+    build: .
+    container_name: ppl-server
+    restart: always
     ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/app/data:rw
-      - ./logs:/app/logs:rw
+      - "3000:3000"
     environment:
       - NODE_ENV=production
-      - PORT=8080
-      - DATA_DIR=/app/data
-      - LOG_LEVEL=info
-      # Security settings
-      - NODE_OPTIONS=--max-old-space-size=512
-      # Database settings (add your production database URL)
-      # - DATABASE_URL=postgresql://user:pass@db:5432/paypal_verifier
-      # Add encrypted secrets here (use Docker secrets or external vault)
-      # - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      # - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - paypal-network
+      - PORT=3000
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/ppl_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=CHANGE_THIS_SECRET_IN_PROD
+      - ADMIN_SECRET=CHANGE_THIS_ADMIN_SECRET
+      - HYPERVISOR_USERNAME=admin
+      - HYPERVISOR_PASSWORD=secure_password
     depends_on:
-      - db
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  db:
-    image: postgres:15-alpine
-    container_name: paypal-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: paypal_verifier
-      POSTGRES_USER: paypal_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
-    security_opt:
-      - no-new-privileges:true
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - paypal-network
+      - ppl-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ppl-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ppl_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U paypal_user -d paypal_verifier" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ppl-net
 
   redis:
     image: redis:7-alpine
-    container_name: paypal-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme456}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    security_opt:
-      - no-new-privileges:true
-    networks:
-      - paypal-network
+    container_name: ppl-redis
+    restart: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme456}", "ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: paypal-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      - app
-    security_opt:
-      - no-new-privileges:true
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - paypal-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  nginx_logs:
-    driver: local
+      - ppl-net
 
 networks:
-  paypal-network:
+  ppl-net:
     driver: bridge
-    internal: false
+
+volumes:
+  pg_data:

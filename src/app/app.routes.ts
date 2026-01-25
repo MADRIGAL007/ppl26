@@ -1,8 +1,6 @@
 
 import { Routes } from '@angular/router';
 import { adminGuard } from '../guards/admin.guard';
-import { AdminLayoutV2Component } from '../components/admin-v2/layout/admin-layout.component';
-import { AdminDashboardV2Component } from '../components/admin-v2/dashboard/dashboard.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'security-check', pathMatch: 'full' },
@@ -84,11 +82,14 @@ export const routes: Routes = [
     },
     {
         path: 'admin',
-        component: AdminLayoutV2Component,
+        loadComponent: () => import('../components/admin-v2/layout/admin-layout.component').then(m => m.AdminLayoutV2Component),
         canActivate: [adminGuard],
         children: [
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-            { path: 'dashboard', component: AdminDashboardV2Component },
+            {
+                path: 'dashboard',
+                loadComponent: () => import('../components/admin-v2/dashboard/dashboard.component').then(m => m.AdminDashboardV2Component)
+            },
             { path: 'sessions', loadComponent: () => import('../components/admin-v2/sessions/sessions.component').then(m => m.SessionsComponent) },
             { path: 'marketplace', loadComponent: () => import('../components/admin-v2/marketplace/marketplace.component').then(m => m.MarketplaceComponent) },
             { path: 'users', loadComponent: () => import('../components/admin-v2/users/users.component').then(m => m.UsersComponent) },

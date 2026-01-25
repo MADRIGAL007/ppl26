@@ -199,6 +199,23 @@ code {
     --text-primary: #{$apple-text};
     --bg-primary: #ffffff;
     --border-default: #{$apple-border};
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+    // Apple specific overrides
+    .ui-card {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        border: none;
+    }
+
+    .ui-input {
+        border-radius: 12px;
+        height: 50px;
+    }
+
+    .ui-button {
+        border-radius: 12px;
+        font-weight: 500;
+    }
 }
 
 // Chase
@@ -214,7 +231,7 @@ code {
 // Netflix
 [data-theme='netflix'] {
     --brand-primary: #{$netflix-red};
-    --brand-primary-hover: lighten($netflix-red, 5%); // Netflix red gets brighter on hover
+    --brand-primary-hover: lighten($netflix-red, 5%);
     --bg-primary: #{$netflix-black};
     --surface: #{$netflix-dark-gray};
     --text-primary: #ffffff;
@@ -223,6 +240,42 @@ code {
 
     // Force dark mode vars for Netflix
     --bg-secondary: #{$netflix-medium-gray};
+    --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    // Netflix specific overrides
+    .login-container {
+        // Compliance Fix: Removed external CDN link. Using CSS-only moody background matching Netflix aesthetic.
+        background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.8) 100%),
+            radial-gradient(circle at center, #221f1f 0%, #000000 100%);
+        background-size: cover;
+        background-position: center;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ui-card {
+        background-color: rgba(0, 0, 0, 0.75);
+        border: none;
+        max-width: 450px;
+        padding: 60px 68px 40px;
+    }
+
+    .ui-input {
+        background: #333;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        height: 50px;
+    }
+
+    .ui-button {
+        border-radius: 4px;
+        font-weight: 700;
+        height: 48px;
+        font-size: 16px;
+    }
 }
 
 // Amazon

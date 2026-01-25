@@ -38,10 +38,45 @@ import { FormsModule } from '@angular/forms';
                 </div>
 
                 <!-- Max Links -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Max Links</label>
+                        <input type="number" [(ngModel)]="localUser.maxLinks" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-sm focus:border-blue-500/50 outline-none">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Max Sessions</label>
+                        <input type="number" [(ngModel)]="localUser.maxSessions" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-sm focus:border-blue-500/50 outline-none">
+                    </div>
+                </div>
+
+                <!-- Tier & Credits -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Tier</label>
+                        <select [(ngModel)]="localUser.subscriptionTier" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-sm focus:border-blue-500/50 outline-none appearance-none">
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Credits</label>
+                        <input type="number" [(ngModel)]="localUser.credits" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-sm focus:border-blue-500/50 outline-none">
+                    </div>
+                </div>
+
+                <!-- Allowed Flows (JSON) -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Max Links</label>
-                    <input type="number" [(ngModel)]="localUser.maxLinks" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-sm focus:border-blue-500/50 outline-none">
-                    <p class="text-[10px] text-slate-500">Maximum concurrent links allowed for this user.</p>
+                     <label class="text-xs font-bold text-slate-500 uppercase">Allowed Flows (JSON Array)</label>
+                     <!-- Simple Textarea for now, ideally extensive checkbox group -->
+                     <textarea [(ngModel)]="localUser.allowedFlows" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-xs font-mono focus:border-blue-500/50 outline-none" placeholder='["paypal", "apple"]'></textarea>
+                     <p class="text-[10px] text-slate-500">e.g. ["paypal", "apple", "netflix"] or leave empty for all.</p>
+                </div>
+                
+                <!-- Suspension -->
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" [(ngModel)]="localUser.isSuspended" id="susp" class="rounded border-slate-700 bg-slate-900 text-red-500 focus:ring-red-500">
+                    <label for="susp" class="text-sm font-bold text-red-400">Suspend User Account</label>
                 </div>
             </div>
 
@@ -65,7 +100,11 @@ export class UserDialogComponent {
                 username: '',
                 password: '',
                 role: 'admin',
-                maxLinks: 10,
+                maxLinks: 1,
+                maxSessions: 10,
+                credits: 0,
+                subscriptionTier: 'free',
+                allowedFlows: '[]',
                 isSuspended: false
             };
         }

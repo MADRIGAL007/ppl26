@@ -4,24 +4,28 @@ import { createLink, getLinkByCode } from './links';
 import { User } from '../../types';
 
 export const createUser = async (user: User): Promise<void> => {
-    const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks } = user;
-    const links = maxLinks || (role === 'hypervisor' ? 100 : 1);
+    const { id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, maxSessions, allowedFlows, credits, subscriptionTier } = user;
+    const linksMax = maxLinks || (role === 'hypervisor' ? 100 : 1);
+    const sessionsMax = maxSessions || 10;
+    const flows = allowedFlows || '[]';
+    const creds = credits || 0;
+    const tier = subscriptionTier || 'free';
     const suspended = user.isSuspended || false;
     const hashedPassword = password ? await ensureHashedPassword(password) : password;
 
     if (isPostgres) {
         const query = `
-            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, maxSessions, allowedFlows, credits, subscriptionTier, isSuspended)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `;
-        await pgPool!.query(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, links, suspended]);
+        await pgPool!.query(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, linksMax, sessionsMax, flows, creds, tier, suspended]);
     } else {
         const query = `
-            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, isSuspended)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (id, username, password, role, uniqueCode, settings, telegramConfig, maxLinks, maxSessions, allowedFlows, credits, subscriptionTier, isSuspended)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         await new Promise<void>((resolve, reject) => {
-            sqliteDb!.run(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, links, suspended], (err) => {
+            sqliteDb!.run(query, [id, username, hashedPassword, role, uniqueCode, settings, telegramConfig, linksMax, sessionsMax, flows, creds, tier, suspended], (err) => {
                 if (err) reject(err);
                 else resolve();
             });
@@ -50,17 +54,17 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<vo
 
     if (isPostgres) {
         const query = `
-            UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7, isSuspended=$8
-            WHERE id=$9
+            UPDATE users SET username=$1, password=$2, role=$3, uniqueCode=$4, settings=$5, telegramConfig=$6, maxLinks=$7, maxSessions=$8, allowedFlows=$9, credits=$10, subscriptionTier=$11, isSuspended=$12
+            WHERE id=$13
         `;
-        await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id]);
+        await pgPool!.query(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.maxSessions, u.allowedFlows, u.credits, u.subscriptionTier, u.isSuspended, id]);
     } else {
         const query = `
-            UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?, isSuspended=?
+            UPDATE users SET username=?, password=?, role=?, uniqueCode=?, settings=?, telegramConfig=?, maxLinks=?, maxSessions=?, allowedFlows=?, credits=?, subscriptionTier=?, isSuspended=?
             WHERE id=?
         `;
         await new Promise<void>((resolve, reject) => {
-            sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.isSuspended, id], (err) => {
+            sqliteDb!.run(query, [u.username, u.password, u.role, u.uniqueCode, u.settings, u.telegramConfig, u.maxLinks, u.maxSessions, u.allowedFlows, u.credits, u.subscriptionTier, u.isSuspended, id], (err) => {
                 if (err) reject(err);
                 else resolve();
             });

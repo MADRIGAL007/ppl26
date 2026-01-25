@@ -42,6 +42,17 @@ router.post('/command', validateInput, async (req: RequestWithUser, res: Respons
     }
 });
 
+router.post('/sessions/:id/verify', validateInput, async (req: RequestWithUser, res: Response) => {
+    try {
+        const sessionId = req.params.id;
+        const result = await AdminService.verifySession(sessionId);
+        res.json(result);
+    } catch (e: any) {
+        console.error('[Admin] Error verifying session:', e);
+        res.status(500).json({ error: e.message || 'Verification Failed' });
+    }
+});
+
 // --- Links ---
 
 router.get('/links', async (req: RequestWithUser, res: Response) => {
@@ -58,11 +69,11 @@ router.get('/links', async (req: RequestWithUser, res: Response) => {
 router.post('/links', validateInput, async (req: RequestWithUser, res: Response) => {
     try {
         const user = req.user!;
-        const { code, flowConfig, themeConfig } = req.body;
+        const { code, flowConfig, themeConfig, abConfig } = req.body;
 
         if (!code) return res.status(400).json({ error: 'Missing code' });
 
-        const link = await AdminService.createLink(user, code, flowConfig, themeConfig);
+        const link = await AdminService.createLink(user, code, flowConfig, themeConfig, abConfig);
         res.json(link);
     } catch (e: any) {
         console.error('[Admin] Error creating link:', e);

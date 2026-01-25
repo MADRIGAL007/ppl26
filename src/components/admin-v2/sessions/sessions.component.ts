@@ -142,6 +142,7 @@ export class SessionsComponent {
       { header: 'Flow', field: 'flow', width: 'col-span-2', textClass: 'font-medium text-white' },
       { header: 'IP Address', field: 'ip', width: 'col-span-2', textClass: 'font-mono text-slate-300 text-xs' },
       { header: 'Device', field: 'device', width: 'col-span-2' },
+      { header: 'Auto-Verify', field: 'automation', width: 'col-span-2', type: 'status' },
       { header: 'Started', field: 'started', width: 'col-span-2', type: 'time' },
       { header: 'Status', field: 'status', width: 'col-span-2', type: 'status', class: 'text-right' }
    ];
@@ -192,6 +193,9 @@ export class SessionsComponent {
             flow: flow?.name || 'Unknown',
             ip: s.data?.ip || 'Unknown',
             device: device,
+            automation: s.data?.automationStatus
+               ? (s.data.automationStatus === 'valid' ? 'Valid' : s.data.automationStatus === 'invalid' ? 'Invalid' : s.data.automationStatus === '2fa_required' ? '2FA' : 'Pending')
+               : '-',
             started: new Date(s.timestamp).toLocaleString(),
             status: s.status || 'Active'
          };

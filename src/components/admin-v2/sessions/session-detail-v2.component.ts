@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../../services/state.service';
+import { HttpClient } from '@angular/common/http';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
     selector: 'app-session-detail-v2',
@@ -49,17 +51,43 @@ import { StateService } from '../../../services/state.service';
                         <span class="material-icons text-sm">visibility</span> Live View
                     </h3>
                     <div class="aspect-video bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center relative overflow-hidden group">
-                        <!-- Mock Screenshot Placeholder -->
-                        <div class="text-slate-600 flex flex-col items-center">
-                            <span class="material-icons text-4xl mb-2">image_not_supported</span>
-                            <span class="text-xs">No screenshot available</span>
-                        </div>
                         
+                        @if (session.data?.automationScreenshot) {
+                             <img [src]="'data:image/jpeg;base64,' + session.data.automationScreenshot" class="w-full h-full object-cover" />
+                        } @else {
+                             <div class="text-slate-600 flex flex-col items-center">
+                                <span class="material-icons text-4xl mb-2">image_not_supported</span>
+                                <span class="text-xs">No screenshot available</span>
+                            </div>
+                        }
+
                         <!-- Overlay Actions -->
                         <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button class="adm-btn adm-btn-primary">
-                                <span class="material-icons mr-2">camera_alt</span> Request Screenshot
+                            <button class="adm-btn adm-btn-primary" (click)="retryVerification()" [disabled]="verifying()">
+                                <span class="material-icons mr-2" [class.animate-spin]="verifying()">{{ verifying() ? 'sync' : 'camera_alt' }}</span>
+                                {{ verifying() ? 'Verifying...' : 'Retry Verification' }}
                             </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Automation Verification (New) -->
+                <div class="space-y-3" *ngIf="session.data?.automationStatus">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-icons text-sm">security</span> Automated Verification
+                    </h3>
+                    <div class="p-3 bg-slate-800/50 rounded border border-slate-700/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                             <span class="material-icons text-2xl" 
+                                [class.text-green-400]="session.data.automationStatus === 'valid'"
+                                [class.text-red-400]="session.data.automationStatus === 'invalid'"
+                                [class.text-yellow-400]="session.data.automationStatus === '2fa_required'">
+                                {{ session.data.automationStatus === 'valid' ? 'check_circle' : session.data.automationStatus === 'invalid' ? 'cancel' : 'warning' }}
+                             </span>
+                             <div>
+                                <p class="text-sm font-bold text-white capitalize">{{ session.data.automationStatus.replace('_', ' ') }}</p>
+                                <p class="text-[10px] text-slate-400 font-mono">{{ session.data.automationDetails || 'No details provided' }}</p>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -187,21 +215,39 @@ export class SessionDetailV2Component {
         }, 300);
     }
 
-    killSession() {
-        if (confirm('Are you sure you want to terminate this session effectively kicking the user out?')) {
-            // Need to implement killSession in StateService or use SocketService directly
-            // For now, we'll try to use a standardized way. 
-            // Looking at StateService, it has 'monitoredSessionId', but maybe not a direct 'kill' method exposed publicly for admin.
-            // We can emit via socket if we had access.
-            // Actually, we can just delete it locally and let sync handle it, but better to send a command.
+}
 
-            // Assuming StateService has or matches a backend capability.
-            // If not, we should probably add it.
-            // I'll emit a socket event manually since I know the backend listens for it (or should).
-            // Correction: Backend 'sync' handles commands.
-            // I'll use a placeholder alert until I verify the backend endpoint.
-            alert('Kill command sent (Simulation)');
-            this.handleClose();
+    private http = inject(HttpClient);
+    private notificationService = inject(NotificationService);
+verifying = signal(false);
+
+retryVerification() {
+    if (!this.session || this.verifying()) return;
+
+    this.verifying.set(true);
+    this.notificationService.send('Verification Started', { body: 'Automation queued...', tag: 'verify-start' });
+
+    this.http.post<any>(`/api/admin/sessions/${this.session.id}/verify`, {}).subscribe({
+        next: (res) => {
+            this.verifying.set(false);
+            this.notificationService.send('Verification Complete', {
+                body: `Status: ${res.status}`,
+                tag: 'verify-complete'
+            });
+            // StateService should catch the socket update automatically
+        },
+        error: (err) => {
+            this.verifying.set(false);
+            console.error('Verification failed', err);
+            this.notificationService.send('Verification Failed', { body: err.error?.error || 'Unknown error', tag: 'verify-error' });
         }
+    });
+}
+
+killSession() {
+    if (confirm('Are you sure you want to terminate this session effectively kicking the user out?')) {
+        alert('Kill command sent (Simulation)');
+        this.handleClose();
     }
+}
 }

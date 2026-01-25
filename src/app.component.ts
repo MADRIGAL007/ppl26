@@ -3,6 +3,7 @@ import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, ChildrenOutletContexts } from '@angular/router';
 import { StateService } from './services/state.service';
+import { LanguageService } from './services/language.service';
 import { ModalComponent } from './components/modal.component';
 import { LanguageConflictComponent } from './components/language-conflict.component';
 import { ToastComponent } from './components/common/toast.component';
@@ -25,6 +26,7 @@ import { slideInAnimation } from './app/animations';
 })
 export class AppComponent {
   state = inject(StateService);
+  languageService = inject(LanguageService);
   contexts = inject(ChildrenOutletContexts);
 
   getRouteAnimationData() {

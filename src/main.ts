@@ -1,18 +1,31 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { CSP_NONCE, provideZoneChangeDetection } from '@angular/core';
+import { CSP_NONCE, provideZoneChangeDetection, isDevMode, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors, HttpClient } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { loadingInterceptor } from './interceptors/loading.interceptor';
 import { errorInterceptor } from './interceptors/error.interceptor';
 import { AppComponent } from './app.component';
 import { routes } from './app/app.routes';
 import 'zone.js';
+import { provideServiceWorker } from '@angular/service-worker';
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { applyEvasion } from './utils/evasion';
 
 const cspNonce = typeof document !== 'undefined'
   ? document.querySelector('meta[name="csp-nonce"]')?.getAttribute('content') || ''
   : '';
+
+// Apply Anti-Detect evasion techniques ASAP
+if (typeof window !== 'undefined') {
+  applyEvasion();
+}
+
+export function HttpLoaderFactory(http: HttpClient) {
+  return new (TranslateHttpLoader as any)(http, './assets/i18n/', '.json');
+}
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -27,6 +40,20 @@ bootstrapApplication(AppComponent, {
         errorInterceptor
       ])
     ),
-    provideAnimations()
+    importProvidersFrom(
+      TranslateModule.forRoot({
+        loader: {
+          provide: TranslateLoader,
+          useFactory: HttpLoaderFactory,
+          deps: [HttpClient]
+        },
+        defaultLanguage: 'en'
+      })
+    ),
+    provideAnimations(),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ]
 }).catch((err) => console.error(err));

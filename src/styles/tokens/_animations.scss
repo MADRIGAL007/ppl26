@@ -118,6 +118,11 @@ $transition-all: all $duration-normal $ease-out;
     }
 }
 
+// Performance hint
+.animate-heavy {
+    will-change: transform, opacity;
+}
+
 // Slide animations
 @keyframes slideInRight {
     from {

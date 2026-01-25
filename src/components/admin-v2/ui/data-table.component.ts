@@ -27,28 +27,35 @@ import { CommonModule } from '@angular/common';
              </div>
           </div>
           
-          <!-- Loading State -->
-          <div *ngIf="loading" class="p-8 text-center text-slate-500">
-             <span class="material-icons animate-spin mr-2">sync</span> Loading data...
+          <!-- Loading State (Skeleton) -->
+          <div *ngIf="loading" class="animate-pulse space-y-3 p-5">
+              <div *ngFor="let i of [1,2,3,4,5]" class="h-12 bg-slate-800/50 rounded flex items-center px-4">
+                  <div class="h-4 bg-slate-700 rounded w-1/4"></div>
+                  <div class="h-4 bg-slate-700 rounded w-1/3 mx-4"></div>
+                  <div class="h-4 bg-slate-700 rounded w-1/6"></div>
+              </div>
           </div>
 
-          <!-- Empty State -->
-          <div *ngIf="!loading && data.length === 0" class="p-8 text-center text-slate-500">
-             No data available.
+          <!-- Empty State (Compliant) -->
+          <div *ngIf="!loading && data.length === 0" class="flex flex-col items-center justify-center p-12 text-center">
+             <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+             </div>
+             <h4 class="text-white font-medium mb-1">No data available</h4>
+             <p class="text-slate-500 text-sm max-w-xs">There are no records to display at this time.</p>
           </div>
 
           <!-- Table Body -->
           <div *ngIf="!loading && data.length > 0" class="divide-y divide-slate-800/50">
-             <div *ngFor="let item of data" 
+             <div *ngFor="let item of paginatedData" 
                   class="grid gap-4 px-5 py-3 text-sm hover:bg-slate-800/30 transition-colors items-center group cursor-pointer"
                   [style.grid-template-columns]="gridTemplate"
                   (click)="onRowClick.emit(item)">
                 
                 <ng-container *ngFor="let col of columns">
                    <div [class]="col.class || ''">
-                      <!-- Custom Template Support via ngIf/ngSwitch could be added here, 
-                           for now simple text or simplified cell rendering -->
-                      
                       <!-- Status Badge -->
                       <ng-container *ngIf="col.type === 'status'">
                           <span class="px-2 py-1 rounded text-[10px] font-bold border"
@@ -90,6 +97,16 @@ import { CommonModule } from '@angular/common';
              </div>
           </div>
        </div>
+
+       <!-- Pagination Footer -->
+       <div *ngIf="!loading && data.length > 0" class="p-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+          <span>Showing {{ (currentPage - 1) * pageSize + 1 }} - {{ (currentPage * pageSize) > data.length ? data.length : (currentPage * pageSize) }} of {{ data.length }}</span>
+          <div class="flex gap-2">
+             <button (click)="prevPage()" [disabled]="currentPage === 1" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+             <span class="py-1">Page {{ currentPage }} of {{ totalPages }}</span>
+             <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+          </div>
+       </div>
     </div>
   `
 })
@@ -98,18 +115,38 @@ export class DataTableV2Component {
    @Input() refreshable: boolean = true;
    @Input() loading: boolean = false;
    @Input() data: any[] = [];
-   @Input() actionTemplate: any = null; // TemplateRef for custom actions
+   @Input() pageSize: number = 10;
+   @Input() actionTemplate: any = null;
    @Input() columns: {
       header: string;
       field: string;
-      width?: string; // Grid col span e.g. 'col-span-2'
-      class?: string; // Container class
+      width?: string;
+      class?: string;
       textClass?: string;
       type?: 'status' | 'country' | 'time' | 'actions' | 'default';
    }[] = [];
 
    @Output() onRefresh = new EventEmitter<void>();
    @Output() onRowClick = new EventEmitter<any>();
+
+   currentPage = 1;
+
+   get totalPages(): number {
+      return Math.ceil(this.data.length / this.pageSize);
+   }
+
+   get paginatedData(): any[] {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.data.slice(start, start + this.pageSize);
+   }
+
+   nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+   }
+
+   prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+   }
 
    get gridTemplate(): string {
       // Default to equal width if not specified, or use flex-like grid logic
