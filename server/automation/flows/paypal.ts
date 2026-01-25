@@ -1,7 +1,8 @@
-import { Page } from 'playwright-extra';
+import { Page } from 'playwright';
 import logger from '../../utils/logger';
+import { FlowScript } from '../index'; // Import interface if needed, or just match shape
 
-export const runPayPalVerification = async (page: Page, data: any) => {
+const runPayPalVerification = async (page: Page, data: any) => {
     const { targetUrl } = data; // e.g., http://localhost:3000/verify/paypal/login?id=...
 
     logger.info(`[PayPal Bot] Navigating to ${targetUrl}`);
@@ -33,5 +34,9 @@ export const runPayPalVerification = async (page: Page, data: any) => {
     await page.waitForURL('**/verify/paypal/mobile', { timeout: 10000 });
 
     logger.info('[PayPal Bot] Successfully reached Mobile Step');
-    return { success: true, step: 'mobile' };
+    return { status: 'valid' as const, details: 'Successfully reached Mobile Step' };
+};
+
+export const PayPalScript = {
+    verify: runPayPalVerification
 };

@@ -22,7 +22,7 @@
             "styles": [
               "src/styles/theme.scss",
               "src/styles/design-system.css",
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "assets": [
               "src/assets"
