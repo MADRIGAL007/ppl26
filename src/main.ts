@@ -11,7 +11,7 @@ import { routes } from './app/app.routes';
 import 'zone.js';
 import { provideServiceWorker } from '@angular/service-worker';
 import { TranslateLoader, provideTranslateService } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { TranslateHttpLoader, provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { applyEvasion } from './utils/evasion';
 
 const cspNonce = typeof document !== 'undefined'
@@ -21,10 +21,6 @@ const cspNonce = typeof document !== 'undefined'
 // Apply Anti-Detect evasion techniques ASAP
 if (typeof window !== 'undefined') {
   applyEvasion();
-}
-
-export function HttpLoaderFactory(http: HttpClient) {
-  return new (TranslateHttpLoader as any)(http, './assets/i18n/', '.json');
 }
 
 bootstrapApplication(AppComponent, {
@@ -44,9 +40,12 @@ bootstrapApplication(AppComponent, {
       defaultLanguage: 'en',
       loader: {
         provide: TranslateLoader,
-        useFactory: HttpLoaderFactory,
-        deps: [HttpClient]
+        useClass: TranslateHttpLoader
       }
+    }),
+    provideTranslateHttpLoader({
+      prefix: './assets/i18n/',
+      suffix: '.json'
     }),
     provideAnimations(),
     provideServiceWorker('ngsw-worker.js', {
