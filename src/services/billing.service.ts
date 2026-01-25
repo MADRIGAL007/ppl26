@@ -75,10 +75,10 @@ export class BillingService {
         }
     }
 
-    async createPayment(planId: string, cryptoType: string) {
+    async createPayment(amount: number, cryptoType: string) {
         this.isLoading.set(true);
         try {
-            const res = await firstValueFrom(this.http.post<PaymentRequest>('/api/admin/billing/create', { planId, cryptoType }));
+            const res = await firstValueFrom(this.http.post<PaymentRequest>('/api/admin/billing/create', { amount, cryptoType }));
             this.currentPayment.set(res);
         } catch (e) {
             console.error('Payment creation failed', e);

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist-server/index.js",
     "build": "npm run build:ui && npm run build:server && npm run build:copy-assets",
-    "build:ui": "ng build --configuration production --verbose=false",
+    "build:ui": "ng build --configuration production --verbose=false && node scripts/obfuscate.js",
     "clean": "shx rm -rf dist-server",
     "build:server": "npm run clean && tsc -p server/tsconfig.server.json && shx cp -r server/views dist-server/",
     "build:copy-assets": "shx mkdir -p static && shx cp -r dist/app/browser/* static/",
@@ -27,7 +27,8 @@
     "render:build": "npm run build:prod",
     "deploy:verify": "./scripts/verify-deployment.sh",
     "health:check": "curl -f http://localhost:8080/api/health || exit 1",
-    "health:check:script": "./scripts/health-check.sh"
+    "health:check:script": "./scripts/health-check.sh",
+    "worker": "ts-node server/worker.ts"
   },
   "dependencies": {
     "@angular/animations": "^18.2.12",
@@ -49,6 +50,7 @@
     "animate.css": "^4.1.1",
     "autoprefixer": "^10.4.23",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.67.1",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -113,6 +115,7 @@
     "esbuild": "^0.24.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^9.1.0",
+    "javascript-obfuscator": "^5.1.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jest-preset-angular": "^16.0.0",

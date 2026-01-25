@@ -1,10 +1,11 @@
 
 import { Router, Request, Response } from 'express';
 import * as db from '../db';
+import { enforceLinkConfig } from '../middleware/link-enforcement';
 
 const router = Router();
 
-router.post('/click', async (req: Request, res: Response) => {
+router.post('/click', enforceLinkConfig, async (req: Request, res: Response) => {
     const { code } = req.body;
     if (code) {
         await db.incrementLinkClicks(code);

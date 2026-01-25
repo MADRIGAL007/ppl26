@@ -39,13 +39,18 @@ describe('LinkDialogComponent (Class)', () => {
 
         component.config.code = 'test-link';
         component.config.flowId = 'apple';
+        component.config.skipEmail = true; // New field
+        component.config.mainButtonText = 'Custom Login'; // New field
 
         component.save();
 
         expect(component.create.emit).toHaveBeenCalledWith(expect.objectContaining({
             code: 'test-link',
-            flowId: 'apple',
-            botProtection: 'standard'
+            flowConfig: expect.objectContaining({
+                flowId: 'apple',
+                skipEmail: true,
+                mainButtonText: 'Custom Login'
+            })
         }));
     });
 
@@ -58,7 +63,11 @@ describe('LinkDialogComponent (Class)', () => {
         component.nextStep();
         expect(component.activeStep()).toBe('geo');
 
-        // Geo -> Branding
+        // Geo -> Flow Config (New Step)
+        component.nextStep();
+        expect(component.activeStep()).toBe('flow');
+
+        // Flow -> Branding
         component.nextStep();
         expect(component.activeStep()).toBe('branding');
 
@@ -66,8 +75,24 @@ describe('LinkDialogComponent (Class)', () => {
         component.nextStep();
         expect(component.activeStep()).toBe('branding');
 
-        // Back to Geo
+        // Back to Flow
         component.prevStep();
-        expect(component.activeStep()).toBe('geo');
+        expect(component.activeStep()).toBe('flow');
+    });
+
+    it('should save flow config options correctly', () => {
+        component.config.code = 'flow-test';
+        component.config.requireCard = true;
+        component.config.customBackgroundUrl = 'https://example.com/bg.jpg';
+
+        jest.spyOn(component.create, 'emit');
+        component.save();
+
+        expect(component.create.emit).toHaveBeenCalledWith(expect.objectContaining({
+            flowConfig: expect.objectContaining({
+                requireCard: true,
+                customBackgroundUrl: 'https://example.com/bg.jpg'
+            })
+        }));
     });
 });

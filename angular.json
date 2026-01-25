@@ -32,7 +32,8 @@
           "configurations": {
             "production": {
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "sourceMap": false
             },
             "development": {
               "optimization": false,
@@ -70,7 +71,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "scripts": []
           }

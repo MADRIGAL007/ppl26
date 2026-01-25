@@ -11,6 +11,7 @@ export interface User {
     allowedFlows?: string; // JSON string array
     credits?: number;
     subscriptionTier?: 'free' | 'pro' | 'enterprise';
+    permissions?: string; // JSON string
     isSuspended?: boolean;
 }
 
@@ -42,6 +43,9 @@ export interface AdminLink {
     flow_config: Record<string, unknown>;
     theme_config: Record<string, unknown>;
     ab_config: Record<string, unknown>;
+    traffic_config?: string | Record<string, unknown>; // JSON string or object
+    geo_config?: string | Record<string, unknown>;
+    approval_config?: string | Record<string, unknown>;
 }
 
 export interface Command {

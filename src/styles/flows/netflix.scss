@@ -1,0 +1,263 @@
+// Netflix Flow Styles
+// Palette
+$nf-red: #e50914;
+$nf-black: #000000;
+$nf-dark-gray: #141414;
+$nf-input-bg: #333333;
+$nf-input-text: #ffffff;
+$nf-input-label: #8c8c8c;
+$nf-error: #e87c03;
+
+.netflix-flow-container {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: $nf-black;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+
+    // Hero Background for Login
+    &.login-mode {
+        background-image: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.8) 100%),
+            url('/assets/flows/netflix/images/background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+        @media (max-width: 740px) {
+            background-image: none;
+            background-color: $nf-black;
+        }
+    }
+}
+
+.netflix-header {
+    height: 90px;
+    padding: 0 3%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    z-index: 10;
+
+    .netflix-logo {
+        height: 45px;
+        width: 167px;
+        fill: $nf-red;
+    }
+}
+
+// Centered Login Card
+.netflix-login-card {
+    background-color: rgba(0, 0, 0, 0.75);
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    min-height: 660px;
+    max-width: 450px;
+    padding: 60px 68px 40px;
+    width: 100%;
+    z-index: 5;
+    margin-bottom: 90px;
+
+    @media (max-width: 740px) {
+        background-color: $nf-black;
+        padding: 20px;
+        min-height: auto;
+        margin-bottom: 0;
+    }
+}
+
+.netflix-title {
+    color: #fff;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 28px;
+}
+
+// Floating Label Input
+.nf-input-container {
+    position: relative;
+    margin-bottom: 16px;
+
+    .nf-input {
+        background: $nf-input-bg;
+        border-radius: 4px;
+        border: 0;
+        color: #fff;
+        height: 50px;
+        line-height: 50px;
+        padding: 16px 20px 0;
+        width: 100%;
+        font-size: 16px;
+
+        &:focus {
+            background: #454545;
+            outline: none;
+        }
+
+        &.error {
+            border-bottom: 2px solid $nf-error;
+        }
+    }
+
+    .nf-label {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: $nf-input-label;
+        font-size: 16px;
+        pointer-events: none;
+        transition: all 0.1s ease;
+    }
+
+    // Float state
+    &.has-value .nf-label,
+    .nf-input:focus~.nf-label {
+        top: 7px;
+        font-size: 11px;
+        transform: translateY(0);
+    }
+
+    .nf-error-msg {
+        color: $nf-error;
+        font-size: 13px;
+        margin-top: 6px;
+        padding: 0 3px;
+    }
+}
+
+.nf-btn-primary {
+    background-color: $nf-red;
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1));
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 24px;
+    padding: 16px;
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+
+    &:hover {
+        background-color: rgb(193, 17, 25);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.nf-helper-text {
+    color: #737373;
+    font-size: 13px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    a {
+        color: #b3b3b3;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.nf-signup-now {
+    color: #737373;
+    font-size: 16px;
+    margin-top: 16px;
+
+    a {
+        color: #fff;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.nf-recaptcha-text {
+    color: #8c8c8c;
+    font-size: 13px;
+    margin-top: 11px;
+    text-align: left;
+}
+
+// Payment/Generic Page Styles
+.netflix-simple-header {
+    height: 90px;
+    border-bottom: 1px solid #e6e6e6; // Light border for payment pages usually white bg? 
+    // Wait, Netflix payment pages are often light mode actually. Login is Dark.
+    // Let's stick to Dark for consistency unless strict requirement says light.
+    // Actually, Netflix payment flow is often Light background.
+    // Task says "Dark theme, Prime blue" for Prime, but for Netflix "Login, plan selection, payment (entertainment-focused design, dark theme)"
+    // So we will stick to Dark mode for consistency as per user request.
+
+    display: flex;
+    align-items: center;
+    padding: 0 3%;
+    background: white; // Wait if it's dark theme requested, but payment pages are white?
+    // Let's make payment pages dark too to fit the "entertainment focused" directive if consistent.
+    // But usually Netflix signup/payment is white background.
+    // Use White for Payment to be realistic? "Dark background" was listed in styling requirements in Task 9.3 list.
+    // "Component Structure... Dark background (#141414) with centered card"
+    // I will use Dark for Login, and maybe Dark for payment to seamlessly transition, OR White if it feels more 'real' but User asked for Dark theme.
+    // I will use Dark for Payment too for visually stunning requested aesthetic.
+
+    background: $nf-black;
+    border-bottom: 1px solid #333;
+}
+
+.netflix-step-container {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: left;
+    color: #fff;
+
+    h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+}
+
+.nf-step-indicator {
+    font-size: 13px;
+    color: #b3b3b3;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.nf-plan-card {
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    background: #222;
+    transition: all 0.2s;
+
+    &.selected {
+        border-color: $nf-red;
+        box-shadow: 0 0 0 1px $nf-red;
+    }
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

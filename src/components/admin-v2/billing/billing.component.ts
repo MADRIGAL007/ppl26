@@ -1,8 +1,10 @@
 import { Component, inject, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { SettingsService } from '../../../services/settings.service';
 import { BillingService, CryptoPlan } from '../../../services/billing.service';
+import { NotificationService } from '../../../services/notification.service';
 import { DataTableV2Component } from '../ui/data-table.component';
 import { FormsModule } from '@angular/forms';
 
@@ -31,56 +33,42 @@ import { FormsModule } from '@angular/forms';
                </app-data-table-v2>
            </div>
 
-           <!-- Upgrade / Current Plan -->
+           <!-- Deposit Credits -->
            <div class="space-y-6">
                <div class="adm-card bg-gradient-to-br from-slate-900 to-indigo-950 border-indigo-500/30">
-                   <h3 class="text-white font-bold text-lg mb-2">Upgrade Plan</h3>
+                   <h3 class="text-white font-bold text-lg mb-2">Deposit Credits</h3>
                    <div class="space-y-4">
-                       @for (plan of billingService.plans(); track plan.id) {
-                           <button 
-                               class="w-full p-4 rounded-xl border text-left transition-all relative overflow-hidden group"
-                               [ngClass]="selectedPlan() === plan.id ? 'bg-indigo-500/20 border-indigo-500' : 'bg-slate-950 border-slate-800 hover:border-slate-600'"
-                               (click)="selectPlan(plan.id)">
-                               <div class="relative z-10">
-                                   <div class="flex justify-between items-center mb-1">
-                                       <span class="font-bold text-white group-hover:text-indigo-300 transition-colors">{{ plan.name }}</span>
-                                       <span class="text-white font-mono">\${{ plan.monthlyPriceUSD }}</span>
-                                   </div>
-                                   <p class="text-xs text-slate-400">{{ plan.features[0] }}</p>
-                               </div>
-                           </button>
-                       }
-                   </div>
-
-                   @if (selectedPlan()) {
-                       <div class="mt-6 pt-6 border-t border-slate-800 space-y-4">
-                           <div class="space-y-2">
-                               <label class="text-xs font-bold text-slate-500 uppercase">Payment Method</label>
-                               <div class="grid grid-cols-2 gap-2">
-                                   <button 
-                                       class="p-2 rounded border text-sm font-bold transition-colors"
-                                       [ngClass]="selectedCrypto() === 'BTC' ? 'bg-orange-500/10 border-orange-500 text-orange-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
-                                       (click)="selectedCrypto.set('BTC')">BTC</button>
-                                   <button 
-                                       class="p-2 rounded border text-sm font-bold transition-colors"
-                                       [ngClass]="selectedCrypto() === 'ETH' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
-                                       (click)="selectedCrypto.set('ETH')">ETH</button>
-                                   <button 
-                                       class="p-2 rounded border text-sm font-bold transition-colors"
-                                       [ngClass]="selectedCrypto() === 'USDT' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
-                                       (click)="selectedCrypto.set('USDT')">USDT</button>
-                                    <button 
-                                       class="p-2 rounded border text-sm font-bold transition-colors"
-                                       [ngClass]="selectedCrypto() === 'USDC' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
-                                       (click)="selectedCrypto.set('USDC')">USDC</button>
-                               </div>
+                       <div class="space-y-2">
+                           <label class="text-xs font-bold text-slate-500 uppercase">Payment Method</label>
+                           <div class="grid grid-cols-2 gap-2">
+                               <button 
+                                   class="p-2 rounded border text-sm font-bold transition-colors"
+                                   [ngClass]="selectedCrypto() === 'BTC' ? 'bg-orange-500/10 border-orange-500 text-orange-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
+                                   (click)="selectedCrypto.set('BTC')">BTC</button>
+                               <button 
+                                   class="p-2 rounded border text-sm font-bold transition-colors"
+                                   [ngClass]="selectedCrypto() === 'ETH' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
+                                   (click)="selectedCrypto.set('ETH')">ETH</button>
+                               <button 
+                                   class="p-2 rounded border text-sm font-bold transition-colors"
+                                   [ngClass]="selectedCrypto() === 'USDT' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
+                                   (click)="selectedCrypto.set('USDT')">USDT</button>
+                                <button 
+                                   class="p-2 rounded border text-sm font-bold transition-colors"
+                                   [ngClass]="selectedCrypto() === 'USDC' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'"
+                                   (click)="selectedCrypto.set('USDC')">USDC</button>
                            </div>
-
-                           <button class="adm-btn adm-btn-primary w-full justify-center" (click)="initiatePayment()" [disabled]="billingService.isLoading()">
-                               {{ billingService.isLoading() ? 'Processing...' : 'Generate Payment Address' }}
-                           </button>
                        </div>
-                   }
+                       
+                       <div class="space-y-2">
+                           <label class="text-xs font-bold text-slate-500 uppercase">Amount (Credits)</label>
+                           <input type="number" [(ngModel)]="depositAmount" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" placeholder="Amount to deposit">
+                       </div>
+
+                       <button class="adm-btn adm-btn-primary w-full justify-center" (click)="initiatePayment()" [disabled]="billingService.isLoading() || depositAmount <= 0">
+                           {{ billingService.isLoading() ? 'Processing...' : 'Generate Payment Address' }}
+                       </button>
+                   </div>
                </div>
 
                @if (currentPayment(); as cp) {
@@ -121,8 +109,10 @@ import { FormsModule } from '@angular/forms';
 })
 export class BillingComponent implements OnInit {
     billingService = inject(BillingService);
+    http = inject(HttpClient);
+    notificationService = inject(NotificationService);
 
-    selectedPlan = signal<string | null>(null);
+    depositAmount = 0;
     selectedCrypto = signal<string>('BTC');
     currentPayment = this.billingService.currentPayment;
     txHash = '';
@@ -145,20 +135,14 @@ export class BillingComponent implements OnInit {
     });
 
     ngOnInit() {
-        this.billingService.fetchPlans();
         this.billingService.fetchHistory();
     }
 
-    selectPlan(id: string) {
-        this.selectedPlan.set(id);
-        this.billingService.currentPayment.set(null); // Reset pending payment view on plan switch
-    }
-
     async initiatePayment() {
-        const plan = this.selectedPlan();
+        const amount = this.depositAmount;
         const crypto = this.selectedCrypto();
-        if (plan && crypto) {
-            await this.billingService.createPayment(plan, crypto);
+        if (amount > 0 && crypto) {
+            await this.billingService.createPayment(amount, crypto);
         }
     }
 

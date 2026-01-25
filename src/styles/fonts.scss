@@ -1,0 +1,45 @@
+/* 
+   Ultra-High Fidelity Font Stacks 
+   Self-hosted or System Native where available.
+*/
+
+/* PayPal - "PayPal Sans" (mocked with Open Sans for now, replace ttf to enable) */
+@font-face {
+    font-family: 'PayPal Sans';
+    src: local('Open Sans'), local('Helvetica Neue'), sans-serif;
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'PayPal Sans';
+    src: local('Open Sans Bold'), local('Helvetica Neue Bold'), sans-serif;
+    font-weight: 700;
+}
+
+/* Apple - System Fonts (100% Accurate) */
+$font-apple: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+/* Chase - "Open Sans" */
+$font-chase: "Open Sans", system-ui, sans-serif;
+
+/* Netflix - "Netflix Sans" (mocked with Archivo) */
+@font-face {
+    font-family: 'Netflix Sans';
+    src: local('Arial'), sans-serif;
+    /* Placeholder */
+}
+
+/* Amazon - "Amazon Ember" */
+$font-amazon: "Amazon Ember", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+
+/* Spotify - "Circular" */
+$font-spotify: "Circular", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+
+/* Utility Mixins */
+@mixin font-paypal {
+    font-family: 'PayPal Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+@mixin font-apple {
+    font-family: $font-apple;
+}

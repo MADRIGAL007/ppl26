@@ -1,0 +1,222 @@
+// Amazon Flow Styles
+// Palette
+$amz-gold: #f0c14b;
+$amz-gold-hover: #e2b13c;
+$amz-gold-border: #a88734;
+$amz-blue: #0066c0;
+$amz-blue-hover: #c7511f; // Amazon links often hover to orange/reddish
+$amz-orange-focus: #e77600;
+$amz-border-gray: #ddd;
+$amz-bg-gray: #fff; // Amazon login is white usually
+$amz-text-main: #111;
+
+.amazon-flow-container {
+    font-family: "Amazon Ember", Arial, sans-serif;
+    background-color: #fff;
+    color: $amz-text-main;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 14px;
+}
+
+.amazon-logo {
+    margin-bottom: 18px;
+    text-align: center;
+
+    img,
+    svg {
+        height: 32px;
+        width: auto; // 103px usually
+    }
+}
+
+.amazon-card {
+    width: 350px;
+    border: 1px solid $amz-border-gray;
+    border-radius: 4px;
+    padding: 20px 26px;
+    margin-bottom: 22px;
+    background: #fff;
+
+    h1 {
+        font-size: 28px;
+        font-weight: 400;
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+
+    @media (max-width: 480px) {
+        width: 100%;
+        border: none;
+        padding: 20px;
+    }
+}
+
+.amz-form-group {
+    margin-bottom: 14px;
+
+    label {
+        font-size: 13px;
+        font-weight: 700;
+        padding-left: 2px;
+        padding-bottom: 2px;
+        display: block;
+    }
+
+    input {
+        width: 100%;
+        height: 31px;
+        padding: 3px 7px;
+        line-height: normal;
+        border: 1px solid #a6a6a6;
+        border-top-color: #949494;
+        border-radius: 3px;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 1px 0 rgba(0, 0, 0, .07) inset;
+        outline: 0;
+        font-size: 13px;
+        transition: all .1s linear;
+
+        &:focus {
+            border-color: $amz-orange-focus;
+            box-shadow: 0 0 3px 2px rgba(228, 121, 17, .5);
+        }
+    }
+}
+
+.amz-btn-primary {
+    background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
+    border-color: #a88734 #9c7e31 #846a29;
+    color: #111;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    width: 100%;
+    height: 31px; // roughly
+    padding: 0 10px; // roughly
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .4) inset;
+    margin-top: 10px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 29px;
+
+    &:hover {
+        background: linear-gradient(to bottom, #f5d78e, #eeb933);
+        border-color: #a88734 #9c7e31 #846a29;
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+}
+
+.amz-link {
+    color: $amz-blue;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 19px;
+
+    &:hover {
+        color: #c45500;
+        text-decoration: underline;
+    }
+}
+
+.amz-divider {
+    text-align: center;
+    position: relative;
+    top: 2px;
+    padding-top: 1px;
+    margin-bottom: 14px;
+    line-height: 0;
+
+    &::after {
+        content: "";
+        width: 100%;
+        background-color: transparent;
+        display: block;
+        height: 1px;
+        border-top: 1px solid #e7e7e7;
+        position: absolute;
+        top: 50%;
+        margin-top: -1px;
+        z-index: 1;
+    }
+
+    span {
+        line-height: 1;
+        font-size: 12px;
+        color: #767676;
+        font-weight: 400;
+        z-index: 2;
+        position: relative;
+        display: inline-block;
+        background-color: #fff;
+        padding: 0 8px 0 7px;
+    }
+}
+
+.amz-btn-secondary {
+    background: linear-gradient(to bottom, #f7f8fa, #e7e9ec);
+    border-color: #adb1b8 #a2a6ac #8d9096;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    width: 100%;
+    height: 29px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset;
+    font-size: 13px;
+    line-height: normal; // usually allow centering
+    display: block; // anchor tag usually
+    text-align: center;
+    text-decoration: none;
+    color: #111;
+    padding: 6px 0; // vertical center
+
+    &:hover {
+        background: linear-gradient(to bottom, #e7eaf0, #d9dce1);
+        border-color: #a2a6ac #979aa1 #82858a;
+        text-decoration: none;
+        color: #111;
+    }
+}
+
+.amz-footer {
+    width: 100%;
+    margin-top: 26px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .14), rgba(0, 0, 0, .03) 3px, transparent);
+    padding-top: 30px; // shadow space
+    z-index: 0;
+
+    // Actually the shadow is usually a pseudo element or just top border/gradient.
+    // Let's just make it simple content.
+    background: none;
+    border-top: 1px solid #e7e7e7; // Or shadow
+    padding: 20px 0;
+    text-align: center;
+
+    .links {
+        margin-bottom: 10px;
+
+        a {
+            margin: 0 10px;
+            font-size: 11px;
+            color: $amz-blue;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+                color: #c45500;
+            }
+        }
+    }
+
+    .copyright {
+        font-size: 11px;
+        color: #555;
+    }
+}

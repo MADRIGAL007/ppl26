@@ -65,29 +65,12 @@ A state-of-the-art, high-fidelity Angular application simulating PayPal's securi
 - Docker & Docker Compose
 - PostgreSQL (optional, SQLite fallback)
 
-### Local Development
+### Quick Setup
+1. Install dependencies: `npm install`
+2. Run the wizard: `node scripts/setup-wizard.js`
+3. Start the server: `npm start`
 
-1. **Clone and Install**
-```bash
-git clone https://github.com/your-repo/paypal-verifier.git
-cd paypal-verifier
-npm install
-```
-
-2. **Environment Setup**
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-3. **Development Server**
-```bash
-# Start with hot reload
-npm run dev
-
-# Or with Docker
-docker-compose up -d
-```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed Docker and Production instructions.
 
 4. **Access Application**
 - User Interface: http://localhost:4200

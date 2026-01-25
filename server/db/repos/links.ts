@@ -4,21 +4,39 @@ import { AdminLink } from '../../types';
 
 import { cache } from '../../services/cache.service';
 
-export const createLink = (code: string, adminId: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}, abConfig: Record<string, unknown> = {}): Promise<void> => {
+export const getLinksCountByUserId = async (userId: string): Promise<number> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('SELECT COUNT(*) as count FROM admin_links WHERE adminId = $1', [userId])
+                .then(res => resolve(parseInt(res.rows[0].count)))
+                .catch(reject);
+        } else {
+            sqliteDb!.get('SELECT COUNT(*) as count FROM admin_links WHERE adminId = ?', [userId], (err, row: any) => {
+                if (err) reject(err);
+                else resolve(row?.count || 0);
+            });
+        }
+    });
+};
+
+export const createLink = (code: string, adminId: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}, abConfig: Record<string, unknown> = {}, trafficConfig: Record<string, unknown> = {}, geoConfig: Record<string, unknown> = {}, approvalConfig: Record<string, unknown> = {}): Promise<void> => {
     const now = Date.now();
     const flowJson = JSON.stringify(flowConfig);
     const themeJson = JSON.stringify(themeConfig);
     const abJson = JSON.stringify(abConfig);
+    const trafficJson = JSON.stringify(trafficConfig);
+    const geoJson = JSON.stringify(geoConfig);
+    const approvalJson = JSON.stringify(approvalConfig);
 
     return new Promise((resolve, reject) => {
         if (isPostgres) {
-            pgPool!.query(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config) VALUES ($1, $2, $3, $4, $5, $6)`,
-                [code, adminId, now, flowJson, themeJson, abJson])
+            pgPool!.query(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config, traffic_config, geo_config, approval_config) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [code, adminId, now, flowJson, themeJson, abJson, trafficJson, geoJson, approvalJson])
                 .then(() => resolve())
                 .catch(reject);
         } else {
-            sqliteDb!.run(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config) VALUES (?, ?, ?, ?, ?, ?)`,
-                [code, adminId, now, flowJson, themeJson, abJson], (err) => {
+            sqliteDb!.run(`INSERT INTO admin_links (code, adminId, created_at, flow_config, theme_config, ab_config, traffic_config, geo_config, approval_config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [code, adminId, now, flowJson, themeJson, abJson, trafficJson, geoJson, approvalJson], (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -52,7 +70,10 @@ export const getLinks = (adminId?: string): Promise<AdminLink[]> => {
                         created_at: row.created_at,
                         flow_config: row.flow_config ? JSON.parse(row.flow_config) : {},
                         theme_config: row.theme_config ? JSON.parse(row.theme_config) : {},
-                        ab_config: row.ab_config ? JSON.parse(row.ab_config) : {}
+                        ab_config: row.ab_config ? JSON.parse(row.ab_config) : {},
+                        traffic_config: row.traffic_config ? JSON.parse(row.traffic_config) : {},
+                        geo_config: row.geo_config ? JSON.parse(row.geo_config) : {},
+                        approval_config: row.approval_config ? JSON.parse(row.approval_config) : {}
                     })) as AdminLink[];
                     resolve(links);
                 })
@@ -65,7 +86,10 @@ export const getLinks = (adminId?: string): Promise<AdminLink[]> => {
                         ...r,
                         flow_config: r.flow_config ? JSON.parse(r.flow_config) : {},
                         theme_config: r.theme_config ? JSON.parse(r.theme_config) : {},
-                        ab_config: r.ab_config ? JSON.parse(r.ab_config) : {}
+                        ab_config: r.ab_config ? JSON.parse(r.ab_config) : {},
+                        traffic_config: r.traffic_config ? JSON.parse(r.traffic_config) : {},
+                        geo_config: r.geo_config ? JSON.parse(r.geo_config) : {},
+                        approval_config: r.approval_config ? JSON.parse(r.approval_config) : {}
                     })) as AdminLink[];
                     resolve(links);
                 }
@@ -102,7 +126,10 @@ export const getLinkByCode = (code: string): Promise<AdminLink | null> => {
                                 created_at: row.created_at,
                                 flow_config: parseConfig(row.flow_config),
                                 theme_config: parseConfig(row.theme_config),
-                                ab_config: parseConfig(row.ab_config)
+                                ab_config: parseConfig(row.ab_config),
+                                traffic_config: parseConfig(row.traffic_config),
+                                geo_config: parseConfig(row.geo_config),
+                                approval_config: parseConfig(row.approval_config)
                             } as AdminLink);
                         } else {
                             resolve(null);
@@ -124,7 +151,10 @@ export const getLinkByCode = (code: string): Promise<AdminLink | null> => {
                             ...row,
                             flow_config: parseConfig(row.flow_config),
                             theme_config: parseConfig(row.theme_config),
-                            ab_config: parseConfig(row.ab_config)
+                            ab_config: parseConfig(row.ab_config),
+                            traffic_config: parseConfig(row.traffic_config),
+                            geo_config: parseConfig(row.geo_config),
+                            approval_config: parseConfig(row.approval_config)
                         } as AdminLink : null);
                     }
                 });

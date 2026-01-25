@@ -92,13 +92,20 @@
   "CONVERSION": "Conversion",
   "ACTIONS": "Actions",
   "LOGIN": {
+    "TITLE": "Log in to your account",
+    "SUBTITLE": "Enter your credentials to continue.",
     "ERROR_CREDENTIALS": "Some of your info isn't correct. Please try again.",
+    "EMAIL_LABEL": "Email Address",
     "EMAIL_PLACEHOLDER": "Email or mobile number",
+    "PASSWORD_LABEL": "Password",
     "PASSWORD_PLACEHOLDER": "Password",
     "FORGOT": "Forgot password?",
+    "REMEMBER": "Stay logged in",
     "LOG_IN": "Log In",
+    "BUTTON": "Log In",
     "OR": "or",
     "SIGN_UP": "Sign Up",
+    "SIGNUP": "Log In",
     "WELCOME": "Welcome"
   },
   "PHONE": {

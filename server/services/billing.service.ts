@@ -1,5 +1,5 @@
-
 import * as BillingRepo from '../db/repos/billing';
+import { updateUser, getUserById } from '../db/repos/users';
 
 export class BillingService {
 
@@ -71,4 +71,10 @@ export class BillingService {
         await this.verifyLicense(license.id, true);
         return license;
     }
+
+    // --- Subscriptions ---
+
+
+    // --- Subscriptions ---
+    // (Removed per user instruction: No Subscription Tiers)
 }

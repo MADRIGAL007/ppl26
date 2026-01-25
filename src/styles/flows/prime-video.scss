@@ -1,0 +1,126 @@
+/* Amazon Prime Video Flow Styles */
+/* Theme: Dark Cinema */
+
+$prime-bg: #0F171E;
+$prime-card-bg: #0F171E;
+/* Often transparent or same as bg */
+$prime-blue: #00A8E1;
+$prime-blue-hover: #008CB9;
+$prime-text-main: #FFFFFF;
+$prime-text-secondary: #8197A4;
+$prime-border: #8197A4;
+$prime-input-bg: #FFFFFF;
+
+.prime-flow-container {
+    background-color: $prime-bg;
+    color: $prime-text-main;
+    min-height: 100vh;
+    font-family: "Amazon Ember", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+}
+
+.prime-logo {
+    height: 48px;
+    margin-bottom: 20px;
+}
+
+.prime-card {
+    width: 100%;
+    max-width: 350px;
+    padding: 20px;
+
+    h1 {
+        font-size: 28px;
+        font-weight: 300;
+        /* Light weight common in Prime branding */
+        margin-bottom: 20px;
+        line-height: 1.2;
+    }
+}
+
+.prime-form-group {
+    margin-bottom: 20px;
+
+    label {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: $prime-text-main;
+    }
+
+    input {
+        width: 100%;
+        height: 44px;
+        padding: 0 10px;
+        background: $prime-input-bg;
+        border: 1px solid #fff;
+        border-radius: 3px;
+        font-size: 16px;
+        color: #000;
+
+        &:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px $prime-blue;
+        }
+
+        &.error {
+            border-color: #D0021B;
+            box-shadow: 0 0 0 2px rgba(208, 2, 27, 0.2);
+        }
+    }
+}
+
+.prime-btn-primary {
+    width: 100%;
+    height: 44px;
+    background-color: $prime-blue;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 16px;
+    font-weight: 400;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+
+    &:hover {
+        background-color: $prime-blue-hover;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.prime-link {
+    color: $prime-blue;
+    text-decoration: none;
+    font-size: 14px;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.prime-footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 12px;
+    color: $prime-text-secondary;
+
+    a {
+        color: $prime-text-secondary;
+        text-decoration: none;
+        margin: 0 10px;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

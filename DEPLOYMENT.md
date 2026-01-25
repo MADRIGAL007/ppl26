@@ -9,35 +9,32 @@ This platform is containerized using Docker and Docker Compose for easy deployme
 - Git installed
 - A server with at least 2GB RAM (4GB recommended)
 
-## Quick Start (Production)
+## Automated Setup (Recommended)
 
-1. **Clone Repository**
+The easiest way to get started is using the interactive setup wizard.
+
+1. **Clone & Install**
    ```bash
    git clone <repo_url>
    cd ppl26
+   npm install
    ```
 
-2. **Configure Environment**
-   Edit `docker-compose.yml` or create a `.env` file to set secure passwords.
-   **CRITICAL**: Change `JWT_SECRET`, `ADMIN_SECRET`, and `HYPERVISOR_PASSWORD`.
-
-   ```env
-   # .env
-   JWT_SECRET=super_secure_random_string
-   HYPERVISOR_PASSWORD=my_strong_admin_password
-   ```
-
-3. **Build & Run**
+2. **Run Config Wizard**
    ```bash
-   docker-compose up -d --build
+   node scripts/setup-wizard.js
    ```
+   This script will:
+   - Check your environment requirements
+   - Generate a `.env` file with **secure, random secrets**
+   - Provide your initial Hypervisor (Root Admin) password
 
-4. **Verify Deployment**
-   Check logs:
-   ```bash
-   docker-compose logs -f app
-   ```
-   Access application at `http://your-server-ip:3000`.
+3. **Start Application**
+   - **Docker**: `docker-compose up -d`
+   - **Manual**: `npm start`
+
+4. **Verify**
+   Access the dashboard at `http://your-server-ip:3000/admin`
 
 ## Manual Deployment (PM2 + Nginx)
 

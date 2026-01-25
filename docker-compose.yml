@@ -40,6 +40,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - ppl-net
 
@@ -52,6 +53,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - ppl-net
+
+  worker:
+    build: .
+    container_name: ppl-worker
+    command: npm run worker
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - HEADLESS=true
+    depends_on:
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
     networks:
       - ppl-net
 

@@ -43,7 +43,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const admin: any = (req as any).user;
-        const { username, password, role, maxLinks, maxSessions, allowedFlows } = req.body;
+        const { username, password, role, maxLinks, maxSessions, allowedFlows, credits } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
@@ -62,10 +62,11 @@ router.post('/', async (req: Request, res: Response) => {
             uniqueCode: crypto.randomUUID().substring(0, 8),
             settings: JSON.stringify({}),
             telegramConfig: JSON.stringify({}),
-            maxLinks: maxLinks || 1,
-            maxSessions: maxSessions || 10,
-            allowedFlows: JSON.stringify(allowedFlows || []),
-            credits: 0,
+            maxLinks: maxLinks || 10,
+            maxSessions: maxSessions || 100,
+            allowedFlows: JSON.stringify(allowedFlows || ['paypal']),
+            permissions: JSON.stringify(req.body.permissions || {}),
+            credits: credits || 0,
             subscriptionTier: 'free',
             isSuspended: false
         };

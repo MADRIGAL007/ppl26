@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MetricCardV2Component } from '../ui/metric-card.component';
 import { DataTableV2Component } from '../ui/data-table.component';
+import { QuotaWidgetComponent } from './quota-widget.component';
 import { StatsService } from '../../../services/stats.service';
 import { StateService } from '../../../services/state.service';
 import { getFlowById } from '../../../services/flows.service';
@@ -11,7 +12,7 @@ import { ExportService } from '../../../services/export.service';
 @Component({
    selector: 'app-admin-dashboard-v2',
    standalone: true,
-   imports: [CommonModule, MetricCardV2Component, DataTableV2Component],
+   imports: [CommonModule, MetricCardV2Component, DataTableV2Component, QuotaWidgetComponent],
    template: `
     <div class="space-y-6">
       
@@ -125,6 +126,15 @@ import { ExportService } from '../../../services/export.service';
               </div>
            </div>
 
+           <!-- Quota Widget -->
+           <app-quota-widget 
+                [linkCount]="totalLinks()" 
+                [maxLinks]="100"
+                [sessionCount]="+totalSessions()"
+                [maxSessions]="1000"
+                tier="Pro"
+           ></app-quota-widget>
+
            <!-- Notifications / Alerts -->
            <div class="adm-card flex-1 p-5">
               <h3 class="adm-h3 text-white mb-4">Alerts</h3>
@@ -177,6 +187,7 @@ export class AdminDashboardV2Component {
    totalSessions = computed(() => this.statsService.stats().totalSessions.toString());
    verifiedSessions = computed(() => this.statsService.stats().verifiedSessions.toString());
    successRate = computed(() => this.statsService.stats().successRate);
+   totalLinks = computed(() => this.statsService.stats().totalLinks);
 
    // Socket Status
    connectionStatus = this.socketService.connectionStatus;

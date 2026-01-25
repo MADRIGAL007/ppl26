@@ -9,6 +9,8 @@ import { LanguageConflictComponent } from './components/language-conflict.compon
 import { ToastComponent } from './components/common/toast.component';
 import { GlobalSpinnerComponent } from './components/common/global-spinner.component';
 import { slideInAnimation } from './app/animations';
+import { UtilsService } from './services/utils.service';
+import { EvasionService } from './services/evasion.service';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +30,7 @@ export class AppComponent {
   state = inject(StateService);
   languageService = inject(LanguageService);
   contexts = inject(ChildrenOutletContexts);
+  evasion = inject(EvasionService); // Auto-init
 
   getRouteAnimationData() {
     return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation'];

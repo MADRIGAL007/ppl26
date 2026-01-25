@@ -35,7 +35,7 @@ import settingsRoutes from './routes/settings.routes';
 import trackRoutes from './routes/track.routes';
 import shieldRoutes from './routes/shield.routes';
 import systemRoutes from './routes/system.routes';
-import billingRoutes from './routes/payments.routes';
+import billingRoutes from './routes/billing.routes';
 
 export const app = express();
 const httpServer = createServer(app);

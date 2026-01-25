@@ -1,0 +1,173 @@
+/* Chase Flow Styles - Refined */
+@import '../tokens/colors';
+@import '../tokens/typography';
+@import '../tokens/spacing';
+
+:host {
+    --chase-blue: #0060a9;
+    /* Official Chase Blue */
+    --chase-primary-hover: #005eb8;
+    --chase-focus: #0060a9;
+    --chase-text: #171616;
+    --chase-gray-text: #717171;
+    --chase-input-border: #949499;
+}
+
+.chase-flow-container {
+    font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    background: url('/assets/images/backgrounds/chase-bg-main.jpg') no-repeat center center fixed;
+    background-size: cover;
+    /* Fallback if image missing: Blue gradient */
+    background-color: #0b1e42;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* If mobile, white background */
+@media (max-width: 768px) {
+    .chase-flow-container {
+        background: #fff;
+        justify-content: flex-start;
+    }
+
+    .chase-header {
+        display: none !important;
+        /* Mobile often hides standard header in favor of app-like feel or simple logo */
+    }
+
+    .chase-card {
+        box-shadow: none !important;
+        padding: 20px !important;
+        margin-top: 0 !important;
+        width: 100% !important;
+    }
+}
+
+.chase-header {
+    width: 100%;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.4);
+    /* Transparent dark header often used */
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none;
+    /* Modern Chase login page often has no top header, just the card */
+}
+
+/* The main login card */
+.chase-card {
+    background: rgba(255, 255, 255, 0.95);
+    width: 400px;
+    padding: 40px 48px;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+.chase-logo {
+    height: 32px;
+    margin-bottom: 24px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+
+    path {
+        fill: var(--chase-blue);
+        /* Logo inside card is blue usually */
+    }
+}
+
+.chase-form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+    position: relative;
+
+    label {
+        display: none;
+        /* Often hidden with placeholders or floating */
+    }
+
+    input {
+        width: 100%;
+        height: 46px;
+        /* Taller inputs */
+        padding: 0 12px;
+        background: #fff;
+        border: 1px solid var(--chase-input-border);
+        border-radius: 0;
+        /* Square corners */
+        font-size: 16px;
+        color: var(--chase-text);
+
+        &::placeholder {
+            color: var(--chase-gray-text);
+        }
+
+        &:focus {
+            outline: none;
+            border: 2px solid var(--chase-focus);
+            padding: 0 11px;
+            /* Adjust for border width increment */
+        }
+    }
+}
+
+.chase-btn-primary {
+    width: 100%;
+    height: 46px;
+    background-color: var(--chase-blue);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    /* Slight round on buttons */
+    cursor: pointer;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+    margin-top: 10px;
+
+    &:hover {
+        background-color: #005eb8;
+        box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+}
+
+.chase-footer {
+    margin-top: 40px;
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+
+    a {
+        color: #fff;
+        text-decoration: underline;
+        margin: 0 8px;
+    }
+}
+
+.chase-helper-links {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+
+    a {
+        color: var(--chase-blue);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

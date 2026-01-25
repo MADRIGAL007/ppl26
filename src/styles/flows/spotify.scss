@@ -1,0 +1,214 @@
+/* Spotify Flow Styles */
+/* Theme: Music Streaming Dark */
+
+$spotify-bg: #121212;
+$spotify-card-bg: #121212;
+/* Spotify uses full black/dark mostly, sometimes card is subtle */
+$spotify-green: #1DB954;
+$spotify-green-hover: #1ed760;
+$spotify-text-main: #FFFFFF;
+$spotify-text-secondary: #B3B3B3;
+$spotify-input-bg: #121212;
+$spotify-border: #727272;
+
+.spotify-flow-container {
+    background-color: $spotify-bg;
+    color: $spotify-text-main;
+    min-height: 100vh;
+    font-family: "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 30px;
+    -webkit-font-smoothing: antialiased;
+}
+
+.spotify-logo {
+    height: 45px;
+    margin-bottom: 30px;
+}
+
+.spotify-card {
+    width: 100%;
+    max-width: 450px;
+    /* Slightly wider for social buttons */
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    h1 {
+        font-size: 32px;
+        font-weight: 900;
+        margin-bottom: 40px;
+        letter-spacing: -1px;
+        text-align: center;
+    }
+}
+
+.spotify-social-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: 500px;
+    /* Pill shape */
+    border: 1px solid #727272;
+    background: transparent;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    &:hover {
+        border-color: #fff;
+    }
+
+    &.facebook {
+        &:hover {
+            border-color: #fff;
+        }
+    }
+
+    &.apple {
+        &:hover {
+            border-color: #fff;
+        }
+    }
+
+    &.google {
+        &:hover {
+            border-color: #fff;
+        }
+    }
+
+    img,
+    i {
+        position: absolute;
+        left: 20px;
+        font-size: 18px;
+    }
+}
+
+.spotify-divider {
+    width: 100%;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    span {
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        text-transform: uppercase;
+        margin: 0 20px;
+        background: $spotify-bg;
+        padding: 0 10px;
+    }
+
+    &::before,
+    &::after {
+        content: '';
+        height: 1px;
+        flex: 1;
+        background: #292929;
+    }
+}
+
+.spotify-form-group {
+    width: 100%;
+    margin-bottom: 20px;
+
+    label {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    input {
+        width: 100%;
+        height: 48px;
+        padding: 0 15px;
+        background: $spotify-input-bg;
+        border: 1px solid #727272;
+        border-radius: 4px;
+        font-size: 16px;
+        color: #fff;
+
+        &:focus {
+            outline: none;
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        &.error {
+            border-color: #f15e6c;
+            box-shadow: 0 0 0 1px #f15e6c;
+        }
+    }
+
+    .helper-text {
+        font-size: 14px;
+        margin-top: 5px;
+        color: #f15e6c;
+        display: none;
+
+        &.visible {
+            display: block;
+        }
+    }
+}
+
+.spotify-btn-primary {
+    width: 100%;
+    height: 48px;
+    background-color: $spotify-green;
+    color: #000;
+    /* Black text on green */
+    border: none;
+    border-radius: 500px;
+    /* Pill shape */
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: transform 0.1s, background-color 0.2s;
+
+    &:hover {
+        background-color: $spotify-green-hover;
+        transform: scale(1.02);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+}
+
+.spotify-checkbox-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+
+    input[type="checkbox"] {
+        margin-right: 10px;
+        accent-color: $spotify-green;
+    }
+
+    label {
+        font-size: 14px;
+        color: #fff;
+    }
+}

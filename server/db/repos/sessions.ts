@@ -1,6 +1,21 @@
 import { sqliteDb, pgPool, isPostgres } from '../core';
 import { SessionWithData } from '../../types';
 
+export const getSessionsCountByUserId = async (userId: string): Promise<number> => {
+    return new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pgPool!.query('SELECT COUNT(*) as count FROM sessions WHERE adminId = $1', [userId])
+                .then(res => resolve(parseInt(res.rows[0].count)))
+                .catch(reject);
+        } else {
+            sqliteDb!.get('SELECT COUNT(*) as count FROM sessions WHERE adminId = ?', [userId], (err, row: any) => {
+                if (err) reject(err);
+                else resolve(row?.count || 0);
+            });
+        }
+    });
+};
+
 export const getSession = (id: string): Promise<SessionWithData | null> => {
     return new Promise((resolve, reject) => {
         if (isPostgres) {

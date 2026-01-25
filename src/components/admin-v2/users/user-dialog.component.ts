@@ -68,9 +68,14 @@ import { FormsModule } from '@angular/forms';
                 <!-- Allowed Flows (JSON) -->
                 <div class="space-y-1">
                      <label class="text-xs font-bold text-slate-500 uppercase">Allowed Flows (JSON Array)</label>
-                     <!-- Simple Textarea for now, ideally extensive checkbox group -->
                      <textarea [(ngModel)]="localUser.allowedFlows" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-xs font-mono focus:border-blue-500/50 outline-none" placeholder='["paypal", "apple"]'></textarea>
                      <p class="text-[10px] text-slate-500">e.g. ["paypal", "apple", "netflix"] or leave empty for all.</p>
+                </div>
+
+                <!-- Permissions (JSON) -->
+                 <div class="space-y-1">
+                     <label class="text-xs font-bold text-slate-500 uppercase">Permissions (JSON Object)</label>
+                     <textarea [(ngModel)]="localUser.permissions" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white text-xs font-mono focus:border-blue-500/50 outline-none" placeholder='{"canExportData": true}'></textarea>
                 </div>
                 
                 <!-- Suspension -->
@@ -105,6 +110,7 @@ export class UserDialogComponent {
                 credits: 0,
                 subscriptionTier: 'free',
                 allowedFlows: '[]',
+                permissions: '{}',
                 isSuspended: false
             };
         }

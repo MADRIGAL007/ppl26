@@ -57,7 +57,7 @@ export class AdminService {
     /**
      * Create a new link
      */
-    static async createLink(user: TokenPayload, code: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}, abConfig: Record<string, unknown> = {}) {
+    static async createLink(user: TokenPayload, code: string, flowConfig: Record<string, unknown> = {}, themeConfig: Record<string, unknown> = {}, abConfig: Record<string, unknown> = {}, trafficConfig: Record<string, unknown> = {}, geoConfig: Record<string, unknown> = {}, approvalConfig: Record<string, unknown> = {}) {
         // License Check
         if (user.role !== 'hypervisor') {
             const flowId = (flowConfig.flowId as string) || 'paypal';
@@ -70,7 +70,7 @@ export class AdminService {
                 throw new Error(`License required for payment flow: ${flowId.toUpperCase()}`);
             }
         }
-        return db.createLink(code, user.id, flowConfig, themeConfig, abConfig);
+        return db.createLink(code, user.id, flowConfig, themeConfig, abConfig, trafficConfig, geoConfig, approvalConfig);
     }
 
     /**
