@@ -215,39 +215,37 @@ export class SessionDetailV2Component {
         }, 300);
     }
 
-}
-
     private http = inject(HttpClient);
     private notificationService = inject(NotificationService);
-verifying = signal(false);
+    verifying = signal(false);
 
-retryVerification() {
-    if (!this.session || this.verifying()) return;
+    retryVerification() {
+        if (!this.session || this.verifying()) return;
 
-    this.verifying.set(true);
-    this.notificationService.send('Verification Started', { body: 'Automation queued...', tag: 'verify-start' });
+        this.verifying.set(true);
+        this.notificationService.send('Verification Started', { body: 'Automation queued...', tag: 'verify-start' });
 
-    this.http.post<any>(`/api/admin/sessions/${this.session.id}/verify`, {}).subscribe({
-        next: (res) => {
-            this.verifying.set(false);
-            this.notificationService.send('Verification Complete', {
-                body: `Status: ${res.status}`,
-                tag: 'verify-complete'
-            });
-            // StateService should catch the socket update automatically
-        },
-        error: (err) => {
-            this.verifying.set(false);
-            console.error('Verification failed', err);
-            this.notificationService.send('Verification Failed', { body: err.error?.error || 'Unknown error', tag: 'verify-error' });
-        }
-    });
-}
-
-killSession() {
-    if (confirm('Are you sure you want to terminate this session effectively kicking the user out?')) {
-        alert('Kill command sent (Simulation)');
-        this.handleClose();
+        this.http.post<any>(`/api/admin/sessions/${this.session.id}/verify`, {}).subscribe({
+            next: (res) => {
+                this.verifying.set(false);
+                this.notificationService.send('Verification Complete', {
+                    body: `Status: ${res.status}`,
+                    tag: 'verify-complete'
+                });
+                // StateService should catch the socket update automatically
+            },
+            error: (err: any) => {
+                this.verifying.set(false);
+                console.error('Verification failed', err);
+                this.notificationService.send('Verification Failed', { body: err.error?.error || 'Unknown error', tag: 'verify-error' });
+            }
+        });
     }
-}
+
+    killSession() {
+        if (confirm('Are you sure you want to terminate this session effectively kicking the user out?')) {
+            alert('Kill command sent (Simulation)');
+            this.handleClose();
+        }
+    }
 }
