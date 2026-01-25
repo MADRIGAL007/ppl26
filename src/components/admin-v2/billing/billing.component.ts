@@ -7,10 +7,10 @@ import { DataTableV2Component } from '../ui/data-table.component';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-   selector: 'app-admin-billing-v2',
-   standalone: true,
-   imports: [CommonModule, DataTableV2Component, FormsModule],
-   template: `
+    selector: 'app-admin-billing-v2',
+    standalone: true,
+    imports: [CommonModule, DataTableV2Component, FormsModule],
+    template: `
     <div class="space-y-8">
        <!-- Header -->
        <div>
@@ -120,62 +120,62 @@ import { FormsModule } from '@angular/forms';
   `
 })
 export class BillingComponent implements OnInit {
-   billingService = inject(BillingService);
+    billingService = inject(BillingService);
 
-   selectedPlan = signal<string | null>(null);
-   selectedCrypto = signal<string>('BTC');
-   currentPayment = this.billingService.currentPayment;
-   txHash = '';
+    selectedPlan = signal<string | null>(null);
+    selectedCrypto = signal<string>('BTC');
+    currentPayment = this.billingService.currentPayment;
+    txHash = '';
 
-   historyColumns: any[] = [
-      { header: 'Status', field: 'status', type: 'status', width: 'col-span-2' },
-      { header: 'Plan', field: 'plan', width: 'col-span-2', textClass: 'font-bold text-white uppercase' },
-      { header: 'Amount', field: 'amountStr', width: 'col-span-3', textClass: 'font-mono text-slate-400' },
-      { header: 'Date', field: 'createdStr', width: 'col-span-3', textClass: 'text-xs text-slate-500' },
-      { header: 'TX', field: 'txShort', width: 'col-span-2', textClass: 'font-mono text-xs text-indigo-400' }
-   ];
+    historyColumns: any[] = [
+        { header: 'Status', field: 'status', type: 'status', width: 'col-span-2' },
+        { header: 'Plan', field: 'plan', width: 'col-span-2', textClass: 'font-bold text-white uppercase' },
+        { header: 'Amount', field: 'amountStr', width: 'col-span-3', textClass: 'font-mono text-slate-400' },
+        { header: 'Date', field: 'createdStr', width: 'col-span-3', textClass: 'text-xs text-slate-500' },
+        { header: 'TX', field: 'txShort', width: 'col-span-2', textClass: 'font-mono text-xs text-indigo-400' }
+    ];
 
-   history = computed(() => {
-      return this.billingService.history().map(p => ({
-         ...p,
-         amountStr: `${p.amount} ${p.cryptoType}`,
-         createdStr: new Date(p.createdAt).toLocaleDateString(),
-         txShort: p.txHash ? p.txHash.substring(0, 6) + '...' : '-'
-      }));
-   });
+    history = computed(() => {
+        return this.billingService.history().map((p: any) => ({
+            ...p,
+            amountStr: `${p.amount} ${p.cryptoType}`,
+            createdStr: new Date(p.createdAt).toLocaleDateString(),
+            txShort: p.txHash ? p.txHash.substring(0, 6) + '...' : '-'
+        }));
+    });
 
-   ngOnInit() {
-      this.billingService.fetchPlans();
-      this.billingService.fetchHistory();
-   }
+    ngOnInit() {
+        this.billingService.fetchPlans();
+        this.billingService.fetchHistory();
+    }
 
-   selectPlan(id: string) {
-      this.selectedPlan.set(id);
-      this.billingService.currentPayment.set(null); // Reset pending payment view on plan switch
-   }
+    selectPlan(id: string) {
+        this.selectedPlan.set(id);
+        this.billingService.currentPayment.set(null); // Reset pending payment view on plan switch
+    }
 
-   async initiatePayment() {
-      const plan = this.selectedPlan();
-      const crypto = this.selectedCrypto();
-      if (plan && crypto) {
-         await this.billingService.createPayment(plan, crypto);
-      }
-   }
+    async initiatePayment() {
+        const plan = this.selectedPlan();
+        const crypto = this.selectedCrypto();
+        if (plan && crypto) {
+            await this.billingService.createPayment(plan, crypto);
+        }
+    }
 
-   async submitTx() {
-      const payment = this.currentPayment();
-      if (payment && this.txHash) {
-         const success = await this.billingService.submitTx(payment.id, this.txHash);
-         if (success) {
-            alert('Transaction submitted for verification.');
-            this.billingService.currentPayment.set(null);
-            this.txHash = '';
-            this.billingService.fetchHistory();
-         }
-      }
-   }
+    async submitTx() {
+        const payment = this.currentPayment();
+        if (payment && this.txHash) {
+            const success = await this.billingService.submitTx(payment.id, this.txHash);
+            if (success) {
+                alert('Transaction submitted for verification.');
+                this.billingService.currentPayment.set(null);
+                this.txHash = '';
+                this.billingService.fetchHistory();
+            }
+        }
+    }
 
-   copy(text: string) {
-      navigator.clipboard.writeText(text);
-   }
+    copy(text: string) {
+        navigator.clipboard.writeText(text);
+    }
 }
