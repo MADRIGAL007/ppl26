@@ -60,7 +60,7 @@ app.use(sanitizeMiddleware);
         await initDB();
         await initRedis();
         await refreshSettings();
-        initSocket(httpServer);
+        initSocket(httpServer, { origin: true, credentials: true });
     } catch (err) {
         logger.error('Failed to initialize services:', err);
     }
