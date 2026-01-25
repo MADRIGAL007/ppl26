@@ -48,6 +48,10 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/track', trackRoutes);
 app.use('/api/shield', shieldRoutes);
 
+// Health Check
+app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
 // API Documentation (Swagger UI)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
