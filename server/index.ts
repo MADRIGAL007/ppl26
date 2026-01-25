@@ -89,12 +89,31 @@ setupGlobalErrorHandlers();
 
 // Serve Static Frontend (Production)
 if (process.env['NODE_ENV'] === 'production') {
-    app.use(express.static('static'));
+    const fs = require('fs');
+    const path = require('path');
+    const staticPath = path.join(process.cwd(), 'static');
 
-    // SPA Fallback
+    // Serve static files normally
+    app.use(express.static(staticPath));
+
+    // SPA Fallback with nonce replacement
     app.get('*', (req, res) => {
         if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not Found' });
-        res.sendFile('index.html', { root: 'static' });
+
+        try {
+            const indexPath = path.join(staticPath, 'index.html');
+            if (fs.existsSync(indexPath)) {
+                let html = fs.readFileSync(indexPath, 'utf8');
+                // Replace %CSP_NONCE% with empty or actual nonce if generated
+                html = html.replace(/%CSP_NONCE%/g, '');
+                res.send(html);
+            } else {
+                res.status(404).send('Frontend not found');
+            }
+        } catch (err) {
+            logger.error('Error serving index.html:', err);
+            res.status(500).send('Internal Server Error');
+        }
     });
 }
 

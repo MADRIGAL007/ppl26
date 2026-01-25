@@ -40,20 +40,20 @@ bootstrapApplication(AppComponent, {
         errorInterceptor
       ])
     ),
-    importProvidersFrom(
-      TranslateModule.forRoot({
-        loader: {
-          provide: TranslateLoader,
-          useFactory: HttpLoaderFactory,
-          deps: [HttpClient]
-        },
-        defaultLanguage: 'en'
-      })
-    ),
-    provideAnimations(),
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000'
+    import { provideTranslateService, TranslateLoader } from '@ngx-translate/core';
+  ...
+  provideTranslateService({
+    defaultLanguage: 'en',
+    loader: {
+      provide: TranslateLoader,
+      useFactory: (http: HttpClient) => new TranslateHttpLoader(http, './assets/i18n/', '.json'),
+      deps: [HttpClient]
+    }
+  }),
+  provideAnimations(),
+  provideServiceWorker('ngsw-worker.js', {
+    enabled: !isDevMode(),
+  registrationStrategy: 'registerWhenStable:30000'
     })
   ]
-}).catch((err) => console.error(err));
+}).catch ((err) => console.error(err));
