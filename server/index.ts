@@ -39,7 +39,35 @@ import billingRoutes from './routes/payments.routes';
 
 export const app = express();
 const httpServer = createServer(app);
-// ...
+
+app.set('trust proxy', 1); // Trust Render proxy
+
+app.use(helmet());
+app.use(cors({ origin: true, credentials: true }));
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+app.use(requestLogger);
+app.use(securityHeaders);
+app.use(cspMiddleware);
+app.use(botDetection);
+app.use(sanitizeMiddleware);
+
+// Initialize Services
+(async () => {
+    try {
+        await initDB();
+        await initRedis();
+        await refreshSettings();
+        initSocket(httpServer);
+    } catch (err) {
+        logger.error('Failed to initialize services:', err);
+    }
+})();
+
+// API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/admin/users', usersRoutes); // User Management (Hypervisor)
 app.use('/api/admin/system', systemRoutes); // System health, audit, payments
 app.use('/api/admin/billing', billingRoutes); // New Billing API
@@ -52,14 +80,6 @@ app.use('/api/shield', shieldRoutes);
 app.get('/health', (req, res) => res.status(200).send('OK'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
-// API Documentation (Swagger UI)
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'PayPal Verification API Docs'
-}));
-
-// Health Check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
 // 5. Error Handling (must be AFTER routes)
 import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/error-handler';
