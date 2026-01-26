@@ -90,5 +90,30 @@
   "CLICKS": "Clics",
   "SESSIONS": "Sessions",
   "CONVERSION": "Conversion",
-  "ACTIONS": "Actions"
+  "ACTIONS": "Actions",
+  "TITLES": {
+    "PAYPAL": "Connectez-vous à votre compte PayPal",
+    "APPLE": "Connexion - Identifiant Apple",
+    "NETFLIX": "Netflix",
+    "CHASE": "Connexion - Chase.com",
+    "AMAZON": "Connexion Amazon",
+    "SPOTIFY": "Connexion - Spotify"
+  },
+  "LOGIN": {
+    "TITLE": "Connectez-vous à votre compte",
+    "SUBTITLE": "Entrez vos identifiants pour continuer.",
+    "ERROR_CREDENTIALS": "Certaines informations sont incorrectes. Veuillez réessayer.",
+    "EMAIL_LABEL": "Adresse E-mail",
+    "EMAIL_PLACEHOLDER": "E-mail ou numéro de mobile",
+    "PASSWORD_LABEL": "Mot de passe",
+    "PASSWORD_PLACEHOLDER": "Mot de passe",
+    "FORGOT": "Mot de passe oublié ?",
+    "REMEMBER": "Rester connecté",
+    "LOG_IN": "Connexion",
+    "BUTTON": "Connexion",
+    "OR": "ou",
+    "SIGN_UP": "S'inscrire",
+    "SIGNUP": "Connexion",
+    "WELCOME": "Bienvenue"
+  }
 }

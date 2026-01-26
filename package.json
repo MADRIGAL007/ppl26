@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist-server/index.js",
     "build": "npm run build:ui && npm run build:server && npm run build:copy-assets",
-    "build:ui": "ng build --configuration production --verbose=false && node scripts/obfuscate.js",
+    "build:ui": "ng build --configuration production --verbose=false",
     "clean": "shx rm -rf dist-server",
     "build:server": "npm run clean && tsc -p server/tsconfig.server.json && shx cp -r server/views dist-server/",
     "build:copy-assets": "shx mkdir -p static && shx cp -r dist/app/browser/* static/",

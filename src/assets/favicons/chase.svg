@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g transform="translate(50,50) scale(0.8) translate(-50,-50)">
+    <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="#117aca" stroke="none" opacity="0.1"/>
+    <rect x="0" y="0" width="45" height="45" fill="#117aca"/>
+    <rect x="55" y="0" width="45" height="45" fill="#117aca"/>
+    <rect x="0" y="55" width="45" height="45" fill="#117aca"/>
+    <rect x="55" y="55" width="45" height="45" fill="#117aca"/>
+  </g>
+  <!-- Simplified Octagon representation for favicon clarity -->
+  <path d="M 25,5 L 75,5 L 95,25 L 95,75 L 75,95 L 25,95 L 5,75 L 5,25 Z" fill="none" stroke="#117aca" stroke-width="8"/>
+  <path d="M 50,5 L 50,95 M 5,50 L 95,50" stroke="#117aca" stroke-width="4"/>
+</svg>

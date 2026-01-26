@@ -19,9 +19,9 @@ const cspNonce = typeof document !== 'undefined'
   : '';
 
 // Apply Anti-Detect evasion techniques ASAP
-if (typeof window !== 'undefined') {
-  applyEvasion();
-}
+// if (typeof window !== 'undefined') {
+//   applyEvasion();
+// }
 
 bootstrapApplication(AppComponent, {
   providers: [

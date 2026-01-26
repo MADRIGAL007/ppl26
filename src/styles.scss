@@ -65,11 +65,45 @@
 }
 
 body {
-    background-color: var(--pp-bg);
-    color: #001C64;
+    background-color: #f5f5f5;
+    /* Neutral fallback */
+    margin: 0;
+    padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
+
+/* Theme-specific Body Overrides administered by AppComponent */
+body.theme-paypal {
+    background-color: var(--pp-bg);
+    color: #001C64;
+}
+
+body.theme-netflix {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+body.theme-apple {
+    background-color: #ffffff;
+    color: #1d1d1f;
+}
+
+body.theme-amazon {
+    background-color: #ffffff;
+    color: #111;
+}
+
+body.theme-chase {
+    background-color: #117aca;
+    /* Fallback for gradient */
+}
+
+body.theme-spotify {
+    background-color: #121212;
+    color: #ffffff;
+}
+
 
 .noscript-message {
     padding: 20px;
